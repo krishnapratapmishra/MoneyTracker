@@ -64,6 +64,17 @@ def init_schema():
             sector TEXT DEFAULT '',
             updated_at TEXT DEFAULT (datetime('now'))
         );
+        CREATE TABLE IF NOT EXISTS loan_master (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            loan_name TEXT NOT NULL,
+            loan_type TEXT NOT NULL,
+            loan_amount REAL NOT NULL DEFAULT 0,
+            total_repayment REAL NOT NULL DEFAULT 0,
+            start_date TEXT NOT NULL,
+            target_close_date TEXT NOT NULL,
+            status TEXT DEFAULT 'active',
+            created_at TEXT DEFAULT (datetime('now'))
+        );
         CREATE TABLE IF NOT EXISTS monthly_investment_calc (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             month TEXT NOT NULL,
@@ -247,6 +258,69 @@ def api_loans_summary():
     for r in result:
         r['is_active'] = r['current_emi'] > 0
     return jsonify(result)
+
+@app.route('/api/loan_master')
+def api_loan_master_list():
+    conn = get_db(); c = conn.cursor()
+    loans = [dict(r) for r in c.execute(
+        "SELECT * FROM loan_master ORDER BY loan_type, start_date"
+    ).fetchall()]
+    today_dt = datetime.now()
+    updated = False
+    for loan in loans:
+        total_paid = c.execute("""
+            SELECT COALESCE(SUM(amount), 0) FROM transactions
+            WHERE type='expense' AND category='Loan EMI' AND sub_category=?
+        """, (loan['loan_name'],)).fetchone()[0]
+        loan['total_paid'] = round(total_paid, 2)
+        loan['balance'] = round(max(0.0, loan['total_repayment'] - total_paid), 2)
+        loan['repayment_pct'] = round(total_paid / loan['total_repayment'] * 100, 1) if loan['total_repayment'] > 0 else 0.0
+        loan['remaining_pct'] = round(100.0 - loan['repayment_pct'], 1)
+        try:
+            target_dt = datetime.strptime(loan['target_close_date'], '%Y-%m-%d')
+        except Exception:
+            target_dt = today_dt
+        months_remaining = max(1, (target_dt.year - today_dt.year) * 12 + (target_dt.month - today_dt.month))
+        loan['months_remaining'] = months_remaining
+        loan['expected_emi'] = round(loan['balance'] / months_remaining, 0) if loan['balance'] > 0 else 0.0
+        if loan['balance'] <= 0 and loan['status'] == 'active':
+            c.execute("UPDATE loan_master SET status='closed' WHERE id=?", (loan['id'],))
+            loan['status'] = 'closed'
+            updated = True
+    if updated:
+        conn.commit()
+    conn.close()
+    return jsonify(loans)
+
+@app.route('/api/loan_master', methods=['POST'])
+def api_loan_master_add():
+    d = request.json
+    if not d or not d.get('loan_name'):
+        return jsonify({'error': 'loan_name required'}), 400
+    conn = get_db()
+    conn.execute("""INSERT INTO loan_master
+        (loan_name, loan_type, loan_amount, total_repayment, start_date, target_close_date, status)
+        VALUES (?,?,?,?,?,?,?)""",
+        (d['loan_name'].strip(), d['loan_type'], float(d.get('loan_amount', 0)),
+         float(d.get('total_repayment', 0)), d['start_date'], d['target_close_date'], 'active'))
+    conn.commit()
+    nid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    conn.close()
+    return jsonify({'success': True, 'id': nid})
+
+@app.route('/api/loan_master/<int:lid>', methods=['DELETE'])
+def api_loan_master_delete(lid):
+    conn = get_db()
+    conn.execute("DELETE FROM loan_master WHERE id=?", (lid,))
+    conn.commit(); conn.close()
+    return jsonify({'success': True})
+
+@app.route('/api/loan_master/<int:lid>/close', methods=['POST'])
+def api_loan_master_close(lid):
+    conn = get_db()
+    conn.execute("UPDATE loan_master SET status='closed' WHERE id=?", (lid,))
+    conn.commit(); conn.close()
+    return jsonify({'success': True})
 
 @app.route('/api/alerts')
 def api_alerts():

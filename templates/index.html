@@ -244,13 +244,42 @@ tr:hover td{background:var(--surface2)}
 .corpus-stats{display:flex;justify-content:space-between;font-size:11px;color:var(--muted2)}
 .corpus-stat-val{font-weight:600;color:var(--text)}
 
-/* ─── LOAN CARDS ─── */
-.loan-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;margin-bottom:20px}
-.loan-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--expense);
-  border-radius:var(--r);padding:14px}
-.loan-type{font-size:12px;font-weight:600;margin-bottom:5px}
-.loan-total{font-family:'Plus Jakarta Sans',sans-serif;font-size:21px;font-weight:800;color:var(--expense)}
-.loan-sub{font-size:10px;color:var(--muted);margin-top:3px}
+/* ─── LOAN TYPE CARDS ─── */
+.loan-type-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px;margin-bottom:20px}
+.ltc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.ltc-head{display:flex;align-items:center;gap:10px;padding:13px 16px 11px;background:var(--surface2);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;transition:background .15s}
+.ltc-head:hover{background:var(--surface3)}
+.ltc-type-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:800;flex:1}
+.ltc-head-badges{display:flex;gap:6px;flex-shrink:0}
+.ltc-chevron{font-size:13px;color:var(--muted);transition:transform .22s;flex-shrink:0}
+.ltc.collapsed .ltc-chevron{transform:rotate(-90deg)}
+.ltc-head-summary{display:none;align-items:center;gap:14px;margin-right:6px}
+.ltc.collapsed .ltc-head-summary{display:flex}
+.ltc-hs-item{text-align:right}
+.ltc-hs-lbl{font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;font-weight:600;line-height:1.2}
+.ltc-hs-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:800;line-height:1.3}
+.ltc-hs-sep{width:1px;height:28px;background:var(--border)}
+.ltc-body{overflow:hidden;transition:max-height .28s ease,opacity .2s ease;max-height:2000px;opacity:1}
+.ltc.collapsed .ltc-body{max-height:0;opacity:0}
+.ltc.collapsed .ltc-head{border-bottom-color:transparent}
+.ltc-badge-active{background:rgba(139,125,255,.15);color:var(--invest);border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700}
+.ltc-badge-closed{background:var(--income-d);color:var(--income);border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700}
+.ltc-loan{padding:13px 16px;border-top:1px solid var(--border)}
+.ltc-loan:first-child{border-top:none}
+.ltc-loan-head{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.ltc-loan-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ltc-status-active{background:rgba(139,125,255,.15);color:var(--invest);border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;white-space:nowrap;flex-shrink:0}
+.ltc-status-closed{background:var(--income-d);color:var(--income);border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;white-space:nowrap;flex-shrink:0}
+.ltc-amounts{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:9px}
+.ltc-amt-box{background:var(--surface2);border-radius:8px;padding:7px 9px}
+.ltc-amt-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);margin-bottom:3px;font-weight:600}
+.ltc-amt-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:800}
+.ltc-meta{font-size:11px;color:var(--muted2);margin-bottom:7px;display:flex;gap:10px;flex-wrap:wrap}
+.ltc-meta strong{color:var(--text);font-weight:600}
+.ltc-prog-bar{background:var(--border);border-radius:3px;height:5px;overflow:hidden;margin-bottom:4px}
+.ltc-prog-fill{height:100%;border-radius:3px;transition:width .8s ease}
+.ltc-prog-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--muted2)}
+.ltc-loan-actions{display:flex;gap:5px;margin-top:9px;justify-content:flex-end}
 
 /* ─── ALERTS ─── */
 .alerts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-bottom:20px}
@@ -295,6 +324,45 @@ tr:hover td{background:var(--surface2)}
 .btn-cancel{background:var(--surface2);color:var(--muted2)}
 .btn-cancel:hover{color:var(--text)}
 
+/* ─── ADD TRANSACTION REDESIGNED ─── */
+.add-tx-modal{width:560px;max-width:96vw;padding:0;overflow:hidden}
+.add-tx-header{display:flex;align-items:center;gap:10px;padding:16px 20px 14px;border-bottom:1px solid var(--border)}
+.add-tx-header .modal-title{flex:1;margin-bottom:0;font-size:16px}
+.add-tx-tabs{display:flex;border-bottom:1px solid var(--border)}
+.add-tab{flex:1;padding:11px 4px;background:none;border:none;font-family:'Inter',sans-serif;
+  font-size:12px;font-weight:500;color:var(--muted2);cursor:pointer;transition:all .15s;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  border-bottom:2px solid transparent;margin-bottom:-1px}
+.add-tab:hover{background:var(--surface2);color:var(--text)}
+.add-tab.active.tab-i{color:var(--income);border-bottom-color:var(--income);font-weight:700}
+.add-tab.active.tab-e{color:var(--expense);border-bottom-color:var(--expense);font-weight:700}
+.add-tab.active.tab-v{color:var(--invest);border-bottom-color:var(--invest);font-weight:700}
+.add-tab.active.tab-l{color:#a855f7;border-bottom-color:#a855f7;font-weight:700}
+.tab-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.tab-dot-i{background:var(--income)}.tab-dot-e{background:var(--expense)}
+.tab-dot-v{background:var(--invest)}.tab-dot-l{background:#a855f7}
+.add-tx-body{max-height:390px;overflow-y:auto}
+.cat-rows{display:flex;flex-direction:column}
+.cat-row{display:flex;align-items:center;padding:7px 20px;gap:12px;border-bottom:1px solid transparent;transition:background .1s}
+.cat-row:hover{background:var(--surface2)}
+.cat-row-name{flex:1;font-size:13px;font-weight:500;color:var(--text)}
+.cat-amt-wrap{display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;overflow:hidden;width:150px;flex-shrink:0;transition:border-color .15s}
+.cat-row:hover .cat-amt-wrap,.cat-amt-wrap:focus-within{border-color:var(--invest)}
+.cat-amt-prefix{padding:0 7px;font-size:11px;color:var(--muted2);font-weight:700;
+  background:var(--surface3);align-self:stretch;display:flex;align-items:center;flex-shrink:0;border-right:1px solid var(--border)}
+.cat-amt-input{border:none;background:transparent;color:var(--text);
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;
+  padding:7px 8px;width:100%;outline:none;text-align:right}
+.cat-amt-input.amt-error{color:var(--expense)!important}
+.cat-amt-input::-webkit-inner-spin-button,.cat-amt-input::-webkit-outer-spin-button{opacity:.4}
+.new-cat-row{border-top:1px dashed var(--border)!important;margin:4px 0 0}
+.new-cat-name-input{flex:1;background:transparent;border:none;font-family:'Inter',sans-serif;
+  font-size:12px;color:var(--text);outline:none;min-width:0}
+.new-cat-name-input::placeholder{color:var(--muted)}
+.add-tx-footer{display:flex;align-items:center;gap:8px;padding:12px 20px;border-top:1px solid var(--border)}
+
+/* keep old type-toggle for any other usages */
 .type-toggle{display:flex;border:1px solid var(--border);border-radius:9px;overflow:hidden;margin-bottom:14px}
 .type-toggle label{flex:1;text-align:center;padding:8px 0;cursor:pointer;font-size:12px;font-weight:500;color:var(--muted2);transition:all .18s}
 .type-toggle input{display:none}
@@ -367,6 +435,80 @@ tr:hover td{background:var(--surface2)}
   padding:7px 12px;background:var(--surface2);border-radius:8px;margin:14px 0 6px;
   display:flex;justify-content:space-between;align-items:center}
 .calc-wrap{overflow-x:auto}
+
+/* ─── VISION BOARD ─── */
+.vb-top{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;align-items:stretch}
+.vb-score-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:0 0 200px;min-width:190px}
+.vb-score-ring{position:relative;width:130px;height:130px;margin-bottom:12px}
+.vb-score-svg{width:130px;height:130px;transform:rotate(-90deg)}
+.vb-score-bg{fill:none;stroke:var(--border);stroke-width:10}
+.vb-score-fill{fill:none;stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset 1s ease}
+.vb-score-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.vb-score-num{font-family:'Plus Jakarta Sans',sans-serif;font-size:32px;font-weight:800;line-height:1}
+.vb-score-denom{font-size:10px;color:var(--muted2);font-weight:500;margin-top:1px}
+.vb-score-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;text-align:center;margin-bottom:4px}
+.vb-score-grade{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;text-align:center}
+.vb-discipline-grid{flex:1;display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;min-width:0}
+.vb-dc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 15px}
+.vb-dc-head{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.vb-dc-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.vb-dc-lbl{font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;line-height:1.3}
+.vb-dc-actual{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;line-height:1;margin-bottom:1px}
+.vb-dc-target{font-size:10px;color:var(--muted2);margin-bottom:7px}
+.vb-dc-bar{background:var(--border);border-radius:3px;height:4px;overflow:hidden;margin-bottom:5px}
+.vb-dc-fill{height:100%;border-radius:3px;transition:width .9s ease}
+.vb-dc-status{font-size:10px;font-weight:600}
+.vb-dc.met{border-color:rgba(5,150,105,.25)}
+.vb-dc.missed{border-color:rgba(220,38,38,.18)}
+
+.vb-src-wrap{margin-bottom:20px}
+.vb-src-head{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.vb-src-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800}
+.vb-src-meta{font-size:11px;color:var(--muted2)}
+.vb-src-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.vb-src-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
+.vb-src-name{font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vb-src-amt{font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:800;color:var(--income);margin-bottom:3px}
+.vb-src-pct{font-size:10px;color:var(--muted2)}
+.vb-src-missing{background:var(--surface2);border:1px dashed var(--border);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--muted)}
+.vb-src-missing-icon{font-size:18px;margin-bottom:4px}
+.vb-src-missing-lbl{font-size:10px;font-weight:600}
+
+.vb-alloc-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;margin-bottom:20px}
+.vb-alloc-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800;margin-bottom:16px}
+.vb-alloc-row{margin-bottom:13px}
+.vb-alloc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.vb-alloc-name{font-size:12px;font-weight:600}
+.vb-alloc-nums{font-size:11px;color:var(--muted2)}
+.vb-alloc-track{background:var(--border);border-radius:5px;height:9px;overflow:hidden;position:relative}
+.vb-alloc-target-line{position:absolute;top:0;bottom:0;width:2px;background:var(--text);opacity:.3;z-index:2}
+.vb-alloc-fill{height:100%;border-radius:5px;transition:width .9s ease;position:relative;z-index:1}
+.vb-alloc-tag{font-size:9px;font-weight:700;margin-top:3px}
+
+.vb-goals-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin-bottom:20px}
+.vb-goal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:box-shadow .18s}
+.vb-goal:hover{box-shadow:var(--shadow)}
+.vb-goal-photo{height:110px;background:var(--surface2);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden}
+.vb-goal-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.vb-goal-photo-ov{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity .18s;color:#fff;gap:3px;font-size:11px;font-weight:600}
+.vb-goal-photo:hover .vb-goal-photo-ov{opacity:1}
+.vb-goal-ph-icon{font-size:28px}
+.vb-goal-body{padding:11px 13px}
+.vb-goal-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:800;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vb-goal-year{font-size:10px;color:var(--muted2);margin-bottom:8px}
+.vb-goal-prog-bar{background:var(--border);border-radius:3px;height:5px;overflow:hidden;margin-bottom:4px}
+.vb-goal-prog-fill{height:100%;border-radius:3px;transition:width .9s ease}
+.vb-goal-nums{display:flex;justify-content:space-between;font-size:10px;color:var(--muted2)}
+.vb-goal-pct{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:800}
+.vb-ds-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-top:20px}
+.vb-ds-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted2);user-select:none}
+.vb-ds-body{display:none;margin-top:14px}
+.vb-ds-body.open{display:block}
+.vb-ds-table{width:100%;border-collapse:collapse;font-size:11px}
+.vb-ds-table th{text-align:left;color:var(--muted2);font-weight:700;padding:6px 8px;border-bottom:1px solid var(--border);font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+.vb-ds-table td{padding:6px 8px;vertical-align:top;border-bottom:1px solid var(--border);line-height:1.5}
+.vb-ds-table tr:last-child td{border-bottom:none}
+.vb-ds-table code{background:var(--surface3);padding:1px 5px;border-radius:4px;font-size:10px;font-family:monospace}
 </style>
 </head>
 <body>
@@ -380,7 +522,10 @@ tr:hover td{background:var(--surface2)}
     <span style="background:linear-gradient(135deg,var(--invest),var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Money Tracker</span>
   </div>
   <div class="nav-section">Main</div>
-  <div class="nav-item active" onclick="showPage('dashboard',this)">
+  <div class="nav-item active" id="nav-vision" onclick="showPage('vision',this)">
+    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>Vision Board
+  </div>
+  <div class="nav-item" onclick="showPage('dashboard',this)">
     <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>Dashboard
   </div>
   <div class="nav-item" onclick="showPage('transactions',this)">
@@ -425,8 +570,85 @@ tr:hover td{background:var(--surface2)}
 <!-- ══════════════════════ MAIN ══════════════════════ -->
 <main class="main">
 
+<!-- ════════════ VISION BOARD ════════════ -->
+<div id="page-vision" class="page active">
+  <div class="header">
+    <div>
+      <div class="page-title">Wealth Vision Board 🎯</div>
+      <div class="page-sub" id="vbSub">All-time data · Your discipline rules &amp; goals</div>
+    </div>
+  </div>
+
+  <!-- Financial Health + Discipline Cards + Investment Discipline -->
+  <div class="vb-top">
+    <!-- Left ring: Financial Health -->
+    <div class="vb-score-card">
+      <div class="vb-score-ring">
+        <svg class="vb-score-svg" viewBox="0 0 130 130">
+          <circle class="vb-score-bg" cx="65" cy="65" r="54"/>
+          <circle class="vb-score-fill" cx="65" cy="65" r="54" id="vb-ring-fill"/>
+        </svg>
+        <div class="vb-score-center">
+          <div class="vb-score-num" id="vb-score-num">—</div>
+          <div class="vb-score-denom">/ 100</div>
+        </div>
+      </div>
+      <div class="vb-score-label">Financial Health</div>
+      <div class="vb-score-grade" id="vb-score-grade"></div>
+    </div>
+    <!-- Centre: 5 Discipline rule cards -->
+    <div class="vb-discipline-grid" id="vbDisciplineGrid"></div>
+    <!-- Right ring: Investment Discipline -->
+    <div class="vb-score-card">
+      <div class="vb-score-ring">
+        <svg class="vb-score-svg" viewBox="0 0 130 130">
+          <circle class="vb-score-bg" cx="65" cy="65" r="54"/>
+          <circle class="vb-score-fill" cx="65" cy="65" r="54" id="vb-inv-ring-fill"/>
+        </svg>
+        <div class="vb-score-center">
+          <div class="vb-score-num" id="vb-inv-score-num">—</div>
+          <div class="vb-score-denom">/ 100</div>
+        </div>
+      </div>
+      <div class="vb-score-label">Investment Discipline</div>
+      <div class="vb-score-grade" id="vb-inv-score-grade"></div>
+      <div id="vbInvBreakdown" style="margin-top:10px;width:100%"></div>
+    </div>
+  </div>
+
+  <!-- Income Sources -->
+  <div class="vb-src-wrap">
+    <div class="vb-src-head">
+      <div class="vb-src-title">💼 Income Sources</div>
+      <div class="vb-src-meta" id="vbSrcMeta">Target: 5 sources · Avg income loading…</div>
+    </div>
+    <div class="vb-src-grid" id="vbSrcGrid"></div>
+  </div>
+
+  <!-- Investment Allocation vs Target -->
+  <div class="vb-alloc-card">
+    <div class="vb-alloc-title">📊 Investment Allocation vs Target</div>
+    <div id="vbAllocRows"></div>
+  </div>
+
+  <!-- Vision Goals -->
+  <div class="section-label">🌟 Vision Goals</div>
+  <div class="vb-goals-grid" id="vbGoalsGrid"></div>
+
+  <!-- Data sources reference -->
+  <div class="vb-ds-wrap">
+    <div class="vb-ds-toggle" onclick="this.nextElementSibling.classList.toggle('open')">
+      <span>ℹ️</span><span>Data Sources &amp; Calculation Reference</span><span class="ltc-chevron" style="margin-left:auto">▾</span>
+    </div>
+    <div class="vb-ds-body" id="vbDataSources"></div>
+  </div>
+
+  <!-- Hidden file input for photo upload -->
+  <input type="file" id="vb-photo-input" accept="image/*" style="display:none" onchange="vbPhotoUploaded(event)">
+</div>
+
 <!-- ════════════ DASHBOARD ════════════ -->
-<div id="page-dashboard" class="page active">
+<div id="page-dashboard" class="page">
   <div class="header">
     <div>
       <div class="page-title">Dashboard</div>
@@ -584,23 +806,29 @@ tr:hover td{background:var(--surface2)}
 <!-- ════════════ LOANS ════════════ -->
 <div id="page-loans" class="page">
   <div class="header">
-    <div><div class="page-title">Loans & EMIs 💳</div><div class="page-sub">Total repayments tracked across 11 loan types</div></div>
+    <div>
+      <div class="page-title">Loans & EMIs 💳</div>
+      <div class="page-sub" id="loansSub">Track loan repayments and progress</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" onclick="openAddLoanModal()">＋ Add Loan</button>
+    </div>
   </div>
 
-  <!-- Key loan cards -->
+  <!-- Summary cards -->
   <div class="cards-grid" id="loanTopCards"></div>
 
-  <div class="section-label">📋 Active Loans</div>
-  <div class="loan-grid" id="loanGrid"></div>
-
-  <div id="loanClosedSection" style="display:none">
-    <div class="section-label" style="color:var(--income);margin-top:8px">✓ Closed Loans</div>
-    <div class="loan-grid" id="loanClosedGrid"></div>
+  <div class="section-label">💳 Loans by Type</div>
+  <div class="loan-type-grid" id="loanTypeGrid">
+    <div class="empty" style="grid-column:1/-1;padding:40px">
+      <div class="empty-icon">💳</div>
+      <p>No loans yet. Click <strong>+ Add Loan</strong> to get started.</p>
+    </div>
   </div>
 
   <div class="charts-row-equal">
     <div class="chart-card">
-      <div class="chart-title">EMI Distribution</div>
+      <div class="chart-title">Balance Distribution</div>
       <canvas id="loanDonut" height="200"></canvas>
     </div>
     <div class="chart-card">
@@ -746,24 +974,90 @@ tr:hover td{background:var(--surface2)}
 
 <!-- ═══ ADD TRANSACTION MODAL ═══ -->
 <div class="modal-overlay" id="addModal">
-  <div class="modal">
-    <div class="modal-title">Add Transaction</div>
-    <div class="type-toggle">
-      <input type="radio" name="txType" id="t-income" value="income" checked>
-      <label for="t-income" class="lbl-i">💵 Income</label>
-      <input type="radio" name="txType" id="t-expense" value="expense">
-      <label for="t-expense" class="lbl-e">💸 Expense</label>
-      <input type="radio" name="txType" id="t-invest" value="investment">
-      <label for="t-invest" class="lbl-v">📈 Investment</label>
+  <div class="modal add-tx-modal">
+    <!-- Header: title + month navigator + close -->
+    <div class="add-tx-header">
+      <div class="modal-title">Add Transaction</div>
+      <div class="month-nav">
+        <button class="month-nav-btn" onclick="prevAddMonth()" title="Previous month">&#8249;</button>
+        <span class="month-nav-label" id="addMonthLabel">Apr 2026</span>
+        <button class="month-nav-btn" onclick="nextAddMonth()" title="Next month">&#8250;</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('addModal')" title="Close">&#x2715;</button>
     </div>
-    <div class="form-group"><label>Category</label><input id="fm-cat" list="catList" placeholder="e.g. Salary, Household, SIP…"><datalist id="catList"></datalist></div>
-    <div class="form-group"><label>Sub-Category</label><input id="fm-sub" placeholder="Optional detail"></div>
-    <div class="form-group"><label>Amount (₹)</label><input id="fm-amt" type="number" min="1" placeholder="0"></div>
-    <div class="form-group"><label>Date</label><input id="fm-date" type="date"></div>
-    <div class="form-group"><label>Note</label><input id="fm-note" placeholder="Optional"></div>
-    <div class="modal-actions">
+    <!-- Tabs: Income | Expense | Investment | Loan -->
+    <div class="add-tx-tabs">
+      <button class="add-tab tab-i active" onclick="setAddTab('income',this)">
+        <span class="tab-dot tab-dot-i"></span>Income
+      </button>
+      <button class="add-tab tab-e" onclick="setAddTab('expense',this)">
+        <span class="tab-dot tab-dot-e"></span>Expense
+      </button>
+      <button class="add-tab tab-v" onclick="setAddTab('investment',this)">
+        <span class="tab-dot tab-dot-v"></span>Investment
+      </button>
+      <button class="add-tab tab-l" onclick="setAddTab('loan',this)">
+        <span class="tab-dot tab-dot-l"></span>Loan
+      </button>
+    </div>
+    <!-- Category rows (rendered by JS) -->
+    <div class="add-tx-body" id="addTxBody"></div>
+    <!-- Footer -->
+    <div class="add-tx-footer">
       <button class="btn btn-primary" onclick="submitTransaction()">Save</button>
       <button class="btn btn-cancel" onclick="closeModal('addModal')">Cancel</button>
+      <span id="addTxStatus" style="font-size:11px;color:var(--muted2);margin-left:auto"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ADD LOAN MODAL ═══ -->
+<div class="modal-overlay" id="addLoanModal">
+  <div class="modal" style="width:480px">
+    <div class="modal-title">Add Loan</div>
+    <div class="form-group">
+      <label>Loan Name *</label>
+      <input id="al-loan-name" placeholder="e.g. HDFC Home Loan, ICICI Personal Loan">
+    </div>
+    <div class="form-group">
+      <label>Loan Type *</label>
+      <select id="al-loan-type">
+        <option value="Home Loan">Home Loan</option>
+        <option value="Personal Loan">Personal Loan</option>
+        <option value="Car Loan">Car Loan</option>
+        <option value="NBFC Loan">NBFC Loan</option>
+        <option value="EPF Loan">EPF Loan</option>
+        <option value="Education Loan">Education Loan</option>
+        <option value="Gadget EMI">Gadget EMI</option>
+        <option value="Credit Card EMI">Credit Card EMI</option>
+        <option value="Family Loan">Family Loan</option>
+        <option value="Credit Purchase">Credit Purchase</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group">
+        <label>Principal Amount (₹) *</label>
+        <input id="al-loan-amount" type="number" min="0" placeholder="e.g. 500000">
+      </div>
+      <div class="form-group">
+        <label>Total Repayment (₹) *</label>
+        <input id="al-loan-repay" type="number" min="0" placeholder="e.g. 720000">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group">
+        <label>Start Date *</label>
+        <input id="al-loan-start" type="date">
+      </div>
+      <div class="form-group">
+        <label>Target Close Date *</label>
+        <input id="al-loan-target" type="date">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveLoan()">Save Loan</button>
+      <button class="btn btn-cancel" onclick="closeModal('addLoanModal')">Cancel</button>
     </div>
   </div>
 </div>
@@ -896,6 +1190,8 @@ let txMonthValue     = '2026-03';
 let alertMonthValue  = '2026-03';
 let detailMonthValue = '2026-03';
 let calcMonthValue   = '';          // empty = show all months
+let addMonthValue    = '';          // set on first open to current month
+let addTabType       = 'income';
 
 // Generic helpers
 function _prevMon(ym) {
@@ -930,13 +1226,14 @@ function prevCalcMonth() { calcMonthValue = _prevMon(calcMonthValue || dashMonth
 function nextCalcMonth() { calcMonthValue = _nextMon(calcMonthValue || dashMonthValue); _setMonthLabel('calcMonthLabel', calcMonthValue); loadMonthlyCalc(); }
 function resetCalcMonth(){ calcMonthValue = ''; _setMonthLabel('calcMonthLabel', ''); loadMonthlyCalc(); }
 
-// Set defaults
-document.getElementById('fm-date').value    = new Date().toISOString().slice(0, 10);
+// Add Transaction month nav
+function prevAddMonth() { addMonthValue = _prevMon(addMonthValue); _setMonthLabel('addMonthLabel', addMonthValue); }
+function nextAddMonth() { addMonthValue = _nextMon(addMonthValue); _setMonthLabel('addMonthLabel', addMonthValue); }
 
 // Initial load
 initTheme();
 updateMonthNav();
-loadDashboard();
+loadVisionBoard();
 loadSidebarHealth();
 
 // ─── FORMAT ──────────────────────────────────────────────────────────────────
@@ -967,6 +1264,8 @@ function showPage(name, el) {
   document.getElementById('page-' + name).classList.add('active');
   el.classList.add('active');
   currentPage = name;
+  if (name === 'vision')       loadVisionBoard();
+  if (name === 'dashboard')    loadDashboard();
   if (name === 'transactions') loadTransactions();
   if (name === 'portfolio')    loadPortfolio();
   if (name === 'loans')        loadLoans();
@@ -1040,6 +1339,312 @@ function renderHealthScore(summary) {
   const bar = document.getElementById('sidebar-health-bar');
   bar.style.width = overall + '%';
   bar.style.background = color;
+}
+
+// ─── VISION BOARD ─────────────────────────────────────────────────────────────
+const VB_CIRC = 2 * Math.PI * 54; // SVG ring circumference
+
+async function loadVisionBoard() {
+  currentPage = 'vision';
+
+  // All-time: pass empty month so APIs return totals across all dates
+  const [cats, trend, portSum] = await Promise.all([
+    fetch('/api/category_breakdown?month=').then(r => r.json()),
+    fetch('/api/monthly_trend').then(r => r.json()),
+    fetch('/api/portfolio/summary').then(r => r.json()),
+  ]);
+
+  // ── All-time totals derived from monthly_trend ─────────────────────────────
+  const n = trend.length || 1;
+  const totalIncome  = trend.reduce((s, m) => s + m.income, 0);
+  const totalExpense = trend.reduce((s, m) => s + m.expense, 0);
+  const totalInvest  = trend.reduce((s, m) => s + m.investment, 0);
+  const totalLoanEmi = trend.reduce((s, m) => s + m.loan_emi, 0);
+  const avgIncome    = totalIncome / n;
+  const avgBurn      = (totalExpense + totalLoanEmi) / n;
+
+  document.getElementById('vbSub').textContent =
+    `All-time data · ${n} month${n !== 1 ? 's' : ''} tracked · Avg income ${fmt(avgIncome)}/mo`;
+
+  // ── Income sources (all-time distinct) ────────────────────────────────────
+  const incomeSrcs = (cats.income || []).filter(c => c.total > 0);
+  const srcCount = incomeSrcs.length;
+
+  document.getElementById('vbSrcMeta').textContent =
+    `Target: 5 sources · Avg income/mo: ${fmt(avgIncome)} · ${n} months tracked`;
+
+  // Source cards (all-time distinct + empty slots up to 5)
+  const srcCards = incomeSrcs.map(s => `
+    <div class="vb-src-card">
+      <div class="vb-src-name">${s.category}</div>
+      <div class="vb-src-amt">${fmt(s.total)}</div>
+      <div class="vb-src-pct">${totalIncome > 0 ? ((s.total/totalIncome)*100).toFixed(1) : 0}% of total · ${fmt(s.total/n)}/mo avg</div>
+    </div>`).join('');
+  const missing = Math.max(0, 5 - srcCount);
+  const missingCards = Array.from({length: missing}, (_, i) => `
+    <div class="vb-src-missing">
+      <div class="vb-src-missing-icon">＋</div>
+      <div class="vb-src-missing-lbl">Source ${srcCount + i + 1}<br>needed</div>
+    </div>`).join('');
+  document.getElementById('vbSrcGrid').innerHTML = srcCards + missingCards;
+
+  // ── Discipline scores (all-time ratios) ────────────────────────────────────
+  const investPct   = totalIncome > 0 ? totalInvest / totalIncome * 100 : 0;
+  const totalExpPct = totalIncome > 0 ? (totalExpense + totalLoanEmi) / totalIncome * 100 : 0;
+  const loanPct     = totalIncome > 0 ? totalLoanEmi / totalIncome * 100 : 0;
+
+  // Emergency fund: cumulative net savings vs 6× avg monthly burn
+  const cumulativeSavings = trend.reduce((s, m) => s + Math.max(0, m.savings), 0);
+  const savingsCoverMos   = avgBurn > 0 ? cumulativeSavings / avgBurn : 0;
+
+  // Each out of 20
+  const srcScore  = Math.min(20, (srcCount / 5) * 20);
+  const invScore  = Math.min(20, (investPct / 30) * 20);
+  const expScore  = totalExpPct <= 60 ? 20 : Math.max(0, 20 * (1 - (totalExpPct - 60) / 40));
+  const loanScore = loanPct <= 15 ? 20 : Math.max(0, 20 * (1 - (loanPct - 15) / 30));
+  const savScore  = Math.min(20, (savingsCoverMos / 6) * 20);
+  const overall   = Math.round(srcScore + invScore + expScore + loanScore + savScore);
+
+  // Ring gauge
+  const ringFill = document.getElementById('vb-ring-fill');
+  let ringColor;
+  if (overall >= 75)      { ringColor = 'var(--income)'; }
+  else if (overall >= 55) { ringColor = 'var(--savings)'; }
+  else if (overall >= 35) { ringColor = 'var(--invest)'; }
+  else                    { ringColor = 'var(--expense)'; }
+  ringFill.style.stroke = ringColor;
+  ringFill.style.strokeDasharray  = VB_CIRC;
+  ringFill.style.strokeDashoffset = VB_CIRC * (1 - overall / 100);
+  document.getElementById('vb-score-num').textContent  = overall;
+  document.getElementById('vb-score-num').style.color  = ringColor;
+  const gradeEl = document.getElementById('vb-score-grade');
+  if (overall >= 75)      { gradeEl.textContent = 'Excellent 🌟'; gradeEl.style.cssText = `background:var(--income-d);color:var(--income)`; }
+  else if (overall >= 55) { gradeEl.textContent = 'Good 👍';      gradeEl.style.cssText = `background:var(--savings-d);color:var(--savings)`; }
+  else if (overall >= 35) { gradeEl.textContent = 'Fair ⚠️';      gradeEl.style.cssText = `background:var(--invest-d);color:var(--invest)`; }
+  else                    { gradeEl.textContent = 'Needs Work 🚨'; gradeEl.style.cssText = `background:var(--expense-d);color:var(--expense)`; }
+
+  // Discipline cards
+  const dc = [
+    { lbl:'Income Sources', icon:'💼', bg:'var(--income-d)',
+      actual:`${srcCount}`, unit:' / 5', target:'Min 5 sources',
+      pct: Math.min(100,(srcCount/5)*100), score:srcScore,
+      met: srcCount >= 5, status: srcCount >= 5 ? '✓ Target met' : `Need ${5-srcCount} more` },
+    { lbl:'Investment', icon:'📈', bg:'var(--invest-d)',
+      actual:`${investPct.toFixed(0)}`, unit:'%', target:'Min 30% of income',
+      pct: Math.min(100,(investPct/30)*100), score:invScore,
+      met: investPct >= 30, status: investPct >= 30 ? '✓ Target met' : `${(30-investPct).toFixed(0)}% short` },
+    { lbl:'Total Expense', icon:'💸', bg:'var(--expense-d)',
+      actual:`${totalExpPct.toFixed(0)}`, unit:'%', target:'Max 60% (incl EMI)',
+      pct: Math.min(100,(totalExpPct/60)*100), score:expScore,
+      met: totalExpPct <= 60, status: totalExpPct <= 60 ? '✓ Within limit' : `${(totalExpPct-60).toFixed(0)}% over` },
+    { lbl:'Loan EMI', icon:'🏦', bg:'rgba(168,85,247,.1)',
+      actual:`${loanPct.toFixed(0)}`, unit:'%', target:'Max 15% of income',
+      pct: Math.min(100,(loanPct/15)*100), score:loanScore,
+      met: loanPct <= 15, status: loanPct <= 15 ? '✓ Within limit' : `${(loanPct-15).toFixed(0)}% over` },
+    { lbl:'Emergency Fund', icon:'🛡️', bg:'var(--savings-d)',
+      actual:`${savingsCoverMos.toFixed(1)}`, unit:' mo', target:'Target 6 months',
+      pct: Math.min(100,(savingsCoverMos/6)*100), score:savScore,
+      met: savingsCoverMos >= 6, status: savingsCoverMos >= 6 ? '✓ Target met' : `${(6-savingsCoverMos).toFixed(1)}mo short` },
+  ];
+  document.getElementById('vbDisciplineGrid').innerHTML = dc.map(d => {
+    const barColor = d.met ? 'var(--income)' : (d.pct > 60 ? 'var(--savings)' : 'var(--expense)');
+    // For expense/loan cards, invert the bar color logic (lower is better)
+    const isInverse = d.lbl === 'Total Expense' || d.lbl === 'Loan EMI';
+    const fill = isInverse ? (d.met ? 'var(--income)' : 'var(--expense)') : barColor;
+    return `
+    <div class="vb-dc ${d.met ? 'met' : 'missed'}">
+      <div class="vb-dc-head">
+        <div class="vb-dc-icon" style="background:${d.bg}">${d.icon}</div>
+        <div class="vb-dc-lbl">${d.lbl}</div>
+      </div>
+      <div class="vb-dc-actual" style="color:${d.met ? 'var(--income)' : 'var(--expense)'}">${d.actual}<span style="font-size:13px;font-weight:600">${d.unit}</span></div>
+      <div class="vb-dc-target">${d.target}</div>
+      <div class="vb-dc-bar"><div class="vb-dc-fill" style="width:${d.pct}%;background:${fill}"></div></div>
+      <div class="vb-dc-status" style="color:${d.met ? 'var(--income)' : 'var(--expense)'}">${d.status}</div>
+    </div>`;
+  }).join('');
+
+  // ── Investment Allocation ──────────────────────────────────────────────────
+  const tm = {};
+  (portSum.by_type || []).forEach(t => tm[t.asset_type] = t);
+  const getVal = (...types) => types.reduce((s, t) => s + ((tm[t] || {}).current_val || 0), 0);
+  const totalPort = portSum.total_value || 1;
+
+  const allocRows = [
+    { name:'Equity', sub:'Stocks + Mutual Fund',  color:'#8b7dff', target:70,
+      actual: getVal('Stocks','Mutual Fund') / totalPort * 100 },
+    { name:'Gold',   sub:'Physical · ETF · SGB',  color:'#fbbf24', target:10,
+      actual: getVal('Gold') / totalPort * 100 },
+    { name:'Fixed Return', sub:'EPF · PPF · Sukanya', color:'#06c4a8', target:20,
+      actual: getVal('Fixed Return') / totalPort * 100 },
+    { name:'Retirement',   sub:'NPS · Pension',        color:'#f59e0b', target:null,
+      actual: getVal('Retirement','NPS') / totalPort * 100, targetLabel:'14% of salary' },
+    { name:'Real Estate',  sub:'Land · Flat',           color:'#ec4899', target:0,
+      actual: getVal('Real Estate') / totalPort * 100, targetLabel:'No target yet' },
+  ];
+  document.getElementById('vbAllocRows').innerHTML = allocRows.map(r => {
+    const tgt = r.target != null ? r.target : 14;
+    const tgtPct = Math.min(100, tgt);
+    const actPct = Math.min(100, r.actual);
+    const ok = r.target === 0 ? r.actual === 0 : r.actual >= r.target * 0.85;
+    const fillColor = ok ? r.color : (r.actual < tgt * 0.5 ? 'var(--expense)' : 'var(--savings)');
+    const tgtLabel = r.targetLabel || `Target ${r.target}%`;
+    return `
+    <div class="vb-alloc-row">
+      <div class="vb-alloc-head">
+        <span class="vb-alloc-name">${r.name} <span style="font-weight:400;color:var(--muted2);font-size:10px">${r.sub}</span></span>
+        <span class="vb-alloc-nums">${r.actual.toFixed(1)}% &nbsp;·&nbsp; ${tgtLabel}</span>
+      </div>
+      <div class="vb-alloc-track">
+        ${r.target != null && r.target > 0 ? `<div class="vb-alloc-target-line" style="left:${tgtPct}%"></div>` : ''}
+        <div class="vb-alloc-fill" style="width:${actPct}%;background:${fillColor}"></div>
+      </div>
+      <div class="vb-alloc-tag" style="color:${fillColor}">${ok ? '✓ On track' : (r.actual < tgt ? '↑ Build up' : '✓ Above target')}</div>
+    </div>`;
+  }).join('');
+
+  // ── Vision Goals ───────────────────────────────────────────────────────────
+  const equityVal  = getVal('Stocks','Mutual Fund');
+  const retireVal  = getVal('Retirement','NPS');
+  const fixedVal   = getVal('Fixed Return');
+  const goldVal    = getVal('Gold');
+
+  const goals = [
+    { key:'equity2030',  icon:'📈', name:'1 Cr Equity Corpus', year:'Target: 2030',
+      current: equityVal,  target: 10000000,  color:'#8b7dff' },
+    { key:'retire2036',  icon:'🏖️', name:'10 Cr Retirement',    year:'Target: 2036',
+      current: retireVal,  target: 100000000, color:'#f59e0b' },
+    { key:'ira2046',     icon:'👧', name:'5 Cr Corpus for Ira', year:'Target: 2046 (age 30)',
+      current: fixedVal,   target: 50000000,  color:'#06c4a8', photo:true },   // hybrid
+    { key:'gold10l',     icon:'🥇', name:'10L Gold Investment',  year:'Ongoing goal',
+      current: goldVal,    target: 1000000,   color:'#fbbf24' },
+    { key:'car',         icon:'🚗', name:'Luxury Car',           year:'Dream goal', photo:true, photoOnly:true },
+    { key:'villa',       icon:'🏠', name:'My Own Villa',          year:'Dream goal', photo:true, photoOnly:true },
+  ];
+
+  document.getElementById('vbGoalsGrid').innerHTML = goals.map(g => {
+    const saved = g.photo ? localStorage.getItem('vb-photo-' + g.key) : null;
+
+    // Photo-only goals (car, villa)
+    if (g.photoOnly) {
+      const imgTag = saved ? `<img src="${saved}" alt="${g.name}">` : '';
+      const ph = !saved ? `<div class="vb-goal-ph-icon">${g.icon}</div><div style="font-size:11px;color:var(--muted2)">Tap to set photo</div>` : '';
+      return `
+      <div class="vb-goal">
+        <div class="vb-goal-photo" onclick="vbPickPhoto('${g.key}')">
+          ${imgTag}${ph}
+          <div class="vb-goal-photo-ov"><span style="font-size:18px">📸</span><span>${saved ? 'Change photo' : 'Upload photo'}</span></div>
+        </div>
+        <div class="vb-goal-body">
+          <div class="vb-goal-name">${g.name}</div>
+          <div class="vb-goal-year">${g.year}</div>
+          <div style="font-size:11px;color:var(--muted2)">${saved ? '✓ Photo set' : 'Visualise your goal'}</div>
+        </div>
+      </div>`;
+    }
+
+    // Progress goals (with optional photo top area for hybrid)
+    const pct = g.target > 0 ? Math.min(100, g.current / g.target * 100) : 0;
+    const barColor = pct >= 75 ? 'var(--income)' : pct >= 40 ? 'var(--savings)' : g.color;
+    const photoTop = g.photo
+      ? `<div class="vb-goal-photo" onclick="vbPickPhoto('${g.key}')" title="Upload a photo for this goal">
+           ${saved ? `<img src="${saved}" alt="${g.name}">` : `<div class="vb-goal-ph-icon">${g.icon}</div>`}
+           <div class="vb-goal-photo-ov"><span style="font-size:16px">📸</span><span>${saved ? 'Change photo' : 'Add photo'}</span></div>
+         </div>`
+      : `<div class="vb-goal-photo" style="cursor:default;background:linear-gradient(135deg,${g.color}22,${g.color}44)">
+           <div style="font-size:40px">${g.icon}</div>
+         </div>`;
+    return `
+    <div class="vb-goal">
+      ${photoTop}
+      <div class="vb-goal-body">
+        <div class="vb-goal-name">${g.name}</div>
+        <div class="vb-goal-year">${g.year}</div>
+        <div class="vb-goal-prog-bar"><div class="vb-goal-prog-fill" style="width:${pct}%;background:${barColor}"></div></div>
+        <div class="vb-goal-nums">
+          <span>${fmt(g.current)}</span>
+          <span class="vb-goal-pct" style="color:${barColor}">${pct.toFixed(1)}%</span>
+          <span>${fmt(g.target)}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // ── Data sources reference panel ──────────────────────────────────────────
+  document.getElementById('vbDataSources').innerHTML = `
+    <table class="vb-ds-table">
+      <thead><tr>
+        <th>Section</th><th>API Endpoint</th><th>DB Table(s)</th><th>What is calculated</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Discipline Score Ring</strong></td>
+          <td><code>/api/monthly_trend</code></td>
+          <td><code>transactions</code></td>
+          <td>All-time sum of income, expense, investment, loan_emi → ratios vs discipline targets. Monthly average burn for emergency fund.</td>
+        </tr>
+        <tr>
+          <td><strong>Income Sources</strong></td>
+          <td><code>/api/category_breakdown?month=</code> (all-time)</td>
+          <td><code>transactions</code></td>
+          <td>Distinct <em>category</em> values where <code>type='income'</code>. Total &amp; avg per month shown per source.</td>
+        </tr>
+        <tr>
+          <td><strong>Investment Allocation</strong></td>
+          <td><code>/api/portfolio/summary</code></td>
+          <td><code>portfolio</code></td>
+          <td><code>current_value</code> grouped by <code>asset_type</code>. Types mapped: Stocks+Mutual Fund→Equity, Gold→Gold, Fixed Return→Fixed, Retirement+NPS→Retirement, Real Estate→Real Estate.</td>
+        </tr>
+        <tr>
+          <td><strong>Equity Goal (1 Cr)</strong></td>
+          <td><code>/api/portfolio/summary</code></td>
+          <td><code>portfolio</code></td>
+          <td>Sum of <code>current_value</code> where <code>asset_type IN ('Stocks','Mutual Fund')</code>.</td>
+        </tr>
+        <tr>
+          <td><strong>Retirement Goal (10 Cr)</strong></td>
+          <td><code>/api/portfolio/summary</code></td>
+          <td><code>portfolio</code></td>
+          <td>Sum of <code>current_value</code> where <code>asset_type IN ('Retirement','NPS')</code>.</td>
+        </tr>
+        <tr>
+          <td><strong>Ira Corpus Goal (5 Cr)</strong></td>
+          <td><code>/api/portfolio/summary</code></td>
+          <td><code>portfolio</code></td>
+          <td>Sum of <code>current_value</code> where <code>asset_type = 'Fixed Return'</code> (EPF, PPF, Sukanya Samriddhi).</td>
+        </tr>
+        <tr>
+          <td><strong>Gold Goal (10L)</strong></td>
+          <td><code>/api/portfolio/summary</code></td>
+          <td><code>portfolio</code></td>
+          <td>Sum of <code>current_value</code> where <code>asset_type = 'Gold'</code>.</td>
+        </tr>
+        <tr>
+          <td><strong>Goal Photos</strong></td>
+          <td>—</td>
+          <td>Browser localStorage</td>
+          <td>Images stored as base64 data URLs under keys <code>vb-photo-ira2046</code>, <code>vb-photo-car</code>, <code>vb-photo-villa</code>.</td>
+        </tr>
+      </tbody>
+    </table>`;
+}
+
+// Photo upload helpers for vision goals
+let _vbPhotoKey = '';
+function vbPickPhoto(key) {
+  _vbPhotoKey = key;
+  document.getElementById('vb-photo-input').click();
+}
+function vbPhotoUploaded(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    localStorage.setItem('vb-photo-' + _vbPhotoKey, ev.target.result);
+    loadVisionBoard(); // re-render to show uploaded photo
+  };
+  reader.readAsDataURL(file);
+  e.target.value = ''; // reset so same file can be re-selected
 }
 
 async function loadSidebarHealth() {
@@ -1450,112 +2055,246 @@ async function openPortfolioDetail(assetName, assetType) {
 
 // ─── LOANS ────────────────────────────────────────────────────────────────────
 async function loadLoans() {
-  const data = await fetch('/api/loans/summary').then(r=>r.json());
+  const loans = await fetch('/api/loan_master').then(r => r.json());
+  const activeLoans = loans.filter(l => l.status === 'active');
+  const closedLoans = loans.filter(l => l.status === 'closed');
+  const totalEMINeeded = activeLoans.reduce((s, l) => s + l.expected_emi, 0);
+  const totalBalance   = activeLoans.reduce((s, l) => s + l.balance, 0);
+  const biggestEMI     = activeLoans.slice().sort((a,b) => b.expected_emi - a.expected_emi)[0];
 
-  const activeLoans = data.filter(l => l.is_active);
-  const closedLoans = data.filter(l => !l.is_active);
-  const totalMonthlyEMI  = activeLoans.reduce((s,l) => s + l.current_emi, 0);
-  const totalClosedPaid  = closedLoans.reduce((s,l) => s + l.total_paid, 0);
-  const biggestActive    = activeLoans[0]; // API returns sorted by current_emi DESC
+  document.getElementById('loansSub').textContent =
+    `${loans.length} loan${loans.length !== 1 ? 's' : ''} tracked · ${activeLoans.length} active · ${closedLoans.length} closed`;
 
   document.getElementById('loanTopCards').innerHTML = `
-    <div class="card card-expense clickable" title="View all loan transactions" onclick="openDetailPage('loans')">
-      <div class="card-icon-row"><div class="ci ci-e">${ICON.loan}</div><div class="card-label">Monthly EMI</div></div>
-      <div class="card-value expense-val">${fmt(totalMonthlyEMI)}</div>
-      <div class="card-sub">Total active EMIs this month</div>
+    <div class="card card-expense">
+      <div class="card-icon-row"><div class="ci ci-e">${ICON.loan}</div><div class="card-label">EMI Needed / Month</div></div>
+      <div class="card-value expense-val">${fmt(totalEMINeeded)}</div>
+      <div class="card-sub">To close on target dates</div>
     </div>
     <div class="card card-expense">
-      <div class="card-icon-row"><div class="ci ci-e">${ICON.trendDn}</div><div class="card-label">Biggest EMI</div></div>
-      <div class="card-value expense-val">${biggestActive ? fmt(biggestActive.current_emi) : '—'}</div>
-      <div class="card-sub">${biggestActive ? biggestActive.loan_type : 'No active loans'}</div>
+      <div class="card-icon-row"><div class="ci ci-e">${ICON.trendDn}</div><div class="card-label">Total Balance</div></div>
+      <div class="card-value expense-val">${fmt(totalBalance)}</div>
+      <div class="card-sub">${biggestEMI ? 'Biggest: ' + fmt(biggestEMI.expected_emi) + '/mo' : 'No active loans'}</div>
     </div>
     <div class="card card-invest">
       <div class="card-icon-row"><div class="ci ci-v">${ICON.chart}</div><div class="card-label">Active Loans</div></div>
       <div class="card-value invest-val">${activeLoans.length}</div>
-      <div class="card-sub">${data.length} total · ${closedLoans.length} closed</div>
+      <div class="card-sub">${loans.length} total · ${closedLoans.length} closed</div>
     </div>
     <div class="card card-savings">
       <div class="card-icon-row"><div class="ci ci-s">${ICON.savings}</div><div class="card-label">Loans Closed</div></div>
       <div class="card-value savings-val">${closedLoans.length}</div>
-      <div class="card-sub">Paid off · ${fmt(totalClosedPaid)} total</div>
+      <div class="card-sub">${closedLoans.length > 0 ? 'Fully repaid ✓' : 'Keep going!'}</div>
     </div>
   `;
 
-  // Active loan cards — show current EMI amount
-  document.getElementById('loanGrid').innerHTML = activeLoans.length
-    ? activeLoans.map(l => `
-        <div class="loan-card">
-          <div class="loan-type">${l.loan_type}</div>
-          <div class="loan-total">${fmt(l.current_emi)}</div>
-          <div class="loan-sub">Current EMI &nbsp;·&nbsp; Total paid: ${fmt(l.total_paid)}</div>
-        </div>`).join('')
-    : `<div class="empty" style="grid-column:1/-1;padding:24px"><div class="empty-icon">🎉</div><p>All loans paid off!</p></div>`;
-
-  // Closed loans section
-  const closedSection = document.getElementById('loanClosedSection');
-  if (closedLoans.length) {
-    closedSection.style.display = 'block';
-    document.getElementById('loanClosedGrid').innerHTML = closedLoans.map(l => `
-      <div class="loan-card" style="border-left-color:var(--income);opacity:.8">
-        <div class="loan-type" style="color:var(--income)">✓ ${l.loan_type}</div>
-        <div class="loan-total" style="color:var(--income)">${fmt(l.total_paid)}</div>
-        <div class="loan-sub">Fully repaid</div>
-      </div>`).join('');
-  } else {
-    closedSection.style.display = 'none';
+  if (!loans.length) {
+    document.getElementById('loanTypeGrid').innerHTML = `
+      <div class="empty" style="grid-column:1/-1;padding:40px">
+        <div class="empty-icon">💳</div>
+        <p>No loans yet. Click <strong>+ Add Loan</strong> to get started.</p>
+      </div>`;
+    _renderLoanCharts([]);
+    return;
   }
 
+  // Group by loan_type
+  const byType = {};
+  loans.forEach(l => { if (!byType[l.loan_type]) byType[l.loan_type] = []; byType[l.loan_type].push(l); });
+
+  // Sort groups: types with any active loan first, all-closed groups last
+  const sortedEntries = Object.entries(byType).sort(([, a], [, b]) => {
+    const aHasActive = a.some(l => l.status === 'active') ? 0 : 1;
+    const bHasActive = b.some(l => l.status === 'active') ? 0 : 1;
+    return aHasActive - bHasActive;
+  });
+
+  document.getElementById('loanTypeGrid').innerHTML = sortedEntries.map(([ltype, llist]) => {
+    const typeActive = llist.filter(l => l.status === 'active');
+    const typeClosed = llist.filter(l => l.status === 'closed');
+    const allClosed  = typeActive.length === 0;
+
+    // Within each group: active loans first, closed loans last
+    const sorted = [...typeActive, ...typeClosed];
+
+    const loanRows = sorted.map(loan => {
+      const isActive = loan.status === 'active';
+      const pct = Math.min(100, loan.repayment_pct);
+      const barColor = isActive ? 'var(--invest)' : 'var(--income)';
+      const targetFmt = loan.target_close_date ? loan.target_close_date.slice(0, 7) : '—';
+      return `
+        <div class="ltc-loan">
+          <div class="ltc-loan-head">
+            <div class="ltc-loan-name" title="${loan.loan_name}">${loan.loan_name}</div>
+            ${isActive
+              ? `<span class="ltc-status-active">Active</span>`
+              : `<span class="ltc-status-closed">✓ Closed</span>`}
+            <button class="delete-btn" onclick="deleteLoan(${loan.id})" title="Delete loan">✕</button>
+          </div>
+          <div class="ltc-amounts">
+            <div class="ltc-amt-box">
+              <div class="ltc-amt-lbl">Paid</div>
+              <div class="ltc-amt-val" style="color:var(--income)">${fmt(loan.total_paid)}</div>
+            </div>
+            <div class="ltc-amt-box">
+              <div class="ltc-amt-lbl">Balance</div>
+              <div class="ltc-amt-val" style="color:${isActive ? 'var(--expense)' : 'var(--income)'}">${isActive ? fmt(loan.balance) : '—'}</div>
+            </div>
+            <div class="ltc-amt-box">
+              <div class="ltc-amt-lbl">${isActive ? 'EMI / mo' : 'Total'}</div>
+              <div class="ltc-amt-val" style="color:${isActive ? 'var(--expense)' : 'var(--muted2)'}">${isActive ? fmt(loan.expected_emi) : fmt(loan.total_repayment)}</div>
+            </div>
+          </div>
+          ${isActive ? `
+          <div class="ltc-meta">
+            <span>Target: <strong>${targetFmt}</strong></span>
+            <span>${loan.months_remaining} month${loan.months_remaining !== 1 ? 's' : ''} left</span>
+            <span>Principal: <strong>${fmt(loan.loan_amount)}</strong></span>
+          </div>` : `
+          <div class="ltc-meta"><span>Fully repaid ✓ &nbsp;·&nbsp; Principal: <strong>${fmt(loan.loan_amount)}</strong></span></div>`}
+          <div class="ltc-prog-bar"><div class="ltc-prog-fill" style="width:${pct}%;background:${barColor}"></div></div>
+          <div class="ltc-prog-labels">
+            <span>${loan.repayment_pct.toFixed(1)}% repaid</span>
+            <span>${isActive ? loan.remaining_pct.toFixed(1) + '% remaining' : 'Complete'}</span>
+          </div>
+        </div>`;
+    }).join('');
+
+    const grpBalance = typeActive.reduce((s, l) => s + l.balance, 0);
+    const grpEMI     = typeActive.reduce((s, l) => s + l.expected_emi, 0);
+
+    const summarySuffix = allClosed
+      ? `<div class="ltc-hs-item"><div class="ltc-hs-lbl">Status</div><div class="ltc-hs-val" style="color:var(--income)">All Closed</div></div>`
+      : `<div class="ltc-hs-item"><div class="ltc-hs-lbl">Balance</div><div class="ltc-hs-val" style="color:var(--expense)">${fmt(grpBalance)}</div></div>
+         <div class="ltc-hs-sep"></div>
+         <div class="ltc-hs-item"><div class="ltc-hs-lbl">EMI / mo</div><div class="ltc-hs-val" style="color:var(--expense)">${fmt(grpEMI)}</div></div>`;
+
+    return `
+      <div class="ltc${allClosed ? ' collapsed' : ''}">
+        <div class="ltc-head" onclick="toggleLoanCard(this)">
+          <div class="ci ci-e" style="flex-shrink:0">${ICON.loan}</div>
+          <div class="ltc-type-name">${ltype}</div>
+          <div class="ltc-head-badges">
+            ${typeActive.length ? `<span class="ltc-badge-active">${typeActive.length} active</span>` : ''}
+            ${typeClosed.length ? `<span class="ltc-badge-closed">${typeClosed.length} closed</span>` : ''}
+          </div>
+          <div class="ltc-head-summary">${summarySuffix}</div>
+          <span class="ltc-chevron">▾</span>
+        </div>
+        <div class="ltc-body">${loanRows}</div>
+      </div>`;
+  }).join('');
+
+  _renderLoanCharts(loans);
+}
+
+async function _renderLoanCharts(loans) {
+  const activeLoans = loans.filter(l => l.status === 'active');
   const _lt = cv('--chart-tick'), _lg = cv('--chart-grid'), _lbg = cv('--chart-bg');
   const colors = ['#ff3f60','#8b7dff','#fbbf24','#00e87a','#f59e0b','#06c4a8','#ec4899','#84cc16','#a78bfa','#fb7185','#34d399'];
 
-  // Donut uses active loans with current_emi; fall back to all if none active
-  const chartLoans  = activeLoans.length ? activeLoans : data;
-  const chartValues = activeLoans.length ? chartLoans.map(l=>l.current_emi) : chartLoans.map(l=>l.total_paid);
-
+  // Donut: active balances (or all total_repayment if none active)
   const ctx1 = document.getElementById('loanDonut').getContext('2d');
   if (loanDonut) loanDonut.destroy();
-  loanDonut = new Chart(ctx1, {
-    type:'doughnut',
-    data:{
-      labels: chartLoans.map(l=>l.loan_type),
-      datasets:[{data:chartValues, backgroundColor:colors.slice(0,chartLoans.length), borderColor:_lbg, borderWidth:3, hoverOffset:6}]
-    },
-    options:{cutout:'60%',plugins:{
-      legend:{position:'right',labels:{color:_lt,font:{size:10},padding:8,boxWidth:10}},
-      tooltip:{callbacks:{label:c=>` ${c.label}: ${fmt(c.raw)}`}}
-    }}
-  });
+  const chartLoans = activeLoans.length ? activeLoans : loans;
+  if (chartLoans.length) {
+    loanDonut = new Chart(ctx1, {
+      type: 'doughnut',
+      data: {
+        labels: chartLoans.map(l => l.loan_name),
+        datasets: [{
+          data: chartLoans.map(l => activeLoans.length ? l.balance : l.total_repayment),
+          backgroundColor: colors.slice(0, chartLoans.length), borderColor: _lbg, borderWidth: 3, hoverOffset: 6
+        }]
+      },
+      options: { cutout: '60%', plugins: {
+        legend: {position:'right', labels:{color:_lt,font:{size:10},padding:8,boxWidth:10}},
+        tooltip: {callbacks:{label:c=>` ${c.label}: ${fmt(c.raw)}`}}
+      }}
+    });
+  }
 
   // Monthly EMI trend from transactions
-  const txData = await fetch('/api/transactions?type=expense').then(r=>r.json());
+  const txData = await fetch('/api/transactions?type=expense').then(r => r.json());
   const loanByMonth = {};
-  txData.filter(t=>t.category==='Loan EMI').forEach(t => {
+  txData.filter(t => t.category === 'Loan EMI').forEach(t => {
     const m = t.date.slice(0,7);
     loanByMonth[m] = (loanByMonth[m]||0) + t.amount;
   });
   const months = Object.keys(loanByMonth).sort();
   const ctx2 = document.getElementById('loanTrend').getContext('2d');
   if (loanTrend) loanTrend.destroy();
-  loanTrend = new Chart(ctx2, {
-    type:'line',
-    data:{
-      labels: months,
-      datasets:[{
-        label:'Total EMI',
-        data: months.map(m=>loanByMonth[m]),
-        borderColor:'#ff3f60', backgroundColor:'rgba(255,63,96,.08)',
-        tension:.3, fill:true, pointRadius:5, pointBackgroundColor:'#ff3f60',
-        pointBorderColor:_lbg, pointBorderWidth:2, borderWidth:2.5
-      }]
-    },
-    options:{responsive:true,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` EMI: ${fmt(c.raw)}`}}},
-      scales:{
-        x:{grid:{color:_lg},ticks:{color:_lt,font:{size:10}}},
-        y:{grid:{color:_lg},ticks:{color:_lt,callback:v=>fmt(v),font:{size:10}}}
+  if (months.length) {
+    loanTrend = new Chart(ctx2, {
+      type: 'line',
+      data: {
+        labels: months,
+        datasets: [{
+          label: 'Total EMI',
+          data: months.map(m => loanByMonth[m]),
+          borderColor: '#ff3f60', backgroundColor: 'rgba(255,63,96,.08)',
+          tension: .3, fill: true, pointRadius: 5, pointBackgroundColor: '#ff3f60',
+          pointBorderColor: _lbg, pointBorderWidth: 2, borderWidth: 2.5
+        }]
+      },
+      options: { responsive: true,
+        plugins: {legend:{display:false}, tooltip:{callbacks:{label:c=>` EMI: ${fmt(c.raw)}`}}},
+        scales: {
+          x: {grid:{color:_lg}, ticks:{color:_lt,font:{size:10}}},
+          y: {grid:{color:_lg}, ticks:{color:_lt,callback:v=>fmt(v),font:{size:10}}}
+        }
       }
-    }
+    });
+  }
+}
+
+function openAddLoanModal() {
+  const today = new Date().toISOString().slice(0, 10);
+  const fiveYr = new Date(); fiveYr.setFullYear(fiveYr.getFullYear() + 5);
+  document.getElementById('al-loan-name').value   = '';
+  document.getElementById('al-loan-amount').value = '';
+  document.getElementById('al-loan-repay').value  = '';
+  document.getElementById('al-loan-start').value  = today;
+  document.getElementById('al-loan-target').value = fiveYr.toISOString().slice(0, 10);
+  document.getElementById('addLoanModal').classList.add('open');
+  setTimeout(() => document.getElementById('al-loan-name').focus(), 80);
+}
+
+async function saveLoan() {
+  const name   = document.getElementById('al-loan-name').value.trim();
+  const ltype  = document.getElementById('al-loan-type').value;
+  const amount = parseFloat(document.getElementById('al-loan-amount').value) || 0;
+  const repay  = parseFloat(document.getElementById('al-loan-repay').value) || 0;
+  const start  = document.getElementById('al-loan-start').value;
+  const target = document.getElementById('al-loan-target').value;
+  if (!name)         { toast('Loan name is required', 'error'); return; }
+  if (amount <= 0)   { toast('Principal amount must be greater than 0', 'error'); return; }
+  if (repay <= 0)    { toast('Total repayment must be greater than 0', 'error'); return; }
+  if (!start || !target) { toast('Both start and target dates are required', 'error'); return; }
+  if (target <= start)   { toast('Target close date must be after start date', 'error'); return; }
+  const res = await fetch('/api/loan_master', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({loan_name:name, loan_type:ltype, loan_amount:amount, total_repayment:repay, start_date:start, target_close_date:target}),
   });
+  const d = await res.json();
+  if (d.success) {
+    closeModal('addLoanModal');
+    toast('Loan added!', 'success');
+    loadLoans();
+  } else {
+    toast('Error: ' + (d.error || 'Unknown'), 'error');
+  }
+}
+
+function toggleLoanCard(headEl) {
+  headEl.closest('.ltc').classList.toggle('collapsed');
+}
+
+async function deleteLoan(id) {
+  if (!confirm('Delete this loan entry? Transactions will not be deleted.')) return;
+  await fetch(`/api/loan_master/${id}`, {method:'DELETE'});
+  toast('Loan deleted', 'success');
+  loadLoans();
 }
 
 // ─── ALERTS ───────────────────────────────────────────────────────────────────
@@ -1607,37 +2346,185 @@ async function submitAlert() {
   closeModal('alertModal'); toast('Alert created! 🔔','success'); loadAlerts();
 }
 
-// ─── ADD TRANSACTION ──────────────────────────────────────────────────────────
+// ─── ADD TRANSACTION (redesigned bulk-entry modal) ────────────────────────────
 const CAT_PRESETS = {
-  income:    ['Salary','Incentive / Bonus','Investment Return','Family','Rati','Loan Return'],
-  expense:   ['Household','Transport','Family','Shopping','Bills','Loan EMI','Lifestyle'],
-  investment:['Stocks','Mutual Fund','Gold','Fixed Return','Retirement','Real Estate'],
+  income:     ['Salary','Incentive / Bonus','Investment Return','Family','Rati','Loan Return'],
+  expense:    ['Household','Transport','Family Care','Shopping','Bills','Lifestyle','Kids\' Expenses','Family Support'],
+  investment: ['Stocks','Mutual Fund','Gold','Fixed Return','Retirement','Real Estate','NPS','EPF','Sukanya Samriddhi'],
+  loan:       ['Home Loan','Personal Loan','Car Loan','NBFC Loan (LIC)','EPF Loan','Education Loan','Gadget EMI','Credit Card EMI','Family loan','Credit Purchase'],
 };
 
+// Custom categories stored in localStorage per type
+function _getCustomCats() {
+  try { return JSON.parse(localStorage.getItem('mt_custom_cats') || '{}'); } catch { return {}; }
+}
+function _saveCustomCat(type, name) {
+  const cats = _getCustomCats();
+  cats[type] = cats[type] || [];
+  if (!cats[type].includes(name)) { cats[type].push(name); localStorage.setItem('mt_custom_cats', JSON.stringify(cats)); }
+}
+function _allCats(type) {
+  const base = CAT_PRESETS[type] || [];
+  const custom = (_getCustomCats()[type] || []);
+  return [...base, ...custom.filter(c => !base.includes(c))];
+}
+
 function openAddModal() {
-  const type = document.querySelector('input[name=txType]:checked').value;
-  document.getElementById('catList').innerHTML = CAT_PRESETS[type].map(c=>`<option value="${c}">`).join('');
-  document.querySelectorAll('input[name=txType]').forEach(r => r.addEventListener('change', ()=>{
-    document.getElementById('catList').innerHTML = CAT_PRESETS[r.value].map(c=>`<option value="${c}">`).join('');
-  }));
+  // Default to the last month used in the Transactions view, or current month
+  addMonthValue = txMonthValue || new Date().toISOString().slice(0, 7);
+  _setMonthLabel('addMonthLabel', addMonthValue);
+  addTabType = 'income';
+  // Reset tab highlight
+  document.querySelectorAll('.add-tab').forEach(b => b.classList.remove('active'));
+  document.querySelector('.add-tab.tab-i').classList.add('active');
+  renderAddBody('income');
   document.getElementById('addModal').classList.add('open');
 }
 
+function setAddTab(type, btn) {
+  addTabType = type;
+  document.querySelectorAll('.add-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderAddBody(type);
+}
+
+async function renderAddBody(type) {
+  // Loan tab: fetch active loans from loan_master
+  if (type === 'loan') {
+    document.getElementById('addTxBody').innerHTML =
+      '<div style="text-align:center;padding:22px;color:var(--muted2);font-size:12px">Loading loans…</div>';
+    const loans = await fetch('/api/loan_master').then(r => r.json());
+    const activeLoans = loans.filter(l => l.status === 'active');
+    if (!activeLoans.length) {
+      document.getElementById('addTxBody').innerHTML = `
+        <div class="empty" style="padding:32px">
+          <div class="empty-icon">💳</div>
+          <p>No active loans.<br>
+          <small style="color:var(--muted2)">Add a loan first from the Loans & EMIs page.</small></p>
+        </div>`;
+      return;
+    }
+    const rows = activeLoans.map(loan => `
+      <div class="cat-row">
+        <div style="flex:1;min-width:0">
+          <div class="cat-row-name">${loan.loan_name}</div>
+          <div style="font-size:10px;color:var(--muted2)">${loan.loan_type} · Balance ${fmt(loan.balance)}</div>
+        </div>
+        <div class="cat-amt-wrap">
+          <span class="cat-amt-prefix">₹</span>
+          <input class="cat-amt-input" type="number" min="0" step="any" value="0"
+            id="amt_loan_${encodeURIComponent(loan.loan_name)}"
+            oninput="validateAmt(this)"
+            onfocus="if(+this.value===0)this.select()"
+            onblur="if(this.value===''||isNaN(+this.value))this.value='0'">
+        </div>
+      </div>`).join('');
+    document.getElementById('addTxBody').innerHTML = `<div class="cat-rows">${rows}</div>`;
+    return;
+  }
+
+  // All other tabs
+  const cats = _allCats(type);
+  const key = encodeURIComponent;
+  const rows = cats.map(cat => `
+    <div class="cat-row">
+      <div class="cat-row-name">${cat}</div>
+      <div class="cat-amt-wrap">
+        <span class="cat-amt-prefix">₹</span>
+        <input class="cat-amt-input" type="number" min="0" step="any" value="0"
+          id="amt_${type}_${key(cat)}"
+          oninput="validateAmt(this)"
+          onfocus="if(+this.value===0)this.select()"
+          onblur="if(this.value===''||isNaN(+this.value))this.value='0'">
+      </div>
+    </div>`).join('');
+
+  document.getElementById('addTxBody').innerHTML = `
+    <div class="cat-rows">
+      ${rows}
+      <div class="cat-row new-cat-row">
+        <input class="new-cat-name-input" type="text" placeholder="＋ New Category name…"
+          id="newCatName_${type}">
+        <div class="cat-amt-wrap">
+          <span class="cat-amt-prefix">₹</span>
+          <input class="cat-amt-input" type="number" min="0" step="any" value="0"
+            id="newCatAmt_${type}"
+            oninput="validateAmt(this)"
+            onfocus="if(+this.value===0)this.select()"
+            onblur="if(this.value===''||isNaN(+this.value))this.value='0'">
+        </div>
+      </div>
+    </div>`;
+}
+
+function validateAmt(input) {
+  const v = parseFloat(input.value);
+  if (input.value !== '' && (isNaN(v) || v < 0)) {
+    input.classList.add('amt-error');
+    input.title = 'Amount must be a positive number';
+  } else {
+    input.classList.remove('amt-error');
+    input.title = '';
+  }
+}
+
 async function submitTransaction() {
-  const payload = {
-    type: document.querySelector('input[name=txType]:checked').value,
-    category: document.getElementById('fm-cat').value,
-    sub_category: document.getElementById('fm-sub').value,
-    amount: document.getElementById('fm-amt').value,
-    date: document.getElementById('fm-date').value,
-    note: document.getElementById('fm-note').value,
-  };
-  if (!payload.category||!payload.amount||!payload.date) { toast('Fill Category, Amount & Date','error'); return; }
-  await fetch('/api/transactions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-  closeModal('addModal'); toast('Added! 🎉','success');
-  ['fm-cat','fm-sub','fm-amt','fm-note'].forEach(id=>document.getElementById(id).value='');
-  if (currentPage==='dashboard') loadDashboard();
-  if (currentPage==='transactions') loadTransactions();
+  const type  = addTabType;
+  const month = addMonthValue || new Date().toISOString().slice(0, 7);
+  const date  = month + '-01';
+
+  // Check for invalid inputs
+  const badInput = document.querySelector('#addTxBody .amt-error');
+  if (badInput) { toast('Fix invalid amount(s) before saving', 'error'); return; }
+
+  // Collect entries — loan type reads directly from DOM (names come from loan_master)
+  const entries = [];
+  if (type === 'loan') {
+    document.querySelectorAll('#addTxBody input[id^="amt_loan_"]').forEach(el => {
+      const v = parseFloat(el.value);
+      if (v > 0) {
+        const cat = decodeURIComponent(el.id.replace('amt_loan_', ''));
+        entries.push({ cat, amt: v });
+      }
+    });
+  } else {
+    // New category (non-loan tabs only)
+    const newName = (document.getElementById(`newCatName_${type}`)?.value || '').trim();
+    const newAmt  = parseFloat(document.getElementById(`newCatAmt_${type}`)?.value || '0') || 0;
+    if (newName && newAmt > 0) _saveCustomCat(type, newName);
+    for (const cat of _allCats(type)) {
+      const el = document.getElementById(`amt_${type}_${encodeURIComponent(cat)}`);
+      if (!el) continue;
+      const v = parseFloat(el.value);
+      if (v > 0) entries.push({ cat, amt: v });
+    }
+    if (newName && newAmt > 0) entries.push({ cat: newName, amt: newAmt });
+  }
+
+  if (!entries.length) { toast('Enter at least one amount greater than 0', 'error'); return; }
+
+  const isLoan = type === 'loan';
+  const statusEl = document.getElementById('addTxStatus');
+  statusEl.textContent = `Saving ${entries.length} entr${entries.length > 1 ? 'ies' : 'y'}…`;
+
+  await Promise.all(entries.map(e => fetch('/api/transactions', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      type:         isLoan ? 'expense'   : type,
+      category:     isLoan ? 'Loan EMI'  : e.cat,
+      sub_category: isLoan ? e.cat        : '',
+      amount:       e.amt,
+      date,
+      note: 'Manual Entry',
+    }),
+  })));
+
+  closeModal('addModal');
+  toast(`${entries.length} transaction${entries.length > 1 ? 's' : ''} saved!`, 'success');
+  if (currentPage === 'dashboard')    loadDashboard();
+  if (currentPage === 'transactions') loadTransactions();
+  if (currentPage === 'loans')        loadLoans();
 }
 
 function openAlertModal() { document.getElementById('alertModal').classList.add('open'); updateAlertForm(); }
