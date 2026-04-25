@@ -2,36 +2,61 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>💰 Money Tracker</title>
+<title>💎 Money Magnet</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;1,14..32,300&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{
-  /* ── LIGHT THEME (default) ── */
-  --bg:#f0f4fb;--surface:#ffffff;--surface2:#f5f7fc;--surface3:#edf0f7;--border:#dde4f0;
-  --text:#111827;--muted:#94a3b8;--muted2:#64748b;
-  --income:#059669;--income-d:rgba(5,150,105,.1);
-  --expense:#dc2626;--expense-d:rgba(220,38,38,.1);
-  --invest:#7c3aed;--invest-d:rgba(124,58,237,.1);
-  --savings:#d97706;--savings-d:rgba(217,119,6,.1);
-  --gold:#b45309;--gold-d:rgba(180,83,9,.1);
-  --teal:#0891b2;--teal-d:rgba(8,145,178,.1);
+  /* ── LIGHT THEME ── */
+  --bg:#f4f6f4;--surface:#ffffff;--surface2:#f7f8f7;--surface3:#eef0ee;--border:#e0e5e0;
+  --text:#1a2118;--muted:#8a9e8a;--muted2:#5c7060;
+
+  /* ══ RIBBON PALETTE ══════════════════════════════════════════════════════
+     Coral  #E8736C  ·  Amber  #F2C94C  ·  Teal  #4FBBA8  ·  Steel  #7AAEC8
+     Each colour has: solid · light bg · icon tint · text (dark)
+  ══════════════════════════════════════════════════════════════════════════ */
+
+  /* INCOME → Teal-mint (growth, fresh) */
+  --income:#1a6058;   --income-p:#4FBBA8;  --income-d:rgba(79,187,168,.15);  --income-bg:#f0fbf9;
+
+  /* EXPENSE → Coral-salmon (outflow, alert) */
+  --expense:#8a2622;  --expense-p:#E8736C; --expense-d:rgba(232,115,108,.14); --expense-bg:#fff5f4;
+
+  /* INVEST → Steel-periwinkle (trust, depth) */
+  --invest:#1e4d6a;   --invest-p:#7AAEC8;  --invest-d:rgba(122,174,200,.16);  --invest-bg:#f0f6fa;
+
+  /* SAVINGS → Amber-yellow (warmth, stored value) */
+  --savings:#6b4c00;  --savings-p:#F2C94C; --savings-d:rgba(242,201,76,.18);  --savings-bg:#fefbf0;
+
+  /* GOLD → deep amber variant */
+  --gold:#7a3d00;     --gold-p:#F0A84A;    --gold-d:rgba(240,168,74,.16);     --gold-bg:#fdf6ec;
+
+  /* TEAL (portfolio accent) → lighter steel */
+  --teal:#1e4d6a;     --teal-p:#7AAEC8;   --teal-d:rgba(122,174,200,.14);    --teal-bg:#f0f6fa;
+
+  /* LOAN → coral variant */
+  --loan-p:#E8736C;   --loan-d:rgba(232,115,108,.14);
+
   --r:14px;--shadow:0 2px 20px rgba(0,0,0,.07);
-  --chart-grid:rgba(0,0,0,.07);--chart-tick:#94a3b8;--chart-bg:#ffffff;
+  --chart-grid:rgba(0,0,0,.06);--chart-tick:#8a9e8a;--chart-bg:#ffffff;
 }
 [data-theme="dark"]{
   /* ── DARK THEME ── */
-  --bg:#090c12;--surface:#101318;--surface2:#181d28;--surface3:#1f2635;--border:#242d3e;
-  --text:#dde3f0;--muted:#49566e;--muted2:#6b7d99;
-  --income:#00e87a;--income-d:rgba(0,232,122,.1);
-  --expense:#ff3f60;--expense-d:rgba(255,63,96,.1);
-  --invest:#8b7dff;--invest-d:rgba(139,125,255,.1);
-  --savings:#f59e0b;--savings-d:rgba(245,158,11,.1);
-  --gold:#fbbf24;--gold-d:rgba(251,191,36,.1);
-  --teal:#06c4a8;--teal-d:rgba(6,196,168,.1);
+  --bg:#0d120e;--surface:#131a14;--surface2:#1a2318;--surface3:#202d20;--border:#2a3a2a;
+  --text:#dce8dc;--muted:#4a6050;--muted2:#6a8470;
+
+  /* Ribbon colours are naturally vivid enough for dark backgrounds */
+  --income:#4FBBA8;   --income-p:#4FBBA8;  --income-d:rgba(79,187,168,.14);   --income-bg:rgba(79,187,168,.06);
+  --expense:#E8736C;  --expense-p:#E8736C; --expense-d:rgba(232,115,108,.14);  --expense-bg:rgba(232,115,108,.06);
+  --invest:#7AAEC8;   --invest-p:#7AAEC8;  --invest-d:rgba(122,174,200,.14);   --invest-bg:rgba(122,174,200,.06);
+  --savings:#F2C94C;  --savings-p:#F2C94C; --savings-d:rgba(242,201,76,.14);   --savings-bg:rgba(242,201,76,.06);
+  --gold:#F0A84A;     --gold-p:#F0A84A;    --gold-d:rgba(240,168,74,.14);      --gold-bg:rgba(240,168,74,.06);
+  --teal:#7AAEC8;     --teal-p:#7AAEC8;   --teal-d:rgba(122,174,200,.14);     --teal-bg:rgba(122,174,200,.06);
+  --loan-p:#E8736C;   --loan-d:rgba(232,115,108,.14);
+
   --shadow:0 12px 48px rgba(0,0,0,.6);
-  --chart-grid:rgba(36,45,62,.8);--chart-tick:#49566e;--chart-bg:#101318;
+  --chart-grid:rgba(42,58,42,.8);--chart-tick:#4a6050;--chart-bg:#131a14;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background-color .25s,color .25s}
@@ -39,32 +64,82 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 /* ─── SIDEBAR ─── */
 .sidebar{
   position:fixed;left:0;top:0;bottom:0;width:218px;
-  background:var(--surface);border-right:1px solid var(--border);
+  background:linear-gradient(180deg,#1a2118 0%,#1e2a1e 60%,#1a2820 100%);
+  border-right:1px solid rgba(79,187,168,.15);
   display:flex;flex-direction:column;padding:22px 14px;z-index:100;
+}
+[data-theme="light"] .sidebar{
+  background:linear-gradient(180deg,#1e2d1e 0%,#1a2820 60%,#162416 100%);
 }
 .logo{font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:800;
   margin-bottom:22px;display:flex;align-items:center;gap:10px;padding:4px 6px 20px;
-  border-bottom:1px solid var(--border);letter-spacing:-.3px}
-.logo-em{font-size:24px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.2))}
-.nav-section{font-size:9.5px;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);
+  border-bottom:1px solid rgba(79,187,168,.2);letter-spacing:-.3px;color:#fff}
+.logo-em{font-size:24px;filter:drop-shadow(0 2px 6px rgba(79,187,168,.4))}
+.nav-section{font-size:9px;text-transform:uppercase;letter-spacing:1.6px;color:rgba(79,187,168,.6);
   margin:16px 8px 5px;font-weight:700}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;
-  cursor:pointer;font-size:13px;font-weight:500;color:var(--muted2);transition:all .15s;margin-bottom:2px}
-.nav-item:hover{background:var(--surface2);color:var(--text);padding-left:16px}
-.nav-item.active{background:var(--invest-d);color:var(--invest);font-weight:600}
-.nav-icon{width:20px;text-align:center;flex-shrink:0;display:flex;align-items:center;justify-content:center;opacity:.75}
-.nav-item:hover .nav-icon,.nav-item.active .nav-icon{opacity:1}
-.sidebar-bottom{margin-top:auto;padding-top:14px;border-top:1px solid var(--border)}
-.health-mini{background:var(--surface2);border-radius:10px;padding:10px 12px;margin-bottom:10px}
-.health-mini-label{font-size:10px;color:var(--muted2);margin-bottom:4px}
-.health-mini-bar{background:var(--border);border-radius:3px;height:5px;overflow:hidden}
+  cursor:pointer;font-size:13px;font-weight:500;color:rgba(220,235,220,.65);transition:all .15s;margin-bottom:2px}
+.nav-item:hover{background:rgba(79,187,168,.1);color:#fff;padding-left:16px}
+.nav-item.active{background:rgba(79,187,168,.18);color:#4FBBA8;font-weight:700;
+  border-left:3px solid #4FBBA8;padding-left:9px;box-shadow:inset 0 0 16px rgba(79,187,168,.08)}
+.nav-icon{width:22px;height:22px;flex-shrink:0;display:flex;align-items:center;justify-content:center;opacity:.7;transition:transform .2s ease,opacity .15s}
+.nav-item:hover .nav-icon{opacity:1;transform:scale(1.18)}
+.nav-item.active .nav-icon{opacity:1;transform:scale(1.1)}
+
+/* ── Animated icon styles ── */
+.nav-icon svg{transition:stroke .15s}
+.nav-item.active .nav-icon svg{stroke:var(--invest);filter:drop-shadow(0 0 5px rgba(155,181,211,.7))}
+
+/* Wealth Horizon icon — horizon rays animate on active */
+@keyframes horizonRise{from{transform:translateY(3px);opacity:.4}to{transform:translateY(0);opacity:1}}
+.nav-item.active .icon-horizon .ray{animation:horizonRise .45s ease both}
+.nav-item.active .icon-horizon .ray:nth-child(2){animation-delay:.07s}
+.nav-item.active .icon-horizon .ray:nth-child(3){animation-delay:.14s}
+.nav-item.active .icon-horizon .ray:nth-child(4){animation-delay:.21s}
+.nav-item.active .icon-horizon .ray:nth-child(5){animation-delay:.28s}
+
+/* WealthFlow — bars animate up on active */
+@keyframes barRise{from{transform:scaleY(.2);opacity:.3}to{transform:scaleY(1);opacity:1}}
+.nav-item.active .icon-wflow .bar{transform-origin:bottom;animation:barRise .4s ease both}
+.nav-item.active .icon-wflow .bar:nth-child(2){animation-delay:.08s}
+.nav-item.active .icon-wflow .bar:nth-child(3){animation-delay:.16s}
+.nav-item.active .icon-wflow .bar:nth-child(4){animation-delay:.24s}
+
+/* Alerts — bell shake on active */
+@keyframes bellShake{0%,100%{transform:rotate(0)}20%{transform:rotate(-10deg)}40%{transform:rotate(10deg)}60%{transform:rotate(-6deg)}80%{transform:rotate(6deg)}}
+.nav-item.active .icon-alert svg{animation:bellShake .5s ease .1s both}
+
+/* Pulse dot on alerts */
+.nav-icon-badge{position:relative;display:flex;align-items:center;justify-content:center}
+.nav-icon-badge::after{content:'';position:absolute;top:-2px;right:-3px;width:5px;height:5px;background:var(--expense);border-radius:50%;border:1.5px solid var(--surface)}
+.nav-item.active .nav-icon-badge::after,.nav-item:hover .nav-icon-badge::after{animation:pulse-dot 1.4s ease infinite}
+@keyframes pulse-dot{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.6);opacity:.6}}
+
+/* Dashboard pulse line */
+@keyframes dashPulse{0%,100%{stroke-dashoffset:0}50%{stroke-dashoffset:-8}}
+.nav-item.active .icon-dash .pulse-line{stroke-dasharray:4 3;animation:dashPulse 1.2s linear infinite}
+
+/* Market signal rings animate in */
+@keyframes signalPing{from{stroke-width:3;opacity:.2}to{stroke-width:2.2;opacity:1}}
+.nav-item.active .icon-market .ring{animation:signalPing .4s ease both}
+.nav-item.active .icon-market .ring:nth-child(1){animation-delay:.1s}
+.nav-item.active .icon-market .ring:nth-child(2){animation-delay:.2s}
+
+/* Transactions arrows slide */
+@keyframes arrowIn{from{transform:translateX(-4px);opacity:0}to{transform:translateX(0);opacity:1}}
+.nav-item.active .icon-tx .arrow{animation:arrowIn .3s ease both}
+.nav-item.active .icon-tx .arrow:nth-child(2){animation-delay:.1s}
+.sidebar-bottom{margin-top:auto;padding-top:14px;border-top:1px solid rgba(79,187,168,.15)}
+.health-mini{background:rgba(79,187,168,.08);border:1px solid rgba(79,187,168,.15);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+.health-mini-label{font-size:10px;color:rgba(79,187,168,.7);margin-bottom:4px;font-weight:600}
+.health-mini-bar{background:rgba(255,255,255,.1);border-radius:3px;height:5px;overflow:hidden}
 .health-mini-fill{height:100%;border-radius:3px;transition:width .8s ease}
-.sidebar-footer{font-size:10px;color:var(--muted);text-align:center;padding:0 4px;line-height:1.7}
+.sidebar-footer{font-size:10px;color:rgba(220,235,220,.35);text-align:center;padding:0 4px;line-height:1.7}
 .theme-toggle{display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;
-  border-radius:9px;border:1px solid var(--border);background:var(--surface2);
-  color:var(--muted2);font-family:'Inter',sans-serif;font-size:12px;font-weight:500;
+  border-radius:9px;border:1px solid rgba(79,187,168,.2);background:rgba(79,187,168,.08);
+  color:rgba(220,235,220,.7);font-family:'Inter',sans-serif;font-size:12px;font-weight:500;
   cursor:pointer;transition:all .18s;margin-bottom:10px}
-.theme-toggle:hover{color:var(--text);border-color:var(--invest);background:var(--invest-d)}
+.theme-toggle:hover{color:#fff;border-color:rgba(79,187,168,.5);background:rgba(79,187,168,.15)}
 .theme-icon{font-size:14px}
 
 /* ─── DETAIL PAGE ─── */
@@ -90,8 +165,9 @@ input[type=month]{background:var(--surface2);border:1px solid var(--border);colo
   padding:7px 11px;border-radius:9px;font-family:'Inter',sans-serif;font-size:12px;cursor:pointer;outline:none}
 .btn{padding:8px 16px;border-radius:9px;border:none;font-family:'Inter',sans-serif;
   font-size:12px;font-weight:500;cursor:pointer;transition:all .18s;white-space:nowrap}
-.btn-primary{background:var(--invest);color:#fff}
-.btn-primary:hover{opacity:.85;transform:translateY(-1px);box-shadow:0 4px 16px rgba(139,125,255,.4)}
+.btn-primary{background:linear-gradient(135deg,var(--invest-p),var(--income-p));color:#1a2e1a;font-weight:700;border:none}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 4px 18px rgba(155,181,211,.5)}
+[data-theme="dark"] .btn-primary{color:#0d1a0d}
 .btn-sm{padding:5px 10px;font-size:11px}
 .btn-ghost{background:var(--surface2);color:var(--muted2);border:1px solid var(--border)}
 .btn-ghost:hover{color:var(--text);border-color:var(--invest)}
@@ -108,29 +184,35 @@ input[type=month]{background:var(--surface2);border:1px solid var(--border);colo
 .card.clickable::after{content:'→';position:absolute;bottom:12px;right:14px;font-size:14px;
   color:var(--muted);opacity:0;transition:opacity .2s,transform .2s;transform:translateX(-4px)}
 .card.clickable:hover::after{opacity:1;transform:translateX(0)}
-.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
-.card-income::before{background:linear-gradient(90deg,var(--income),#00b4ff)}
-.card-expense::before{background:linear-gradient(90deg,var(--expense),#ff8c00)}
-.card-invest::before{background:linear-gradient(90deg,var(--invest),#b06eff)}
-.card-savings::before{background:linear-gradient(90deg,var(--savings),#ff6b35)}
-.card-teal::before{background:linear-gradient(90deg,var(--teal),#00d4ff)}
-.card-gold::before{background:linear-gradient(90deg,var(--gold),#ffb347)}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px}
+.card-income {background:var(--income-bg)} .card-income::before {background:var(--income-p)}
+.card-expense{background:var(--expense-bg)}.card-expense::before{background:var(--expense-p)}
+.card-invest {background:var(--invest-bg)} .card-invest::before {background:var(--invest-p)}
+.card-savings{background:var(--savings-bg)}.card-savings::before{background:var(--savings-p)}
+.card-teal   {background:var(--teal-bg)}   .card-teal::before   {background:var(--teal-p)}
+.card-gold   {background:var(--gold-bg)}   .card-gold::before   {background:var(--gold-p)}
 
 .card-icon-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .ci{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;
   font-size:16px;transition:transform .2s,box-shadow .2s;flex-shrink:0}
 .card.clickable:hover .ci{transform:scale(1.1);box-shadow:0 4px 12px rgba(0,0,0,.18)}
-.ci-i{background:var(--income-d);color:var(--income)}
-.ci-e{background:var(--expense-d);color:var(--expense)}
-.ci-v{background:var(--invest-d);color:var(--invest)}
-.ci-s{background:var(--savings-d);color:var(--savings)}
-.ci-t{background:var(--teal-d);color:var(--teal)}
-.ci-g{background:var(--gold-d);color:var(--gold)}
+.ci-i{background:var(--income-d);  color:var(--income);  border:1px solid rgba(105,242,102,.3)}
+.ci-e{background:var(--expense-d); color:var(--expense); border:1px solid rgba(224,133,151,.3)}
+.ci-v{background:var(--invest-d);  color:var(--invest);  border:1px solid rgba(155,181,211,.3)}
+.ci-s{background:var(--savings-d); color:var(--savings); border:1px solid rgba(245,243,148,.35)}
+.ci-t{background:var(--teal-d);    color:var(--teal);    border:1px solid rgba(250,166,218,.3)}
+.ci-g{background:var(--gold-d);    color:var(--gold);    border:1px solid rgba(232,182,148,.3)}
+.ci-l{background:var(--loan-d);    color:var(--teal);    border:1px solid rgba(250,166,218,.3)}
 
 .card-label{font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted2);font-weight:700}
 .card-value{font-family:'Plus Jakarta Sans',sans-serif;font-size:27px;font-weight:800;margin:8px 0 5px;line-height:1;letter-spacing:-.5px}
-.income-val{color:var(--income)}.expense-val{color:var(--expense)}.invest-val{color:var(--invest)}
-.savings-val{color:var(--savings)}.teal-val{color:var(--teal)}.gold-val{color:var(--gold)}
+.income-val {color:var(--income)}
+.expense-val{color:var(--expense)}
+.invest-val {color:var(--invest)}
+.savings-val{color:var(--savings)}
+.teal-val   {color:var(--teal)}
+.gold-val   {color:var(--gold)}
+.loan-val   {color:var(--teal)}
 .card-delta{font-size:11px;font-weight:500;display:flex;align-items:center;gap:3px}
 .delta-up{color:var(--income)}.delta-down{color:var(--expense)}.delta-neutral{color:var(--muted2)}
 .card-sub{font-size:10px;color:var(--muted);margin-top:4px}
@@ -306,7 +388,110 @@ tr:hover td{background:var(--surface2)}
 .section-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--muted2);
   text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:7px}
 
-/* ─── MODAL ─── */
+/* ══ UNIVERSE MAGNET ══════════════════════════════════════════════════════════ */
+/* Magnet colour tokens */
+:root{
+  --health-c:#4FBBA8; --health-d:rgba(79,187,168,.14); --health-bg:#f0fbf9;
+  --relate-c:#E8736C; --relate-d:rgba(232,115,108,.14); --relate-bg:#fff5f4;
+  --career-c:#7AAEC8; --career-d:rgba(122,174,200,.14); --career-bg:#f0f6fa;
+  --money-c:#F2C94C;  --money-d:rgba(242,201,76,.16);   --money-bg:#fefbf0;
+}
+[data-theme="dark"]{
+  --health-bg:rgba(79,187,168,.07);  --relate-bg:rgba(232,115,108,.07);
+  --career-bg:rgba(122,174,200,.07); --money-bg:rgba(242,201,76,.07);
+}
+
+/* Universe home — 4 magnet hero cards */
+.um-hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;margin-bottom:28px}
+.um-card{border-radius:18px;padding:28px 24px;position:relative;overflow:hidden;cursor:pointer;
+  transition:transform .22s,box-shadow .22s;border:none;text-align:left}
+.um-card:hover{transform:translateY(-6px);box-shadow:0 16px 40px rgba(0,0,0,.18)}
+.um-card-stripe{position:absolute;top:0;left:0;right:0;height:5px}
+.um-card-icon{font-size:40px;margin-bottom:16px;display:block;line-height:1}
+.um-card-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;
+  margin-bottom:6px;color:#fff}
+.um-card-sub{font-size:12px;font-weight:500;opacity:.8;color:#fff}
+.um-card-arrow{position:absolute;bottom:20px;right:20px;font-size:22px;opacity:.5;transition:opacity .2s,transform .2s}
+.um-card:hover .um-card-arrow{opacity:1;transform:translateX(4px)}
+.um-card-count{position:absolute;top:18px;right:18px;background:rgba(255,255,255,.25);
+  border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;color:#fff}
+
+.um-card.health  {background:linear-gradient(135deg,#3aa896,#4FBBA8)}
+.um-card.relate  {background:linear-gradient(135deg,#d45e58,#E8736C)}
+.um-card.career  {background:linear-gradient(135deg,#5a8ead,#7AAEC8)}
+.um-card.money   {background:linear-gradient(135deg,#c9a030,#F2C94C)}
+
+/* Universe home summary bar */
+.um-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px}
+.um-stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.um-stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted2);font-weight:700;margin-bottom:5px}
+.um-stat-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800}
+
+/* Magnet page tabs (Vision Board / Current Status) */
+.magnet-tabs{display:flex;gap:4px;background:var(--surface2);border-radius:12px;padding:4px;
+  margin-bottom:22px;width:fit-content}
+.magnet-tab{padding:8px 20px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;
+  color:var(--muted2);transition:all .18s;white-space:nowrap}
+.magnet-tab.active{background:var(--surface);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.1)}
+
+/* Vision Board cards */
+.vision-board-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:20px}
+.vision-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  overflow:hidden;transition:transform .2s,box-shadow .2s;position:relative}
+.vision-card:hover{transform:translateY(-4px);box-shadow:0 10px 28px rgba(0,0,0,.12)}
+.vision-card-photo{width:100%;height:160px;object-fit:cover;background:var(--surface2);
+  display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;cursor:pointer}
+.vision-card-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.vision-card-photo-ph{font-size:48px;opacity:.4}
+.vision-card-photo-ov{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:5px;opacity:0;transition:opacity .2s;color:#fff;font-size:12px;font-weight:600}
+.vision-card-photo:hover .vision-card-photo-ov{opacity:1}
+.vision-card-body{padding:14px 16px}
+.vision-card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800;
+  margin-bottom:6px;line-height:1.3}
+.vision-card-desc{font-size:12px;color:var(--muted2);line-height:1.6}
+.vision-card-del{position:absolute;top:10px;right:10px;background:rgba(232,115,108,.9);color:#fff;
+  border:none;border-radius:50%;width:24px;height:24px;font-size:12px;cursor:pointer;
+  display:none;align-items:center;justify-content:center;font-weight:700;z-index:2}
+.vision-card:hover .vision-card-del{display:flex}
+
+/* Add Vision Card button */
+.vision-add-btn{border:2px dashed var(--border);border-radius:16px;min-height:200px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .2s;color:var(--muted2);font-size:13px;gap:8px;background:none}
+.vision-add-btn:hover{border-color:var(--invest-p);color:var(--invest);background:var(--invest-d)}
+.vision-add-icon{font-size:28px;opacity:.5}
+
+/* Status metric cards */
+.status-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px}
+.status-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;position:relative}
+.status-card-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.status-card-emoji{font-size:24px;width:44px;height:44px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.status-card-name{font-size:12px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;line-height:1.3}
+.status-card-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:24px;font-weight:800;line-height:1;margin-bottom:3px}
+.status-card-target{font-size:11px;color:var(--muted2)}
+.status-card-note{font-size:11px;color:var(--muted2);margin-top:8px;line-height:1.5;border-top:1px solid var(--border);padding-top:8px}
+.status-card-bar{background:var(--border);border-radius:3px;height:4px;overflow:hidden;margin-top:8px}
+.status-card-fill{height:100%;border-radius:3px}
+.status-card-del{position:absolute;top:10px;right:10px;background:var(--expense-d);color:var(--expense);
+  border:none;border-radius:50%;width:22px;height:22px;font-size:11px;cursor:pointer;
+  display:none;align-items:center;justify-content:center;font-weight:700}
+.status-card:hover .status-card-del{display:flex}
+
+/* Magnet page header band */
+.magnet-header-band{border-radius:16px;padding:22px 24px;margin-bottom:22px;display:flex;align-items:center;gap:16px}
+.magnet-header-icon{font-size:44px}
+.magnet-header-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:26px;font-weight:800;color:#fff}
+.magnet-header-sub{font-size:13px;color:rgba(255,255,255,.75);margin-top:3px}
+
+/* Nav group indent for money sub-items */
+.nav-sub-item{padding-left:28px !important;font-size:12px !important}
+.nav-group-label{display:flex;align-items:center;gap:8px;padding:7px 12px;font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.8px;color:rgba(242,201,76,.7);margin-top:10px;margin-bottom:2px}
+.nav-group-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+/* ── MODAL ─── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);
   backdrop-filter:blur(5px);z-index:1000;align-items:center;justify-content:center}
 .modal-overlay.open{display:flex}
@@ -396,7 +581,7 @@ tr:hover td{background:var(--surface2)}
   border-left:1px solid var(--border);border-right:1px solid var(--border)}
 
 /* ─── LOAN CARD ─── */
-.card-loan::before{background:linear-gradient(90deg,#a855f7,#ec4899)}
+.card-loan{background:var(--expense-bg)}.card-loan::before{background:var(--loan-p)}
 .ci-l{background:rgba(168,85,247,.12);color:#a855f7}
 .loan-val{color:#a855f7}
 
@@ -448,7 +633,7 @@ tr:hover td{background:var(--surface2)}
 .vb-score-denom{font-size:10px;color:var(--muted2);font-weight:500;margin-top:1px}
 .vb-score-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;text-align:center;margin-bottom:4px}
 .vb-score-grade{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;text-align:center}
-.vb-discipline-grid{flex:1;display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;min-width:0}
+.vb-discipline-grid{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;min-width:0;align-content:start}
 .vb-dc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 15px}
 .vb-dc-head{display:flex;align-items:center;gap:8px;margin-bottom:9px}
 .vb-dc-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
@@ -458,8 +643,8 @@ tr:hover td{background:var(--surface2)}
 .vb-dc-bar{background:var(--border);border-radius:3px;height:4px;overflow:hidden;margin-bottom:5px}
 .vb-dc-fill{height:100%;border-radius:3px;transition:width .9s ease}
 .vb-dc-status{font-size:10px;font-weight:600}
-.vb-dc.met{border-color:rgba(5,150,105,.25)}
-.vb-dc.missed{border-color:rgba(220,38,38,.18)}
+.vb-dc.met{border-color:rgba(79,187,168,.35)}
+.vb-dc.missed{border-color:rgba(232,115,108,.3)}
 
 .vb-src-wrap{margin-bottom:20px}
 .vb-src-head{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
@@ -500,6 +685,25 @@ tr:hover td{background:var(--surface2)}
 .vb-goal-prog-fill{height:100%;border-radius:3px;transition:width .9s ease}
 .vb-goal-nums{display:flex;justify-content:space-between;font-size:10px;color:var(--muted2)}
 .vb-goal-pct{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:800}
+.vb-inv-mini{font-size:10px;color:var(--muted2);display:flex;justify-content:space-between;margin-bottom:3px}
+.vb-inv-mini-bar{background:var(--border);border-radius:2px;height:3px;overflow:hidden;margin-bottom:6px}
+.vb-inv-mini-fill{height:100%;border-radius:2px}
+.vb-ded-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:20px;overflow:hidden}
+.vb-ded-head{display:flex;align-items:center;gap:8px;padding:13px 16px;background:var(--surface2);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;font-size:13px;font-weight:700;transition:background .15s}
+.vb-ded-head:hover{background:var(--surface3)}
+.vb-ded-body{display:none;padding:16px}
+.vb-ded-body.open{display:block}
+.vb-ded-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:14px}
+.vb-ded-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px}
+.vb-ded-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);margin-bottom:6px}
+.vb-ded-sub{font-size:9px;color:var(--muted);margin-bottom:8px}
+.vb-ded-input-wrap{display:flex;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:7px;overflow:hidden}
+.vb-ded-prefix{padding:0 8px;font-size:12px;font-weight:600;color:var(--muted2);background:var(--surface3);border-right:1px solid var(--border);height:34px;display:flex;align-items:center}
+.vb-ded-input{border:none;background:transparent;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;padding:0 10px;width:100%;height:34px;color:var(--text);outline:none}
+.vb-ded-extra-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.vb-ded-extra-name{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12px;color:var(--text);outline:none;font-family:'Inter',sans-serif}
+.vb-ded-extra-amt{width:110px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12px;font-weight:700;color:var(--text);outline:none;font-family:'Plus Jakarta Sans',sans-serif;text-align:right}
+.vb-ded-save-note{font-size:10px;color:var(--muted2);margin-top:10px;padding:8px 10px;background:var(--invest-d);border-radius:7px;color:var(--invest)}
 .vb-ds-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-top:20px}
 .vb-ds-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted2);user-select:none}
 .vb-ds-body{display:none;margin-top:14px}
@@ -517,45 +721,165 @@ tr:hover td{background:var(--surface2)}
 <aside class="sidebar">
   <div class="logo">
     <span class="logo-em">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--invest)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 2px 6px rgba(124,58,237,.4))"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <svg width="28" height="28" viewBox="0 0 26 26" fill="none" style="filter:drop-shadow(0 2px 8px rgba(79,187,168,.5))">
+        <!-- Universe Magnet: 4 coloured arrows radiating from centre -->
+        <circle cx="13" cy="13" r="3" fill="#fff" opacity=".9"/>
+        <path d="M13 10 L13 3"  stroke="#4FBBA8" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M13 16 L13 23" stroke="#F2C94C" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M10 13 L3 13"  stroke="#E8736C" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M16 13 L23 13" stroke="#7AAEC8" stroke-width="2.5" stroke-linecap="round"/>
+        <polygon points="13,2 11.5,5 14.5,5"  fill="#4FBBA8"/>
+        <polygon points="13,24 11.5,21 14.5,21" fill="#F2C94C"/>
+        <polygon points="2,13 5,11.5 5,14.5"  fill="#E8736C"/>
+        <polygon points="24,13 21,11.5 21,14.5" fill="#7AAEC8"/>
+      </svg>
     </span>
-    <span style="background:linear-gradient(135deg,var(--invest),var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Money Tracker</span>
+    <span style="background:linear-gradient(135deg,#4FBBA8,#7AAEC8,#F2C94C);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Universe Magnet</span>
   </div>
-  <div class="nav-section">Main</div>
-  <div class="nav-item active" id="nav-vision" onclick="showPage('vision',this)">
-    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>Vision Board
+
+  <div class="nav-section">Magnets</div>
+
+  <!-- Universe Home -->
+  <div class="nav-item" id="nav-universe" onclick="showPage('universe',this)">
+    <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>Universe Home
   </div>
-  <div class="nav-item" onclick="showPage('dashboard',this)">
-    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>Dashboard
+
+  <!-- Health Magnet -->
+  <div class="nav-item" onclick="showPage('health',this)">
+    <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>Health Magnet
   </div>
-  <div class="nav-item" onclick="showPage('transactions',this)">
-    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>Transactions
+
+  <!-- Relationship Magnet -->
+  <div class="nav-item" onclick="showPage('relationship',this)">
+    <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Relationship Magnet
   </div>
+
+  <!-- Career Magnet -->
+  <div class="nav-item" onclick="showPage('career',this)">
+    <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>Career Magnet
+  </div>
+
+  <!-- Money Magnet — top-level magnet nav item (same style as Health/Career) -->
+  <div class="nav-item" id="nav-vision" onclick="showPage('vision',this)">
+    <span class="nav-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 4v6a6 6 0 0 0 12 0V4"/>
+        <line x1="2" y1="4" x2="6" y2="4"/><line x1="18" y1="4" x2="22" y2="4"/>
+        <circle cx="12" cy="21" r="1" fill="currentColor"/>
+        <line x1="12" y1="16" x2="12" y2="20"/>
+      </svg>
+    </span>Money Magnet
+  </div>
+
+  <!-- Dashboard — gauge/speedometer -->
+  <div class="nav-item nav-sub-item" onclick="showPage('dashboard',this)">
+    <span class="nav-icon">
+      <svg class="icon-dash" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2a10 10 0 0 1 10 10"/>
+        <path class="pulse-line" d="M2 12A10 10 0 0 1 12 2"/>
+        <circle cx="12" cy="12" r="2"/>
+        <path d="M12 10 L15.5 7.5" stroke-width="2" stroke-linecap="round"/>
+        <line x1="4.5" y1="19.5" x2="6"  y2="18"  stroke-width="1.5"/>
+        <line x1="19.5" y1="19.5" x2="18" y2="18" stroke-width="1.5"/>
+        <line x1="2" y1="13" x2="4" y2="13" stroke-width="1.5"/>
+        <line x1="20" y1="13" x2="22" y2="13" stroke-width="1.5"/>
+      </svg>
+    </span>Dashboard
+  </div>
+
+  <!-- Transactions — two-way lightning transfer arrows -->
+  <div class="nav-item nav-sub-item" onclick="showPage('transactions',this)">
+    <span class="nav-icon">
+      <svg class="icon-tx" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline class="arrow" points="17 8 21 8 21 4"/>
+        <path class="arrow" d="M3 11A9 9 0 0 1 21 8"/>
+        <polyline class="arrow" points="7 16 3 16 3 20"/>
+        <path class="arrow" d="M21 13A9 9 0 0 1 3 16"/>
+      </svg>
+    </span>Transactions
+  </div>
+
   <div class="nav-section">Wealth</div>
-  <div class="nav-item" onclick="showPage('portfolio',this)">
-    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>Portfolio
+
+  <!-- WealthFlow (was Portfolio) — animated bar chart with trend arrow -->
+  <div class="nav-item nav-sub-item" onclick="showPage('portfolio',this)">
+    <span class="nav-icon">
+      <svg class="icon-wflow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <rect class="bar" x="3"  y="14" width="4" height="7" rx="1"/>
+        <rect class="bar" x="10" y="9"  width="4" height="12" rx="1"/>
+        <rect class="bar" x="17" y="5"  width="4" height="16" rx="1"/>
+        <polyline points="5 9 10 5 17 8 22 3" stroke-width="1.8" opacity=".65"/>
+        <polyline points="20 3 22 3 22 5"     stroke-width="1.8" opacity=".65"/>
+      </svg>
+    </span>WealthFlow
   </div>
-  <div class="nav-item" onclick="showPage('loans',this)">
-    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>Loans &amp; EMIs
+
+  <!-- Loans & EMIs — coin stack with arrow -->
+  <div class="nav-item nav-sub-item" onclick="showPage('loans',this)">
+    <span class="nav-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <ellipse cx="9" cy="7"  rx="7" ry="2.5"/>
+        <path d="M2 7v5c0 1.38 3.13 2.5 7 2.5s7-1.12 7-2.5V7"/>
+        <path d="M2 12v5c0 1.38 3.13 2.5 7 2.5s7-1.12 7-2.5v-5"/>
+        <path d="M19 5 L19 19 M16 16 L19 19 L22 16" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </span>Loans &amp; EMIs
   </div>
+
   <div class="nav-section">Config</div>
-  <div class="nav-item" onclick="showPage('alerts',this)">
-    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>Alerts
+
+  <!-- Alerts — bell with animated pulse dot -->
+  <div class="nav-item nav-sub-item" onclick="showPage('alerts',this)">
+    <span class="nav-icon">
+      <span class="icon-alert nav-icon-badge">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+      </span>
+    </span>Alerts
   </div>
+
   <div class="nav-section">Data</div>
-  <div class="nav-item" onclick="showPage('import',this)">
-    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>Import Excel
+
+  <!-- Import Excel — file with sparkle -->
+  <div class="nav-item nav-sub-item" onclick="showPage('import',this)">
+    <span class="nav-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <polyline points="9 15 12 18 15 15"/>
+        <line x1="12" y1="11" x2="12" y2="18"/>
+      </svg>
+    </span>Import Excel
   </div>
+
   <div class="nav-section">Market</div>
-  <div class="nav-item" onclick="showPage('nse',this)">
-    <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg></span>NSE Market
+
+  <!-- NSE Market — candlestick chart -->
+  <div class="nav-item nav-sub-item" onclick="showPage('nse',this)">
+    <span class="nav-icon">
+      <svg class="icon-market" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <!-- candlesticks -->
+        <line x1="5"  y1="4"  x2="5"  y2="7"/>
+        <rect x="3.5" y="7"  width="3" height="5" rx=".5" fill="var(--income)"   stroke="var(--income)"   stroke-width="1"/>
+        <line x1="5"  y1="12" x2="5"  y2="15"/>
+        <line x1="12" y1="6"  x2="12" y2="9"/>
+        <rect x="10.5" y="9" width="3" height="6" rx=".5" fill="var(--expense)"  stroke="var(--expense)"  stroke-width="1"/>
+        <line x1="12" y1="15" x2="12" y2="18"/>
+        <line x1="19" y1="5"  x2="19" y2="8"/>
+        <rect x="17.5" y="8" width="3" height="5" rx=".5" fill="var(--income)"   stroke="var(--income)"   stroke-width="1"/>
+        <line x1="19" y1="13" x2="19" y2="16"/>
+        <line class="ring" x1="2" y1="21" x2="22" y2="21"/>
+      </svg>
+    </span>NSE Market
   </div>
   <div class="sidebar-bottom">
     <div class="health-mini">
       <div class="health-mini-label">Financial Health</div>
       <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px">
-        <span id="sidebar-health-score" style="font-weight:700;font-family:'Plus Jakarta Sans',sans-serif">—</span>
-        <span id="sidebar-health-tag" style="color:var(--muted2)"></span>
+        <span id="sidebar-health-score" style="font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;color:#fff">—</span>
+        <span id="sidebar-health-tag" style="color:rgba(79,187,168,.8);font-size:10px"></span>
       </div>
       <div class="health-mini-bar"><div class="health-mini-fill" id="sidebar-health-bar"></div></div>
     </div>
@@ -563,7 +887,7 @@ tr:hover td{background:var(--surface2)}
       <span class="theme-icon" id="themeIcon">🌙</span>
       <span id="themeLabel">Dark Mode</span>
     </button>
-    <div class="sidebar-footer">Powered by your Excel 📊<br>Nov 2025 – Mar 2026</div>
+    <div class="sidebar-footer">💎 Money Magnet<br>Your wealth, magnetised</div>
   </div>
 </aside>
 
@@ -571,10 +895,223 @@ tr:hover td{background:var(--surface2)}
 <main class="main">
 
 <!-- ════════════ VISION BOARD ════════════ -->
-<div id="page-vision" class="page active">
+<!-- ════════════════════════════════════════════════════════════════════════════
+     UNIVERSE MAGNET — HOME
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="page-universe" class="page">
   <div class="header">
     <div>
-      <div class="page-title">Wealth Vision Board 🎯</div>
+      <div class="page-title">🌌 Universe Magnet</div>
+      <div class="page-sub">Your complete life vision — attract what you want in every dimension</div>
+    </div>
+  </div>
+
+  <!-- 4 Magnet hero cards -->
+  <div class="um-hero">
+    <div class="um-card health" onclick="showPage('health', document.querySelector('.nav-item[onclick*=health]'))">
+      <div class="um-card-count" id="um-health-count">0 cards</div>
+      <span class="um-card-icon">🏃</span>
+      <div class="um-card-name">Health Magnet</div>
+      <div class="um-card-sub">Vitality · Fitness · Wellbeing · Energy</div>
+      <div class="um-card-arrow">→</div>
+    </div>
+    <div class="um-card relate" onclick="showPage('relationship', document.querySelector('.nav-item[onclick*=relationship]'))">
+      <div class="um-card-count" id="um-relate-count">0 cards</div>
+      <span class="um-card-icon">🤝</span>
+      <div class="um-card-name">Relationship Magnet</div>
+      <div class="um-card-sub">Love · Family · Friendships · Community</div>
+      <div class="um-card-arrow">→</div>
+    </div>
+    <div class="um-card career" onclick="showPage('career', document.querySelector('.nav-item[onclick*=career]'))">
+      <div class="um-card-count" id="um-career-count">0 cards</div>
+      <span class="um-card-icon">🚀</span>
+      <div class="um-card-name">Career Magnet</div>
+      <div class="um-card-sub">Purpose · Skills · Impact · Growth</div>
+      <div class="um-card-arrow">→</div>
+    </div>
+    <div class="um-card money" onclick="showPage('vision', document.getElementById('nav-vision'))">
+      <div class="um-card-count" id="um-money-count">Money Magnet</div>
+      <span class="um-card-icon">💰</span>
+      <div class="um-card-name">Money Magnet</div>
+      <div class="um-card-sub">Wealth · Investments · Financial Freedom</div>
+      <div class="um-card-arrow">→</div>
+    </div>
+  </div>
+
+  <!-- Universe quick stats -->
+  <div class="section-label">📊 My Universe at a Glance</div>
+  <div class="um-summary" id="umSummaryGrid"></div>
+
+  <!-- Affirmation -->
+  <div style="background:linear-gradient(135deg,rgba(79,187,168,.12),rgba(122,174,200,.12));border:1px solid rgba(79,187,168,.2);border-radius:16px;padding:22px 26px;text-align:center;margin-top:8px">
+    <div style="font-size:13px;color:var(--muted2);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;font-weight:700">Universe Affirmation</div>
+    <div id="umAffirmation" style="font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:700;line-height:1.6;color:var(--text)">Loading your affirmation…</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     HEALTH MAGNET
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="page-health" class="page">
+  <div class="magnet-header-band" style="background:linear-gradient(135deg,#3aa896,#4FBBA8)">
+    <div class="magnet-header-icon">🏃</div>
+    <div>
+      <div class="magnet-header-title">Health Magnet</div>
+      <div class="magnet-header-sub">Vitality · Fitness · Mental Wellbeing · Energy</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn" style="background:rgba(255,255,255,.25);color:#fff;font-weight:700" onclick="openAddVisionCard('health','vision')">＋ Vision Card</button>
+      <button class="btn" style="background:rgba(255,255,255,.15);color:#fff" onclick="openAddStatusCard('health')">＋ Status</button>
+    </div>
+  </div>
+
+  <div class="magnet-tabs">
+    <div class="magnet-tab active" id="tab-health-vision" onclick="switchMagnetTab('health','vision',this)">🌟 Long Term Vision</div>
+    <div class="magnet-tab" id="tab-health-status" onclick="switchMagnetTab('health','status',this)">📊 Current Status</div>
+  </div>
+
+  <div id="health-vision-section">
+    <div class="section-label" style="color:var(--health-c)">Long Term Vision Board</div>
+    <div class="vision-board-grid" id="health-vision-grid"></div>
+  </div>
+  <div id="health-status-section" style="display:none">
+    <div class="section-label" style="color:var(--health-c)">Current Status & Metrics</div>
+    <div class="status-grid" id="health-status-grid"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     RELATIONSHIP MAGNET
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="page-relationship" class="page">
+  <div class="magnet-header-band" style="background:linear-gradient(135deg,#d45e58,#E8736C)">
+    <div class="magnet-header-icon">🤝</div>
+    <div>
+      <div class="magnet-header-title">Relationship Magnet</div>
+      <div class="magnet-header-sub">Love · Family · Friendships · Community</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn" style="background:rgba(255,255,255,.25);color:#fff;font-weight:700" onclick="openAddVisionCard('relationship','vision')">＋ Vision Card</button>
+      <button class="btn" style="background:rgba(255,255,255,.15);color:#fff" onclick="openAddStatusCard('relationship')">＋ Status</button>
+    </div>
+  </div>
+
+  <div class="magnet-tabs">
+    <div class="magnet-tab active" id="tab-relationship-vision" onclick="switchMagnetTab('relationship','vision',this)">🌟 Long Term Vision</div>
+    <div class="magnet-tab" id="tab-relationship-status" onclick="switchMagnetTab('relationship','status',this)">📊 Current Status</div>
+  </div>
+
+  <div id="relationship-vision-section">
+    <div class="section-label" style="color:var(--relate-c)">Long Term Vision Board</div>
+    <div class="vision-board-grid" id="relationship-vision-grid"></div>
+  </div>
+  <div id="relationship-status-section" style="display:none">
+    <div class="section-label" style="color:var(--relate-c)">Current Status & Metrics</div>
+    <div class="status-grid" id="relationship-status-grid"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     CAREER MAGNET
+════════════════════════════════════════════════════════════════════════════ -->
+<div id="page-career" class="page">
+  <div class="magnet-header-band" style="background:linear-gradient(135deg,#5a8ead,#7AAEC8)">
+    <div class="magnet-header-icon">🚀</div>
+    <div>
+      <div class="magnet-header-title">Career Magnet</div>
+      <div class="magnet-header-sub">Purpose · Skills · Impact · Growth</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn" style="background:rgba(255,255,255,.25);color:#fff;font-weight:700" onclick="openAddVisionCard('career','vision')">＋ Vision Card</button>
+      <button class="btn" style="background:rgba(255,255,255,.15);color:#fff" onclick="openAddStatusCard('career')">＋ Status</button>
+    </div>
+  </div>
+
+  <div class="magnet-tabs">
+    <div class="magnet-tab active" id="tab-career-vision" onclick="switchMagnetTab('career','vision',this)">🌟 Long Term Vision</div>
+    <div class="magnet-tab" id="tab-career-status" onclick="switchMagnetTab('career','status',this)">📊 Current Status</div>
+  </div>
+
+  <div id="career-vision-section">
+    <div class="section-label" style="color:var(--career-c)">Long Term Vision Board</div>
+    <div class="vision-board-grid" id="career-vision-grid"></div>
+  </div>
+  <div id="career-status-section" style="display:none">
+    <div class="section-label" style="color:var(--career-c)">Current Status & Metrics</div>
+    <div class="status-grid" id="career-status-grid"></div>
+  </div>
+</div>
+
+<!-- ────── Add Vision Card Modal ────── -->
+<div class="modal-overlay" id="visionCardModal">
+  <div class="modal" style="width:460px">
+    <div class="modal-title" id="visionCardModalTitle">✨ Add Vision Card</div>
+    <input type="hidden" id="vcMagnet"><input type="hidden" id="vcSection"><input type="hidden" id="vcEditId">
+
+    <!-- Photo area -->
+    <div style="border:2px dashed var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px;cursor:pointer;position:relative;height:160px;display:flex;align-items:center;justify-content:center;background:var(--surface2)"
+         onclick="document.getElementById('vcPhotoInput').click()" id="vcPhotoArea">
+      <div id="vcPhotoPlaceholder" style="text-align:center;color:var(--muted2)">
+        <div style="font-size:32px;margin-bottom:6px">📸</div>
+        <div style="font-size:12px">Click to upload photo</div>
+      </div>
+      <img id="vcPhotoPreview" style="display:none;width:100%;height:100%;object-fit:cover;position:absolute;inset:0">
+    </div>
+    <input type="file" id="vcPhotoInput" accept="image/*" style="display:none" onchange="vcPreviewPhoto(event)">
+
+    <div class="form-group">
+      <label class="form-label">Card Title *</label>
+      <input class="form-input" type="text" id="vcTitle" placeholder="e.g. Run a Marathon">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea class="form-input" id="vcDesc" rows="3" placeholder="Describe your vision, why it matters to you…" style="resize:vertical"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal('visionCardModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveVisionCard()">Save Card</button>
+    </div>
+  </div>
+</div>
+
+<!-- ────── Add Status Card Modal ────── -->
+<div class="modal-overlay" id="statusCardModal">
+  <div class="modal" style="width:420px">
+    <div class="modal-title" id="statusCardModalTitle">📊 Add Status Card</div>
+    <input type="hidden" id="scMagnet"><input type="hidden" id="scEditId">
+    <div class="form-group">
+      <label class="form-label">Emoji / Icon</label>
+      <input class="form-input" type="text" id="scEmoji" placeholder="e.g. 💪 or 🏃" maxlength="4" style="width:80px;font-size:20px">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Metric Name *</label>
+      <input class="form-input" type="text" id="scName" placeholder="e.g. Body Weight">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:13px">
+      <div>
+        <label class="form-label">Current Value</label>
+        <input class="form-input" type="text" id="scCurrent" placeholder="e.g. 82 kg">
+      </div>
+      <div>
+        <label class="form-label">Target Value</label>
+        <input class="form-input" type="text" id="scTarget" placeholder="e.g. 70 kg">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea class="form-input" id="scNote" rows="2" placeholder="Any context or action plan…" style="resize:vertical"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal('statusCardModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStatusCard()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="page-vision" class="page">
+  <div class="header">
+    <div>
+      <div class="page-title">Money Magnet 💰</div>
       <div class="page-sub" id="vbSub">All-time data · Your discipline rules &amp; goals</div>
     </div>
   </div>
@@ -629,6 +1166,16 @@ tr:hover td{background:var(--surface2)}
   <div class="vb-alloc-card">
     <div class="vb-alloc-title">📊 Investment Allocation vs Target</div>
     <div id="vbAllocRows"></div>
+  </div>
+
+  <!-- Salary Deductions Board -->
+  <div class="vb-ded-wrap">
+    <div class="vb-ded-head" onclick="this.nextElementSibling.classList.toggle('open')">
+      <span>⚙️ Salary Deductions</span>
+      <span style="font-size:11px;color:var(--muted2);flex:1;margin-left:10px" id="vbDedSummary">Auto-added as investments when salary is recorded</span>
+      <span class="ltc-chevron">▾</span>
+    </div>
+    <div class="vb-ded-body" id="vbDedBody"></div>
   </div>
 
   <!-- Vision Goals -->
@@ -752,7 +1299,7 @@ tr:hover td{background:var(--surface2)}
 <!-- ════════════ PORTFOLIO ════════════ -->
 <div id="page-portfolio" class="page">
   <div class="header">
-    <div><div class="page-title">Portfolio 📈</div><div class="page-sub">Corpus tracker — Goal: ₹2 Crore by Dec 2027</div></div>
+    <div><div class="page-title">WealthFlow 📊</div><div class="page-sub">Corpus tracker — Goal: ₹2 Crore by Dec 2027</div></div>
     <div class="header-actions"><button class="btn btn-ghost" onclick="loadPortfolio()">↺ Refresh</button></div>
   </div>
 
@@ -811,6 +1358,7 @@ tr:hover td{background:var(--surface2)}
       <div class="page-sub" id="loansSub">Track loan repayments and progress</div>
     </div>
     <div class="header-actions">
+      <button class="btn btn-ghost" onclick="openPayLoanModal()">💳 Pay Loan</button>
       <button class="btn btn-primary" onclick="openAddLoanModal()">＋ Add Loan</button>
     </div>
   </div>
@@ -931,7 +1479,7 @@ tr:hover td{background:var(--surface2)}
     <div><div class="page-title">NSE Market 📡</div>
     <div class="page-sub">Live prices · 52-week high/low · Monthly investment P&amp;L</div></div>
     <div class="header-actions">
-      <button class="btn btn-ghost btn-sm" onclick="autoAddNSE()">⚡ Auto-add from Portfolio</button>
+      <button class="btn btn-ghost btn-sm" onclick="autoAddNSE()">⚡ Auto-add from WealthFlow</button>
       <button class="btn btn-ghost btn-sm" onclick="openNSEAddModal()">＋ Add Stock</button>
       <button class="btn btn-primary btn-sm" id="syncBtn" onclick="syncNSE()">🔄 Sync Prices</button>
     </div>
@@ -945,7 +1493,7 @@ tr:hover td{background:var(--surface2)}
     </div>
     <div class="table-wrap" id="nseTable">
       <div class="empty"><div class="empty-icon">📡</div>
-        <p>No stocks added. Click <strong>Auto-add from Portfolio</strong> to import your stocks, or <strong>+ Add Stock</strong> to add one manually.</p>
+        <p>No stocks added. Click <strong>Auto-add from WealthFlow</strong> to import your stocks, or <strong>+ Add Stock</strong> to add one manually.</p>
       </div>
     </div>
   </div>
@@ -1233,7 +1781,13 @@ function nextAddMonth() { addMonthValue = _nextMon(addMonthValue); _setMonthLabe
 // Initial load
 initTheme();
 updateMonthNav();
-loadVisionBoard();
+// Start on Universe Home; swap active page + nav
+document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+document.getElementById('page-universe').classList.add('active');
+document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+document.getElementById('nav-universe').classList.add('active');
+currentPage = 'universe';
+loadUniverseHome();
 loadSidebarHealth();
 
 // ─── FORMAT ──────────────────────────────────────────────────────────────────
@@ -1262,16 +1816,244 @@ function showPage(name, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  el.classList.add('active');
+  if (el) el.classList.add('active');
   currentPage = name;
-  if (name === 'vision')       loadVisionBoard();
-  if (name === 'dashboard')    loadDashboard();
-  if (name === 'transactions') loadTransactions();
-  if (name === 'portfolio')    loadPortfolio();
-  if (name === 'loans')        loadLoans();
-  if (name === 'alerts')       loadAlerts();
-  if (name === 'nse')          loadNSE();
-  if (name === 'detail')       loadDetailPage();
+  if (name === 'universe')      loadUniverseHome();
+  if (name === 'health')        loadMagnetPage('health');
+  if (name === 'relationship')  loadMagnetPage('relationship');
+  if (name === 'career')        loadMagnetPage('career');
+  if (name === 'vision')        loadVisionBoard();
+  if (name === 'dashboard')     loadDashboard();
+  if (name === 'transactions')  loadTransactions();
+  if (name === 'portfolio')     loadPortfolio();
+  if (name === 'loans')         loadLoans();
+  if (name === 'alerts')        loadAlerts();
+  if (name === 'nse')           loadNSE();
+  if (name === 'detail')        loadDetailPage();
+}
+
+// ─── UNIVERSE MAGNET ──────────────────────────────────────────────────────────
+const AFFIRMATIONS = [
+  'I attract abundance in health, love, career, and wealth.',
+  'Every day I grow stronger, richer, and more connected.',
+  'My vision is clear. My actions are aligned. My universe responds.',
+  'I am the architect of my life — I build its foundation and choose its contents.',
+  'What I focus on expands. I choose to focus on greatness.',
+  'I am a magnet for miracles, opportunities, and extraordinary people.',
+  'My health is my wealth. My relationships are my treasure. My work is my legacy.',
+];
+
+function loadUniverseHome() {
+  // Update card counts from localStorage
+  ['health','relationship','career'].forEach(key => {
+    const vCards = _umCards(key, 'vision').length;
+    const sCards = _umCards(key, 'status').length;
+    const el = document.getElementById(`um-${key === 'relationship' ? 'relate' : key}-count`);
+    if (el) el.textContent = `${vCards + sCards} card${vCards + sCards !== 1 ? 's' : ''}`;
+  });
+
+  // Summary stats
+  const allVision = ['health','relationship','career'].reduce((s,k) => s + _umCards(k,'vision').length, 0);
+  const allStatus = ['health','relationship','career'].reduce((s,k) => s + _umCards(k,'status').length, 0);
+  document.getElementById('umSummaryGrid').innerHTML = `
+    <div class="um-stat"><div class="um-stat-lbl">Vision Cards</div><div class="um-stat-val" style="color:var(--health-c)">${allVision}</div></div>
+    <div class="um-stat"><div class="um-stat-lbl">Status Metrics</div><div class="um-stat-val" style="color:var(--career-c)">${allStatus}</div></div>
+    <div class="um-stat"><div class="um-stat-lbl">Life Areas</div><div class="um-stat-val" style="color:var(--money-c)">4</div></div>
+    <div class="um-stat"><div class="um-stat-lbl">Total Intentions</div><div class="um-stat-val" style="color:var(--relate-c)">${allVision + allStatus}</div></div>`;
+
+  // Rotate affirmation
+  const idx = Math.floor(Date.now() / 86400000) % AFFIRMATIONS.length;
+  document.getElementById('umAffirmation').textContent = '"' + AFFIRMATIONS[idx] + '"';
+}
+
+function loadMagnetPage(key) {
+  renderVisionCards(key);
+  renderStatusCards(key);
+  // Reset to vision tab
+  switchMagnetTab(key, 'vision', document.getElementById(`tab-${key}-vision`));
+}
+
+function switchMagnetTab(magnet, tab, el) {
+  // Update tab highlight
+  document.getElementById(`tab-${magnet}-vision`).classList.toggle('active', tab === 'vision');
+  document.getElementById(`tab-${magnet}-status`).classList.toggle('active', tab === 'status');
+  document.getElementById(`${magnet}-vision-section`).style.display  = tab === 'vision'  ? '' : 'none';
+  document.getElementById(`${magnet}-status-section`).style.display  = tab === 'status'  ? '' : 'none';
+}
+
+// ── Vision Cards ──────────────────────────────────────────────────────────────
+function _umKey(magnet, section) { return `um_${magnet}_${section}`; }
+function _umCards(magnet, section) {
+  try { return JSON.parse(localStorage.getItem(_umKey(magnet, section)) || '[]'); } catch { return []; }
+}
+function _umSave(magnet, section, cards) {
+  localStorage.setItem(_umKey(magnet, section), JSON.stringify(cards));
+}
+
+let _vcPhotoData = '';
+function vcPreviewPhoto(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    _vcPhotoData = ev.target.result;
+    document.getElementById('vcPhotoPreview').src = _vcPhotoData;
+    document.getElementById('vcPhotoPreview').style.display = 'block';
+    document.getElementById('vcPhotoPlaceholder').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+function openAddVisionCard(magnet, section) {
+  document.getElementById('vcMagnet').value  = magnet;
+  document.getElementById('vcSection').value = section;
+  document.getElementById('vcEditId').value  = '';
+  document.getElementById('vcTitle').value   = '';
+  document.getElementById('vcDesc').value    = '';
+  document.getElementById('vcPhotoPreview').style.display = 'none';
+  document.getElementById('vcPhotoPlaceholder').style.display = '';
+  document.getElementById('visionCardModalTitle').textContent = '✨ Add Vision Card';
+  _vcPhotoData = '';
+  document.getElementById('visionCardModal').classList.add('open');
+}
+
+function saveVisionCard() {
+  const magnet  = document.getElementById('vcMagnet').value;
+  const section = document.getElementById('vcSection').value;
+  const editId  = document.getElementById('vcEditId').value;
+  const title   = document.getElementById('vcTitle').value.trim();
+  if (!title) { toast('Card title is required', 'error'); return; }
+  const cards = _umCards(magnet, section);
+  if (editId) {
+    const i = cards.findIndex(c => c.id === editId);
+    if (i >= 0) { cards[i] = { ...cards[i], title, desc: document.getElementById('vcDesc').value.trim(), photo: _vcPhotoData || cards[i].photo }; }
+  } else {
+    cards.push({ id: Date.now().toString(), title, desc: document.getElementById('vcDesc').value.trim(), photo: _vcPhotoData, created: new Date().toISOString() });
+  }
+  _umSave(magnet, section, cards);
+  closeModal('visionCardModal');
+  renderVisionCards(magnet);
+  if (currentPage === 'universe') loadUniverseHome();
+  toast('Vision card saved!', 'success');
+}
+
+function renderVisionCards(magnet) {
+  const cards = _umCards(magnet, 'vision');
+  const colorVar = `--${magnet === 'relationship' ? 'relate' : magnet}-c`;
+  const grid = document.getElementById(`${magnet}-vision-grid`);
+  if (!grid) return;
+  grid.innerHTML = cards.map(c => `
+    <div class="vision-card">
+      <button class="vision-card-del" onclick="deleteVisionCard('${magnet}','vision','${c.id}')">✕</button>
+      <div class="vision-card-photo" onclick="openEditVisionCard('${magnet}','vision','${c.id}')">
+        ${c.photo ? `<img src="${c.photo}" alt="${c.title}">` : `<div class="vision-card-photo-ph">🌟</div>`}
+        <div class="vision-card-photo-ov"><span>✏️</span><span>Edit card</span></div>
+      </div>
+      <div class="vision-card-body">
+        <div class="vision-card-title">${c.title}</div>
+        ${c.desc ? `<div class="vision-card-desc">${c.desc}</div>` : ''}
+      </div>
+    </div>`).join('') +
+    `<div class="vision-add-btn" onclick="openAddVisionCard('${magnet}','vision')">
+      <div class="vision-add-icon">＋</div>
+      <div>Add Vision Card</div>
+    </div>`;
+}
+
+function openEditVisionCard(magnet, section, id) {
+  const cards = _umCards(magnet, section);
+  const card = cards.find(c => c.id === id); if (!card) return;
+  document.getElementById('vcMagnet').value  = magnet;
+  document.getElementById('vcSection').value = section;
+  document.getElementById('vcEditId').value  = id;
+  document.getElementById('vcTitle').value   = card.title;
+  document.getElementById('vcDesc').value    = card.desc || '';
+  _vcPhotoData = card.photo || '';
+  if (_vcPhotoData) {
+    document.getElementById('vcPhotoPreview').src = _vcPhotoData;
+    document.getElementById('vcPhotoPreview').style.display = 'block';
+    document.getElementById('vcPhotoPlaceholder').style.display = 'none';
+  } else {
+    document.getElementById('vcPhotoPreview').style.display = 'none';
+    document.getElementById('vcPhotoPlaceholder').style.display = '';
+  }
+  document.getElementById('visionCardModalTitle').textContent = '✏️ Edit Vision Card';
+  document.getElementById('visionCardModal').classList.add('open');
+}
+
+function deleteVisionCard(magnet, section, id) {
+  const cards = _umCards(magnet, section).filter(c => c.id !== id);
+  _umSave(magnet, section, cards);
+  renderVisionCards(magnet);
+  if (currentPage === 'universe') loadUniverseHome();
+}
+
+// ── Status Cards ──────────────────────────────────────────────────────────────
+const MAGNET_COLORS = { health:'#4FBBA8', relationship:'#E8736C', career:'#7AAEC8' };
+
+function openAddStatusCard(magnet) {
+  document.getElementById('scMagnet').value  = magnet;
+  document.getElementById('scEditId').value  = '';
+  document.getElementById('scEmoji').value   = '';
+  document.getElementById('scName').value    = '';
+  document.getElementById('scCurrent').value = '';
+  document.getElementById('scTarget').value  = '';
+  document.getElementById('scNote').value    = '';
+  document.getElementById('statusCardModalTitle').textContent = '📊 Add Status Card';
+  document.getElementById('statusCardModal').classList.add('open');
+}
+
+function saveStatusCard() {
+  const magnet = document.getElementById('scMagnet').value;
+  const editId = document.getElementById('scEditId').value;
+  const name   = document.getElementById('scName').value.trim();
+  if (!name) { toast('Metric name is required', 'error'); return; }
+  const entry = {
+    id:      editId || Date.now().toString(),
+    emoji:   document.getElementById('scEmoji').value.trim() || '📌',
+    name,
+    current: document.getElementById('scCurrent').value.trim(),
+    target:  document.getElementById('scTarget').value.trim(),
+    note:    document.getElementById('scNote').value.trim(),
+    created: new Date().toISOString(),
+  };
+  const cards = _umCards(magnet, 'status');
+  if (editId) { const i = cards.findIndex(c => c.id === editId); if (i >= 0) cards[i] = entry; }
+  else cards.push(entry);
+  _umSave(magnet, 'status', cards);
+  closeModal('statusCardModal');
+  renderStatusCards(magnet);
+  if (currentPage === 'universe') loadUniverseHome();
+  toast('Status card saved!', 'success');
+}
+
+function renderStatusCards(magnet) {
+  const cards  = _umCards(magnet, 'status');
+  const color  = MAGNET_COLORS[magnet] || 'var(--invest-p)';
+  const grid   = document.getElementById(`${magnet}-status-grid`);
+  if (!grid) return;
+  grid.innerHTML = cards.map(c => `
+    <div class="status-card">
+      <button class="status-card-del" onclick="deleteStatusCard('${magnet}','${c.id}')">✕</button>
+      <div class="status-card-top">
+        <div class="status-card-emoji" style="background:${color}22">${c.emoji}</div>
+        <div class="status-card-name">${c.name}</div>
+      </div>
+      <div class="status-card-val" style="color:${color}">${c.current || '—'}</div>
+      ${c.target ? `<div class="status-card-target">🎯 Target: ${c.target}</div>` : ''}
+      ${c.note   ? `<div class="status-card-note">${c.note}</div>` : ''}
+    </div>`).join('') +
+    `<div class="vision-add-btn" onclick="openAddStatusCard('${magnet}')">
+      <div class="vision-add-icon">＋</div>
+      <div>Add Status Metric</div>
+    </div>`;
+}
+
+function deleteStatusCard(magnet, id) {
+  const cards = _umCards(magnet, 'status').filter(c => c.id !== id);
+  _umSave(magnet, 'status', cards);
+  renderStatusCards(magnet);
+  if (currentPage === 'universe') loadUniverseHome();
 }
 
 // ─── FINANCIAL HEALTH SCORE ──────────────────────────────────────────────────
@@ -1325,27 +2107,34 @@ function renderHealthScore(summary) {
   tag.style.cssText = tagStyle;
 
   metricsEl.innerHTML = metrics.map(m => {
-    const barColor = m.score >= 70 ? 'var(--income)' : m.score >= 40 ? 'var(--savings)' : 'var(--expense)';
+    const barColor = m.score >= 70 ? 'var(--income-p)' : m.score >= 40 ? 'var(--savings-p)' : 'var(--expense-p)';
+    const txtColor  = m.score >= 70 ? 'var(--income)'  : m.score >= 40 ? 'var(--savings)'  : 'var(--expense)';
     return `<div class="metric-row">
       <div class="metric-name">${m.name}</div>
       <div class="metric-bar-wrap"><div class="metric-bar" style="width:${m.score}%;background:${barColor}"></div></div>
-      <div class="metric-val" style="color:${barColor}">${m.val}</div>
+      <div class="metric-val" style="color:${txtColor}">${m.val}</div>
     </div>`;
   }).join('');
 
-  // Sidebar health
+  // Sidebar health — gradient using pastel colours
   document.getElementById('sidebar-health-score').textContent = overall + '/100';
   document.getElementById('sidebar-health-tag').textContent = label.split(' ')[0];
   const bar = document.getElementById('sidebar-health-bar');
   bar.style.width = overall + '%';
-  bar.style.background = color;
+  bar.style.background = overall >= 75
+    ? `linear-gradient(90deg,var(--income-p),#a8f5a6)`
+    : overall >= 55
+    ? `linear-gradient(90deg,var(--savings-p),#fcfcc0)`
+    : overall >= 35
+    ? `linear-gradient(90deg,var(--invest-p),#c8daf0)`
+    : `linear-gradient(90deg,var(--expense-p),#f7c2cc)`;
 }
 
 // ─── VISION BOARD ─────────────────────────────────────────────────────────────
-const VB_CIRC = 2 * Math.PI * 54; // SVG ring circumference
-
 async function loadVisionBoard() {
+  const VB_CIRC = 2 * Math.PI * 54; // SVG ring circumference (must be inside function, before try block)
   currentPage = 'vision';
+  try {
 
   // All-time: pass empty month so APIs return totals across all dates
   const [cats, trend, portSum] = await Promise.all([
@@ -1393,94 +2182,109 @@ async function loadVisionBoard() {
   const totalExpPct = totalIncome > 0 ? (totalExpense + totalLoanEmi) / totalIncome * 100 : 0;
   const loanPct     = totalIncome > 0 ? totalLoanEmi / totalIncome * 100 : 0;
 
+  // Charity: sum all-time from expense categories
+  const charityTotal = (cats.expense || []).filter(c => c.category.toLowerCase() === 'charity')
+                         .reduce((s, c) => s + c.total, 0);
+  const charityPct   = totalIncome > 0 ? charityTotal / totalIncome * 100 : 0;
+
   // Emergency fund: cumulative net savings vs 6× avg monthly burn
   const cumulativeSavings = trend.reduce((s, m) => s + Math.max(0, m.savings), 0);
   const savingsCoverMos   = avgBurn > 0 ? cumulativeSavings / avgBurn : 0;
 
-  // Each out of 20
-  const srcScore  = Math.min(20, (srcCount / 5) * 20);
-  const invScore  = Math.min(20, (investPct / 30) * 20);
-  const expScore  = totalExpPct <= 60 ? 20 : Math.max(0, 20 * (1 - (totalExpPct - 60) / 40));
-  const loanScore = loanPct <= 15 ? 20 : Math.max(0, 20 * (1 - (loanPct - 15) / 30));
-  const savScore  = Math.min(20, (savingsCoverMos / 6) * 20);
-  const overall   = Math.round(srcScore + invScore + expScore + loanScore + savScore);
+  // Each out of 16.67 (6 cards × 16.67 = 100)
+  const W = 100 / 6;
+  const srcScore     = Math.min(W, (srcCount / 5) * W);
+  const invScore     = Math.min(W, (investPct / 30) * W);
+  const expScore     = totalExpPct <= 60 ? W : Math.max(0, W * (1 - (totalExpPct - 60) / 40));
+  const loanScore    = loanPct <= 15 ? W : Math.max(0, W * (1 - (loanPct - 15) / 30));
+  const savScore     = Math.min(W, (savingsCoverMos / 6) * W);
+  const charityScore = charityPct >= 2 ? W : Math.min(W, (charityPct / 2) * W);
+  const overall      = Math.round(srcScore + invScore + expScore + loanScore + savScore + charityScore);
 
-  // Ring gauge
+  // Ring gauge — use hardcoded ribbon hex so light/dark mode both look right
   const ringFill = document.getElementById('vb-ring-fill');
   let ringColor;
-  if (overall >= 75)      { ringColor = 'var(--income)'; }
-  else if (overall >= 55) { ringColor = 'var(--savings)'; }
-  else if (overall >= 35) { ringColor = 'var(--invest)'; }
-  else                    { ringColor = 'var(--expense)'; }
+  if (overall >= 75)      { ringColor = '#4FBBA8'; }   // teal
+  else if (overall >= 55) { ringColor = '#F2C94C'; }   // amber
+  else if (overall >= 35) { ringColor = '#7AAEC8'; }   // steel
+  else                    { ringColor = '#E8736C'; }   // coral
   ringFill.style.stroke = ringColor;
   ringFill.style.strokeDasharray  = VB_CIRC;
   ringFill.style.strokeDashoffset = VB_CIRC * (1 - overall / 100);
-  document.getElementById('vb-score-num').textContent  = overall;
-  document.getElementById('vb-score-num').style.color  = ringColor;
+  document.getElementById('vb-score-num').textContent = overall;
+  document.getElementById('vb-score-num').style.color = ringColor;
   const gradeEl = document.getElementById('vb-score-grade');
-  if (overall >= 75)      { gradeEl.textContent = 'Excellent 🌟'; gradeEl.style.cssText = `background:var(--income-d);color:var(--income)`; }
-  else if (overall >= 55) { gradeEl.textContent = 'Good 👍';      gradeEl.style.cssText = `background:var(--savings-d);color:var(--savings)`; }
-  else if (overall >= 35) { gradeEl.textContent = 'Fair ⚠️';      gradeEl.style.cssText = `background:var(--invest-d);color:var(--invest)`; }
-  else                    { gradeEl.textContent = 'Needs Work 🚨'; gradeEl.style.cssText = `background:var(--expense-d);color:var(--expense)`; }
+  if (overall >= 75)      { gradeEl.textContent = 'Excellent 🌟'; gradeEl.style.cssText = `background:rgba(79,187,168,.15);color:#4FBBA8`; }
+  else if (overall >= 55) { gradeEl.textContent = 'Good 👍';      gradeEl.style.cssText = `background:rgba(242,201,76,.18);color:#c49a00`; }
+  else if (overall >= 35) { gradeEl.textContent = 'Fair ⚠️';      gradeEl.style.cssText = `background:rgba(122,174,200,.16);color:#7AAEC8`; }
+  else                    { gradeEl.textContent = 'Needs Work 🚨'; gradeEl.style.cssText = `background:rgba(232,115,108,.14);color:#E8736C`; }
 
-  // Discipline cards
+  // Discipline cards — Row 1: Income Sources, Total Expense, Emergency Fund
+  //                   Row 2: Investment, Loan EMI, Charity
   const dc = [
     { lbl:'Income Sources', icon:'💼', bg:'var(--income-d)',
       actual:`${srcCount}`, unit:' / 5', target:'Min 5 sources',
       pct: Math.min(100,(srcCount/5)*100), score:srcScore,
       met: srcCount >= 5, status: srcCount >= 5 ? '✓ Target met' : `Need ${5-srcCount} more` },
-    { lbl:'Investment', icon:'📈', bg:'var(--invest-d)',
-      actual:`${investPct.toFixed(0)}`, unit:'%', target:'Min 30% of income',
-      pct: Math.min(100,(investPct/30)*100), score:invScore,
-      met: investPct >= 30, status: investPct >= 30 ? '✓ Target met' : `${(30-investPct).toFixed(0)}% short` },
     { lbl:'Total Expense', icon:'💸', bg:'var(--expense-d)',
       actual:`${totalExpPct.toFixed(0)}`, unit:'%', target:'Max 60% (incl EMI)',
       pct: Math.min(100,(totalExpPct/60)*100), score:expScore,
-      met: totalExpPct <= 60, status: totalExpPct <= 60 ? '✓ Within limit' : `${(totalExpPct-60).toFixed(0)}% over` },
-    { lbl:'Loan EMI', icon:'🏦', bg:'rgba(168,85,247,.1)',
-      actual:`${loanPct.toFixed(0)}`, unit:'%', target:'Max 15% of income',
-      pct: Math.min(100,(loanPct/15)*100), score:loanScore,
-      met: loanPct <= 15, status: loanPct <= 15 ? '✓ Within limit' : `${(loanPct-15).toFixed(0)}% over` },
+      met: totalExpPct <= 60, status: totalExpPct <= 60 ? '✓ Within limit' : `${(totalExpPct-60).toFixed(0)}% over`,
+      inverse: true },
     { lbl:'Emergency Fund', icon:'🛡️', bg:'var(--savings-d)',
       actual:`${savingsCoverMos.toFixed(1)}`, unit:' mo', target:'Target 6 months',
       pct: Math.min(100,(savingsCoverMos/6)*100), score:savScore,
       met: savingsCoverMos >= 6, status: savingsCoverMos >= 6 ? '✓ Target met' : `${(6-savingsCoverMos).toFixed(1)}mo short` },
+    { lbl:'Investment', icon:'📈', bg:'var(--invest-d)',
+      actual:`${investPct.toFixed(0)}`, unit:'%', target:'Min 30% of income',
+      pct: Math.min(100,(investPct/30)*100), score:invScore,
+      met: investPct >= 30, status: investPct >= 30 ? '✓ Target met' : `${(30-investPct).toFixed(0)}% short` },
+    { lbl:'Loan EMI', icon:'🏦', bg:'rgba(168,85,247,.1)',
+      actual:`${loanPct.toFixed(0)}`, unit:'%', target:'Max 15% of income',
+      pct: Math.min(100,(loanPct/15)*100), score:loanScore,
+      met: loanPct <= 15, status: loanPct <= 15 ? '✓ Within limit' : `${(loanPct-15).toFixed(0)}% over`,
+      inverse: true },
+    { lbl:'Charity', icon:'🤝', bg:'rgba(236,72,153,.1)',
+      actual:`${charityPct.toFixed(1)}`, unit:'%', target:'Min 2% of income',
+      pct: Math.min(100,(charityPct/2)*100), score:charityScore,
+      met: charityPct >= 2, status: charityPct >= 2 ? '✓ Target met' : `${(2-charityPct).toFixed(1)}% short`,
+      sub: fmt(charityTotal) + ' total' },
   ];
   document.getElementById('vbDisciplineGrid').innerHTML = dc.map(d => {
-    const barColor = d.met ? 'var(--income)' : (d.pct > 60 ? 'var(--savings)' : 'var(--expense)');
-    // For expense/loan cards, invert the bar color logic (lower is better)
-    const isInverse = d.lbl === 'Total Expense' || d.lbl === 'Loan EMI';
-    const fill = isInverse ? (d.met ? 'var(--income)' : 'var(--expense)') : barColor;
+    const fill = d.inverse ? (d.met ? '#4FBBA8' : '#E8736C') :
+                 (d.met ? '#4FBBA8' : (d.pct > 60 ? '#F2C94C' : '#E8736C'));
+    const statusColor = d.met ? '#4FBBA8' : '#E8736C';
     return `
     <div class="vb-dc ${d.met ? 'met' : 'missed'}">
       <div class="vb-dc-head">
         <div class="vb-dc-icon" style="background:${d.bg}">${d.icon}</div>
         <div class="vb-dc-lbl">${d.lbl}</div>
       </div>
-      <div class="vb-dc-actual" style="color:${d.met ? 'var(--income)' : 'var(--expense)'}">${d.actual}<span style="font-size:13px;font-weight:600">${d.unit}</span></div>
-      <div class="vb-dc-target">${d.target}</div>
+      <div class="vb-dc-actual" style="color:${statusColor}">${d.actual}<span style="font-size:13px;font-weight:600">${d.unit}</span></div>
+      <div class="vb-dc-target">${d.target}${d.sub ? ` · <span style="color:var(--muted2)">${d.sub}</span>` : ''}</div>
       <div class="vb-dc-bar"><div class="vb-dc-fill" style="width:${d.pct}%;background:${fill}"></div></div>
-      <div class="vb-dc-status" style="color:${d.met ? 'var(--income)' : 'var(--expense)'}">${d.status}</div>
+      <div class="vb-dc-status" style="color:${statusColor}">${d.status}</div>
     </div>`;
   }).join('');
 
   // ── Investment Allocation ──────────────────────────────────────────────────
+  // Portfolio API returns by_type with asset_type keys: Equity, Gold, Fixed Return, Retirement, Real State
   const tm = {};
-  (portSum.by_type || []).forEach(t => tm[t.asset_type] = t);
+  (portSum.by_type || []).forEach(t => { tm[t.asset_type] = t; });
   const getVal = (...types) => types.reduce((s, t) => s + ((tm[t] || {}).current_val || 0), 0);
   const totalPort = portSum.total_value || 1;
 
   const allocRows = [
     { name:'Equity', sub:'Stocks + Mutual Fund',  color:'#8b7dff', target:70,
-      actual: getVal('Stocks','Mutual Fund') / totalPort * 100 },
+      actual: getVal('Equity') / totalPort * 100 },
     { name:'Gold',   sub:'Physical · ETF · SGB',  color:'#fbbf24', target:10,
       actual: getVal('Gold') / totalPort * 100 },
     { name:'Fixed Return', sub:'EPF · PPF · Sukanya', color:'#06c4a8', target:20,
       actual: getVal('Fixed Return') / totalPort * 100 },
     { name:'Retirement',   sub:'NPS · Pension',        color:'#f59e0b', target:null,
-      actual: getVal('Retirement','NPS') / totalPort * 100, targetLabel:'14% of salary' },
+      actual: getVal('Retirement') / totalPort * 100, targetLabel:'14% of salary' },
     { name:'Real Estate',  sub:'Land · Flat',           color:'#ec4899', target:0,
-      actual: getVal('Real Estate') / totalPort * 100, targetLabel:'No target yet' },
+      actual: getVal('Real State') / totalPort * 100, targetLabel:'No target yet' },
   ];
   document.getElementById('vbAllocRows').innerHTML = allocRows.map(r => {
     const tgt = r.target != null ? r.target : 14;
@@ -1504,8 +2308,8 @@ async function loadVisionBoard() {
   }).join('');
 
   // ── Vision Goals ───────────────────────────────────────────────────────────
-  const equityVal  = getVal('Stocks','Mutual Fund');
-  const retireVal  = getVal('Retirement','NPS');
+  const equityVal  = getVal('Equity');
+  const retireVal  = getVal('Retirement');
   const fixedVal   = getVal('Fixed Return');
   const goldVal    = getVal('Gold');
 
@@ -1570,6 +2374,101 @@ async function loadVisionBoard() {
     </div>`;
   }).join('');
 
+  // ── Investment Discipline Score ───────────────────────────────────────────
+  // Targets: Equity 70%, Gold 15%, Fixed Return 15% (NPS excluded — salary deduction)
+  const equityAmt   = getVal('Equity');
+  const goldAmt     = getVal('Gold');
+  const fixedAmt    = getVal('Fixed Return');
+  const invBase     = equityAmt + goldAmt + fixedAmt || 1;  // exclude NPS/Retirement from denominator
+  const eqPct  = equityAmt / invBase * 100;
+  const gdPct  = goldAmt   / invBase * 100;
+  const frPct  = fixedAmt  / invBase * 100;
+
+  // Each component: 33 pts. Score = closeness to target (symmetric, max penalty = 100% deviation)
+  function allocScore(actual, target, weight) {
+    const dev = Math.abs(actual - target);
+    return weight * Math.max(0, 1 - dev / Math.max(target, 1));
+  }
+  const invDisciplineScore = Math.round(
+    allocScore(eqPct, 70, 33) +
+    allocScore(gdPct, 15, 33) +
+    allocScore(frPct, 15, 34)
+  );
+
+  const invRingFill = document.getElementById('vb-inv-ring-fill');
+  let invRingColor;
+  if (invDisciplineScore >= 75)      invRingColor = '#4FBBA8';   // teal
+  else if (invDisciplineScore >= 55) invRingColor = '#F2C94C';   // amber
+  else if (invDisciplineScore >= 35) invRingColor = '#7AAEC8';   // steel
+  else                               invRingColor = '#E8736C';   // coral
+  invRingFill.style.stroke = invRingColor;
+  invRingFill.style.strokeDasharray  = VB_CIRC;
+  invRingFill.style.strokeDashoffset = VB_CIRC * (1 - invDisciplineScore / 100);
+  document.getElementById('vb-inv-score-num').textContent = invDisciplineScore;
+  document.getElementById('vb-inv-score-num').style.color = invRingColor;
+  const invGradeEl = document.getElementById('vb-inv-score-grade');
+  if (invDisciplineScore >= 75)      { invGradeEl.textContent = 'Excellent 🌟'; invGradeEl.style.cssText = `background:rgba(79,187,168,.15);color:#4FBBA8`; }
+  else if (invDisciplineScore >= 55) { invGradeEl.textContent = 'On Track 👍';  invGradeEl.style.cssText = `background:rgba(242,201,76,.18);color:#c49a00`; }
+  else if (invDisciplineScore >= 35) { invGradeEl.textContent = 'Rebalance ⚠️'; invGradeEl.style.cssText = `background:rgba(122,174,200,.16);color:#7AAEC8`; }
+  else                               { invGradeEl.textContent = 'Off Target 🚨'; invGradeEl.style.cssText = `background:rgba(232,115,108,.14);color:#E8736C`; }
+
+  // Mini allocation bars inside the investment ring card
+  const invAllocs = [
+    { name:'Equity',       actual:eqPct, target:70, color:'#8b7dff' },
+    { name:'Gold',         actual:gdPct, target:15, color:'#fbbf24' },
+    { name:'Fixed Return', actual:frPct, target:15, color:'#06c4a8' },
+  ];
+  document.getElementById('vbInvBreakdown').innerHTML = invAllocs.map(a => {
+    const ok = Math.abs(a.actual - a.target) <= a.target * 0.15;
+    const fillColor = ok ? a.color : (a.actual < a.target ? 'var(--expense)' : 'var(--savings)');
+    return `
+    <div class="vb-inv-mini">
+      <span>${a.name}</span>
+      <span style="color:${fillColor}">${a.actual.toFixed(0)}% <span style="color:var(--muted2);font-weight:400">/ ${a.target}%</span></span>
+    </div>
+    <div class="vb-inv-mini-bar">
+      <div class="vb-inv-mini-fill" style="width:${Math.min(100,a.actual)}%;background:${fillColor}"></div>
+    </div>`;
+  }).join('');
+
+  // ── Salary Deductions Board ────────────────────────────────────────────────
+  const ded = JSON.parse(localStorage.getItem('mt_salary_deductions') || '{"epf":0,"nps":0,"others":[]}');
+  const othersHtml = (ded.others || []).map((o, i) => `
+    <div class="vb-ded-extra-row" id="ded-extra-${i}">
+      <input class="vb-ded-extra-name" type="text" placeholder="Deduction name" value="${o.name}" id="ded-ename-${i}">
+      <input class="vb-ded-extra-amt"  type="number" min="0" placeholder="0" value="${o.amount}" id="ded-eamt-${i}">
+      <button class="btn btn-ghost btn-sm" onclick="vbRemoveDedExtra(${i})" title="Remove">✕</button>
+    </div>`).join('');
+  document.getElementById('vbDedBody').innerHTML = `
+    <div class="vb-ded-grid">
+      <div class="vb-ded-item">
+        <div class="vb-ded-lbl">EPF (Employee PF)</div>
+        <div class="vb-ded-input-wrap">
+          <span class="vb-ded-prefix">₹</span>
+          <input class="vb-ded-input" type="number" min="0" id="dedEpf" placeholder="0" value="${ded.epf || 0}">
+        </div>
+        <div style="font-size:10px;color:var(--muted2);margin-top:5px">→ Fixed Return / EPF Contribution</div>
+      </div>
+      <div class="vb-ded-item">
+        <div class="vb-ded-lbl">NPS (National Pension)</div>
+        <div class="vb-ded-input-wrap">
+          <span class="vb-ded-prefix">₹</span>
+          <input class="vb-ded-input" type="number" min="0" id="dedNps" placeholder="0" value="${ded.nps || 0}">
+        </div>
+        <div style="font-size:10px;color:var(--muted2);margin-top:5px">→ Retirement / NPS Contribution</div>
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Other Deductions</div>
+    <div id="vbDedExtras">${othersHtml}</div>
+    <button class="btn btn-ghost btn-sm" onclick="vbAddDedExtra()" style="margin-bottom:14px">＋ Add deduction</button>
+    <br>
+    <button class="btn btn-primary" onclick="saveSalaryDed()">Save Deductions</button>
+    <div class="vb-ded-save-note">💡 These amounts are auto-posted as investment/expense transactions whenever you record a Salary income entry.</div>`;
+
+  const totalDed = (ded.epf || 0) + (ded.nps || 0) + (ded.others || []).reduce((s, o) => s + (o.amount || 0), 0);
+  document.getElementById('vbDedSummary').textContent =
+    totalDed > 0 ? `EPF + NPS + others = ${fmt(totalDed)}/salary` : 'Auto-added as investments when salary is recorded';
+
   // ── Data sources reference panel ──────────────────────────────────────────
   document.getElementById('vbDataSources').innerHTML = `
     <table class="vb-ds-table">
@@ -1627,6 +2526,14 @@ async function loadVisionBoard() {
         </tr>
       </tbody>
     </table>`;
+
+  } catch(err) {
+    console.error('loadVisionBoard error:', err);
+    const num = document.getElementById('vb-score-num');
+    if (num) { num.textContent = '!'; num.style.color = '#E8736C'; }
+    const grid = document.getElementById('vbDisciplineGrid');
+    if (grid) grid.innerHTML = `<div style="grid-column:1/-1;padding:16px;color:#E8736C;font-size:12px">⚠️ Could not load data — check the server is running: ${err.message}</div>`;
+  }
 }
 
 // Photo upload helpers for vision goals
@@ -1645,6 +2552,51 @@ function vbPhotoUploaded(e) {
   };
   reader.readAsDataURL(file);
   e.target.value = ''; // reset so same file can be re-selected
+}
+
+function vbAddDedExtra() {
+  const container = document.getElementById('vbDedExtras');
+  const i = container.children.length;
+  const row = document.createElement('div');
+  row.className = 'vb-ded-extra-row';
+  row.id = `ded-extra-${i}`;
+  row.innerHTML = `
+    <input class="vb-ded-extra-name" type="text" placeholder="Deduction name" id="ded-ename-${i}">
+    <input class="vb-ded-extra-amt"  type="number" min="0" placeholder="0" id="ded-eamt-${i}">
+    <button class="btn btn-ghost btn-sm" onclick="vbRemoveDedExtra(${i})" title="Remove">✕</button>`;
+  container.appendChild(row);
+}
+
+function vbRemoveDedExtra(i) {
+  const el = document.getElementById(`ded-extra-${i}`);
+  if (el) el.remove();
+}
+
+function saveSalaryDed() {
+  const epf = parseFloat(document.getElementById('dedEpf')?.value || 0) || 0;
+  const nps = parseFloat(document.getElementById('dedNps')?.value || 0) || 0;
+  const extras = document.querySelectorAll('#vbDedExtras .vb-ded-extra-row');
+  const others = [];
+  extras.forEach(row => {
+    const name = row.querySelector('.vb-ded-extra-name')?.value.trim();
+    const amt  = parseFloat(row.querySelector('.vb-ded-extra-amt')?.value || 0) || 0;
+    if (name && amt > 0) others.push({ name, amount: amt });
+  });
+  localStorage.setItem('mt_salary_deductions', JSON.stringify({ epf, nps, others }));
+  const total = epf + nps + others.reduce((s, o) => s + o.amount, 0);
+  toast(`Deductions saved! ${fmt(total)} will auto-post per salary entry`, 'success');
+  document.getElementById('vbDedSummary').textContent =
+    total > 0 ? `EPF + NPS + others = ${fmt(total)}/salary` : 'Auto-added as investments when salary is recorded';
+}
+
+function openPayLoanModal() {
+  addMonthValue = txMonthValue || new Date().toISOString().slice(0, 7);
+  _setMonthLabel('addMonthLabel', addMonthValue);
+  addTabType = 'loan';
+  document.querySelectorAll('.add-tab').forEach(b => b.classList.remove('active'));
+  document.querySelector('.add-tab.tab-l').classList.add('active');
+  renderAddBody('loan', true);  // prePopulate=true pre-fills expected EMI
+  document.getElementById('addModal').classList.add('open');
 }
 
 async function loadSidebarHealth() {
@@ -2102,11 +3054,15 @@ async function loadLoans() {
   const byType = {};
   loans.forEach(l => { if (!byType[l.loan_type]) byType[l.loan_type] = []; byType[l.loan_type].push(l); });
 
-  // Sort groups: types with any active loan first, all-closed groups last
+  // Sort groups: all-closed groups first, then active groups sorted by total balance ascending (less remaining = sooner)
   const sortedEntries = Object.entries(byType).sort(([, a], [, b]) => {
-    const aHasActive = a.some(l => l.status === 'active') ? 0 : 1;
-    const bHasActive = b.some(l => l.status === 'active') ? 0 : 1;
-    return aHasActive - bHasActive;
+    const aAllClosed = a.every(l => l.status === 'closed');
+    const bAllClosed = b.every(l => l.status === 'closed');
+    if (aAllClosed !== bAllClosed) return aAllClosed ? -1 : 1;  // closed groups first
+    // Both same status — sort by total remaining balance ascending
+    const aBalance = a.reduce((s, l) => s + (l.balance || 0), 0);
+    const bBalance = b.reduce((s, l) => s + (l.balance || 0), 0);
+    return aBalance - bBalance;
   });
 
   document.getElementById('loanTypeGrid').innerHTML = sortedEntries.map(([ltype, llist]) => {
@@ -2114,8 +3070,9 @@ async function loadLoans() {
     const typeClosed = llist.filter(l => l.status === 'closed');
     const allClosed  = typeActive.length === 0;
 
-    // Within each group: active loans first, closed loans last
-    const sorted = [...typeActive, ...typeClosed];
+    // Within each group: closed loans first, then active sorted by balance ascending (least remaining first)
+    const sortedActive = typeActive.slice().sort((a, b) => a.balance - b.balance);
+    const sorted = [...typeClosed, ...sortedActive];
 
     const loanRows = sorted.map(loan => {
       const isActive = loan.status === 'active';
@@ -2170,7 +3127,7 @@ async function loadLoans() {
          <div class="ltc-hs-item"><div class="ltc-hs-lbl">EMI / mo</div><div class="ltc-hs-val" style="color:var(--expense)">${fmt(grpEMI)}</div></div>`;
 
     return `
-      <div class="ltc${allClosed ? ' collapsed' : ''}">
+      <div class="ltc collapsed">
         <div class="ltc-head" onclick="toggleLoanCard(this)">
           <div class="ci ci-e" style="flex-shrink:0">${ICON.loan}</div>
           <div class="ltc-type-name">${ltype}</div>
@@ -2388,7 +3345,7 @@ function setAddTab(type, btn) {
   renderAddBody(type);
 }
 
-async function renderAddBody(type) {
+async function renderAddBody(type, prePopulate = false) {
   // Loan tab: fetch active loans from loan_master
   if (type === 'loan') {
     document.getElementById('addTxBody').innerHTML =
@@ -2404,21 +3361,24 @@ async function renderAddBody(type) {
         </div>`;
       return;
     }
-    const rows = activeLoans.map(loan => `
+    const rows = activeLoans.map(loan => {
+      const defaultAmt = prePopulate ? Math.round(loan.expected_emi || 0) : 0;
+      return `
       <div class="cat-row">
         <div style="flex:1;min-width:0">
           <div class="cat-row-name">${loan.loan_name}</div>
-          <div style="font-size:10px;color:var(--muted2)">${loan.loan_type} · Balance ${fmt(loan.balance)}</div>
+          <div style="font-size:10px;color:var(--muted2)">${loan.loan_type} · Balance ${fmt(loan.balance)}${prePopulate && loan.expected_emi ? ' · EMI ~' + fmt(loan.expected_emi) : ''}</div>
         </div>
         <div class="cat-amt-wrap">
           <span class="cat-amt-prefix">₹</span>
-          <input class="cat-amt-input" type="number" min="0" step="any" value="0"
+          <input class="cat-amt-input" type="number" min="0" step="any" value="${defaultAmt}"
             id="amt_loan_${encodeURIComponent(loan.loan_name)}"
             oninput="validateAmt(this)"
             onfocus="if(+this.value===0)this.select()"
             onblur="if(this.value===''||isNaN(+this.value))this.value='0'">
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
     document.getElementById('addTxBody').innerHTML = `<div class="cat-rows">${rows}</div>`;
     return;
   }
@@ -2426,18 +3386,35 @@ async function renderAddBody(type) {
   // All other tabs
   const cats = _allCats(type);
   const key = encodeURIComponent;
-  const rows = cats.map(cat => `
+
+  // For investment tab: pre-fill EPF/NPS from saved salary deductions
+  let salDed = {};
+  if (type === 'investment') {
+    try { salDed = JSON.parse(localStorage.getItem('mt_salary_deductions') || '{}'); } catch(e) {}
+  }
+  const _dedDefault = (cat) => {
+    if (type !== 'investment') return 0;
+    const cl = cat.toLowerCase();
+    if (cl.includes('epf')) return salDed.epf || 0;
+    if (cl.includes('nps')) return salDed.nps || 0;
+    return 0;
+  };
+
+  const rows = cats.map(cat => {
+    const defVal = _dedDefault(cat);
+    return `
     <div class="cat-row">
       <div class="cat-row-name">${cat}</div>
       <div class="cat-amt-wrap">
         <span class="cat-amt-prefix">₹</span>
-        <input class="cat-amt-input" type="number" min="0" step="any" value="0"
+        <input class="cat-amt-input" type="number" min="0" step="any" value="${defVal}"
           id="amt_${type}_${key(cat)}"
           oninput="validateAmt(this)"
           onfocus="if(+this.value===0)this.select()"
           onblur="if(this.value===''||isNaN(+this.value))this.value='0'">
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   document.getElementById('addTxBody').innerHTML = `
     <div class="cat-rows">
@@ -2519,6 +3496,39 @@ async function submitTransaction() {
       note: 'Manual Entry',
     }),
   })));
+
+  // ── Auto-post salary deductions when a Salary income entry is saved ────────
+  if (type === 'income') {
+    const salaryEntry = entries.find(e => e.cat.toLowerCase().includes('salary'));
+    if (salaryEntry) {
+      const ded = JSON.parse(localStorage.getItem('mt_salary_deductions') || '{"epf":0,"nps":0,"others":[]}');
+      const dedPosts = [];
+      if ((ded.epf || 0) > 0) dedPosts.push(fetch('/api/transactions', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ type:'investment', category:'Fixed Return', sub_category:'EPF Contribution', amount: ded.epf, date, note: 'Auto: Salary Deduction' }),
+      }));
+      if ((ded.nps || 0) > 0) dedPosts.push(fetch('/api/transactions', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ type:'investment', category:'Retirement', sub_category:'NPS Contribution', amount: ded.nps, date, note: 'Auto: Salary Deduction' }),
+      }));
+      (ded.others || []).forEach(o => {
+        if (o.amount > 0) dedPosts.push(fetch('/api/transactions', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ type:'expense', category:'Salary Deduction', sub_category: o.name, amount: o.amount, date, note: 'Auto: Salary Deduction' }),
+        }));
+      });
+      if (dedPosts.length) {
+        await Promise.all(dedPosts);
+        const total = (ded.epf || 0) + (ded.nps || 0) + (ded.others || []).reduce((s, o) => s + (o.amount || 0), 0);
+        toast(`${entries.length} transaction${entries.length > 1 ? 's' : ''} saved + ${dedPosts.length} deduction${dedPosts.length > 1 ? 's' : ''} auto-posted (${fmt(total)})!`, 'success');
+        closeModal('addModal');
+        if (currentPage === 'dashboard')    loadDashboard();
+        if (currentPage === 'transactions') loadTransactions();
+        if (currentPage === 'loans')        loadLoans();
+        return;
+      }
+    }
+  }
 
   closeModal('addModal');
   toast(`${entries.length} transaction${entries.length > 1 ? 's' : ''} saved!`, 'success');
@@ -2791,7 +3801,7 @@ async function submitUpload() {
     if (data.error) { toast('Error: ' + data.error, 'error'); return; }
     const labels = {
       income: 'Income rows', expenses: 'Expense rows', loans: 'Loan entries',
-      investments: 'Investment rows', portfolio: 'Portfolio assets',
+      investments: 'Investment rows', portfolio: 'WealthFlow assets',
       invest_transactions: 'Investment transactions',
     };
     let html = '';
@@ -2828,7 +3838,7 @@ function renderNSETable(data) {
   const wrap = document.getElementById('nseTable');
   if (!data.length) {
     wrap.innerHTML = `<div class="empty"><div class="empty-icon">📡</div>
-      <p>No stocks added. Click <strong>Auto-add from Portfolio</strong> or <strong>+ Add Stock</strong>.</p></div>`;
+      <p>No stocks added. Click <strong>Auto-add from WealthFlow</strong> or <strong>+ Add Stock</strong>.</p></div>`;
     return;
   }
   const latest = data.reduce((mx, r) => (r.updated_at > mx ? r.updated_at : mx), '');

@@ -179,12 +179,71 @@ def api_transactions():
     rows = c.execute(q, p).fetchall(); conn.close()
     return jsonify([dict(r) for r in rows])
 
+def _tx_to_portfolio_asset(category, sub_category):
+    """Map a transaction category/sub_category to portfolio (asset, asset_type)."""
+    cat = (category or '').strip()
+    sub = (sub_category or '').strip()
+    mapping = {
+        ('Stocks',        ''               ): ('Stocks',             'Equity'),
+        ('Stocks',        'Direct Equity'  ): ('Stocks',             'Equity'),
+        ('Mutual Fund',   'MF SIP'         ): ('Mutual Fund',        'Equity'),
+        ('Mutual Fund',   ''               ): ('Mutual Fund',        'Equity'),
+        ('Gold',          'Gold Mutual Fund'): ('Gold MF',           'Gold'),
+        ('Gold',          'Gold ETF'       ): ('Gold ETF',           'Gold'),
+        ('Gold',          'SGB'            ): ('SGB',                'Gold'),
+        ('Gold',          ''               ): ('Gold',               'Gold'),
+        ('Fixed Return',  'EPF Contribution'): ('EPF/PPF',           'Fixed Return'),
+        ('Fixed Return',  'Sukanya Samriddhi'): ('Sukanya Samriddhi','Fixed Return'),
+        ('Fixed Return',  'PPF'            ): ('EPF/PPF',            'Fixed Return'),
+        ('Fixed Return',  ''               ): ('EPF/PPF',            'Fixed Return'),
+        ('Sukanya Samriddhi', ''           ): ('Sukanya Samriddhi',  'Fixed Return'),
+        ('EPF',           ''               ): ('EPF/PPF',            'Fixed Return'),
+        ('Retirement',    'NPS Contribution'): ('NPS',               'Retirement'),
+        ('Retirement',    ''               ): ('NPS',                'Retirement'),
+        ('NPS',           ''               ): ('NPS',                'Retirement'),
+        ('Real Estate',   ''               ): ('Flat',               'Real State'),
+    }
+    # Exact match first
+    result = mapping.get((cat, sub))
+    if result:
+        return result
+    # Category-only fallback
+    result = mapping.get((cat, ''))
+    if result:
+        return result
+    return None
+
 @app.route('/api/transactions', methods=['POST'])
 def add_transaction():
     d = request.json; conn = get_db()
     conn.execute("INSERT INTO transactions (type,category,sub_category,amount,date,note) VALUES (?,?,?,?,?,?)",
                  (d['type'], d['category'], d.get('sub_category',''), float(d['amount']), d['date'], d.get('note','')))
-    conn.commit(); nid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]; conn.close()
+    conn.commit(); nid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+    # Auto-update portfolio when an investment transaction is posted
+    if d['type'] == 'investment':
+        portfolio_map = _tx_to_portfolio_asset(d.get('category',''), d.get('sub_category',''))
+        if portfolio_map:
+            asset, asset_type = portfolio_map
+            amt = float(d['amount'])
+            existing = conn.execute("SELECT id FROM portfolio WHERE asset=?", (asset,)).fetchone()
+            if existing:
+                conn.execute("""UPDATE portfolio
+                                SET total_invested = total_invested + ?,
+                                    current_value  = current_value  + ?,
+                                    total_return   = current_value + ? - total_invested,
+                                    return_pct     = CASE WHEN (total_invested + ?) > 0
+                                                     THEN (current_value + ? - (total_invested + ?)) / (total_invested + ?) * 100
+                                                     ELSE 0 END,
+                                    updated_at     = datetime('now')
+                                WHERE asset=?""",
+                             (amt, amt, amt, amt, amt, amt, amt, asset))
+            else:
+                conn.execute("""INSERT INTO portfolio (asset,asset_type,total_invested,current_value,total_return,return_pct)
+                                VALUES (?,?,?,?,0,0)""", (asset, asset_type, amt, amt))
+            conn.commit()
+
+    conn.close()
     return jsonify({'success': True, 'id': nid})
 
 @app.route('/api/transactions/<int:tid>', methods=['DELETE'])
