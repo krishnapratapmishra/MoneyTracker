@@ -92,6 +92,26 @@ def init_schema():
             updated_at TEXT DEFAULT (datetime('now')),
             UNIQUE(month, symbol)
         );
+        CREATE TABLE IF NOT EXISTS magnet_status (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            magnet TEXT NOT NULL,
+            metric_name TEXT NOT NULL,
+            emoji TEXT DEFAULT '📌',
+            current_value TEXT,
+            target_value TEXT,
+            note TEXT,
+            recorded_date TEXT DEFAULT (date('now')),
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS um_vision_cards (
+            id TEXT PRIMARY KEY,
+            magnet TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT,
+            photo_data TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        );
     """)
     conn.commit(); conn.close()
 
@@ -378,6 +398,104 @@ def api_loan_master_delete(lid):
 def api_loan_master_close(lid):
     conn = get_db()
     conn.execute("UPDATE loan_master SET status='closed' WHERE id=?", (lid,))
+    conn.commit(); conn.close()
+    return jsonify({'success': True})
+
+# ── Universe Magnet: Status entries (DB-backed, date-tracked for trend charts) ──
+
+@app.route('/api/magnet_status/<magnet>', methods=['GET'])
+def get_magnet_status(magnet):
+    conn = get_db(); c = conn.cursor()
+    # Latest entry per metric_name for display
+    latest = c.execute("""
+        SELECT ms.* FROM magnet_status ms
+        INNER JOIN (
+            SELECT metric_name, MAX(recorded_date) as max_date
+            FROM magnet_status WHERE magnet=? GROUP BY metric_name
+        ) mx ON ms.metric_name=mx.metric_name AND ms.recorded_date=mx.max_date
+        WHERE ms.magnet=? ORDER BY ms.metric_name
+    """, (magnet, magnet)).fetchall()
+    # History for all metrics (for future trend charts)
+    history = c.execute("""
+        SELECT * FROM magnet_status WHERE magnet=?
+        ORDER BY metric_name, recorded_date
+    """, (magnet,)).fetchall()
+    conn.close()
+    return jsonify({
+        'latest':  [dict(r) for r in latest],
+        'history': [dict(r) for r in history],
+    })
+
+@app.route('/api/magnet_status', methods=['POST'])
+def save_magnet_status():
+    d = request.json
+    magnet      = d.get('magnet','').strip()
+    metric_name = d.get('metric_name','').strip()
+    if not magnet or not metric_name:
+        return jsonify({'error': 'magnet and metric_name required'}), 400
+    conn = get_db()
+    conn.execute("""
+        INSERT INTO magnet_status (magnet, metric_name, emoji, current_value, target_value, note, recorded_date)
+        VALUES (?,?,?,?,?,?,?)
+    """, (
+        magnet, metric_name,
+        d.get('emoji','📌'),
+        d.get('current_value',''),
+        d.get('target_value',''),
+        d.get('note',''),
+        d.get('recorded_date', datetime.now().strftime('%Y-%m-%d')),
+    ))
+    conn.commit()
+    new_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    conn.close()
+    return jsonify({'success': True, 'id': new_id})
+
+@app.route('/api/magnet_status/<int:sid>', methods=['DELETE'])
+def delete_magnet_status(sid):
+    conn = get_db()
+    conn.execute("DELETE FROM magnet_status WHERE id=?", (sid,))
+    conn.commit(); conn.close()
+    return jsonify({'success': True})
+
+# ── Universe Magnet: Vision cards (DB-backed) ────────────────────────────────
+
+@app.route('/api/um_vision/<magnet>', methods=['GET'])
+def get_um_vision(magnet):
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT * FROM um_vision_cards WHERE magnet=? ORDER BY created_at", (magnet,)
+    ).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route('/api/um_vision', methods=['POST'])
+def save_um_vision():
+    d = request.json
+    vid    = d.get('id')
+    magnet = d.get('magnet','').strip()
+    title  = d.get('title','').strip()
+    if not magnet or not title:
+        return jsonify({'error': 'magnet and title required'}), 400
+    conn = get_db()
+    if vid:
+        conn.execute("""
+            UPDATE um_vision_cards SET title=?, description=?, photo_data=?, updated_at=datetime('now')
+            WHERE id=?
+        """, (title, d.get('description',''), d.get('photo_data',''), vid))
+    else:
+        import uuid
+        new_id = str(uuid.uuid4())
+        conn.execute("""
+            INSERT INTO um_vision_cards (id, magnet, title, description, photo_data)
+            VALUES (?,?,?,?,?)
+        """, (new_id, magnet, title, d.get('description',''), d.get('photo_data','')))
+    conn.commit(); conn.close()
+    return jsonify({'success': True})
+
+@app.route('/api/um_vision/<vid>', methods=['DELETE'])
+def delete_um_vision(vid):
+    conn = get_db()
+    conn.execute("DELETE FROM um_vision_cards WHERE id=?", (vid,))
     conn.commit(); conn.close()
     return jsonify({'success': True})
 

@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>💎 Money Magnet</title>
+<title>💎 Universe Magnet</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;1,14..32,300&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link  href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
 <style>
 :root{
   /* ── LIGHT THEME ── */
@@ -18,16 +20,16 @@
   ══════════════════════════════════════════════════════════════════════════ */
 
   /* INCOME → Teal-mint (growth, fresh) */
-  --income:#1a6058;   --income-p:#4FBBA8;  --income-d:rgba(79,187,168,.15);  --income-bg:#f0fbf9;
+  --income:#1a6058;   --income-p:#4FBBA8;  --income-d:rgba(79,187,168,.18);  --income-bg:#e2f7f4;
 
   /* EXPENSE → Coral-salmon (outflow, alert) */
-  --expense:#8a2622;  --expense-p:#E8736C; --expense-d:rgba(232,115,108,.14); --expense-bg:#fff5f4;
+  --expense:#8a2622;  --expense-p:#E8736C; --expense-d:rgba(232,115,108,.16); --expense-bg:#fce8e7;
 
   /* INVEST → Steel-periwinkle (trust, depth) */
-  --invest:#1e4d6a;   --invest-p:#7AAEC8;  --invest-d:rgba(122,174,200,.16);  --invest-bg:#f0f6fa;
+  --invest:#1e4d6a;   --invest-p:#7AAEC8;  --invest-d:rgba(122,174,200,.18);  --invest-bg:#e4f1f8;
 
   /* SAVINGS → Amber-yellow (warmth, stored value) */
-  --savings:#6b4c00;  --savings-p:#F2C94C; --savings-d:rgba(242,201,76,.18);  --savings-bg:#fefbf0;
+  --savings:#6b4c00;  --savings-p:#F2C94C; --savings-d:rgba(242,201,76,.20);  --savings-bg:#fdf5d9;
 
   /* GOLD → deep amber variant */
   --gold:#7a3d00;     --gold-p:#F0A84A;    --gold-d:rgba(240,168,74,.16);     --gold-bg:#fdf6ec;
@@ -47,10 +49,10 @@
   --text:#dce8dc;--muted:#4a6050;--muted2:#6a8470;
 
   /* Ribbon colours are naturally vivid enough for dark backgrounds */
-  --income:#4FBBA8;   --income-p:#4FBBA8;  --income-d:rgba(79,187,168,.14);   --income-bg:rgba(79,187,168,.06);
-  --expense:#E8736C;  --expense-p:#E8736C; --expense-d:rgba(232,115,108,.14);  --expense-bg:rgba(232,115,108,.06);
-  --invest:#7AAEC8;   --invest-p:#7AAEC8;  --invest-d:rgba(122,174,200,.14);   --invest-bg:rgba(122,174,200,.06);
-  --savings:#F2C94C;  --savings-p:#F2C94C; --savings-d:rgba(242,201,76,.14);   --savings-bg:rgba(242,201,76,.06);
+  --income:#4FBBA8;   --income-p:#4FBBA8;  --income-d:rgba(79,187,168,.18);   --income-bg:rgba(79,187,168,.1);
+  --expense:#E8736C;  --expense-p:#E8736C; --expense-d:rgba(232,115,108,.18);  --expense-bg:rgba(232,115,108,.1);
+  --invest:#7AAEC8;   --invest-p:#7AAEC8;  --invest-d:rgba(122,174,200,.18);   --invest-bg:rgba(122,174,200,.1);
+  --savings:#F2C94C;  --savings-p:#F2C94C; --savings-d:rgba(242,201,76,.18);   --savings-bg:rgba(242,201,76,.1);
   --gold:#F0A84A;     --gold-p:#F0A84A;    --gold-d:rgba(240,168,74,.14);      --gold-bg:rgba(240,168,74,.06);
   --teal:#7AAEC8;     --teal-p:#7AAEC8;   --teal-d:rgba(122,174,200,.14);     --teal-bg:rgba(122,174,200,.06);
   --loan-p:#E8736C;   --loan-d:rgba(232,115,108,.14);
@@ -89,6 +91,24 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 /* ── Animated icon styles ── */
 .nav-icon svg{transition:stroke .15s}
 .nav-item.active .nav-icon svg{stroke:var(--invest);filter:drop-shadow(0 0 5px rgba(155,181,211,.7))}
+
+/* ── Per-magnet nav colours ── */
+/* Health → Teal */
+.nav-item.c-health:hover{background:rgba(79,187,168,.12);color:#fff}
+.nav-item.c-health.active{background:rgba(79,187,168,.2);color:#4FBBA8;border-left-color:#4FBBA8;box-shadow:inset 0 0 16px rgba(79,187,168,.1)}
+.nav-item.c-health.active .nav-icon svg{stroke:#4FBBA8;filter:drop-shadow(0 0 5px rgba(79,187,168,.6))}
+/* Relationship → Coral */
+.nav-item.c-relate:hover{background:rgba(232,115,108,.12);color:#fff}
+.nav-item.c-relate.active{background:rgba(232,115,108,.18);color:#E8736C;border-left-color:#E8736C;box-shadow:inset 0 0 16px rgba(232,115,108,.08)}
+.nav-item.c-relate.active .nav-icon svg{stroke:#E8736C;filter:drop-shadow(0 0 5px rgba(232,115,108,.6))}
+/* Career → Steel */
+.nav-item.c-career:hover{background:rgba(122,174,200,.12);color:#fff}
+.nav-item.c-career.active{background:rgba(122,174,200,.18);color:#7AAEC8;border-left-color:#7AAEC8;box-shadow:inset 0 0 16px rgba(122,174,200,.08)}
+.nav-item.c-career.active .nav-icon svg{stroke:#7AAEC8;filter:drop-shadow(0 0 5px rgba(122,174,200,.6))}
+/* Money → Amber */
+.nav-item.c-money:hover{background:rgba(242,201,76,.1);color:#fff}
+.nav-item.c-money.active{background:rgba(242,201,76,.16);color:#d4a017;border-left-color:#F2C94C;box-shadow:inset 0 0 16px rgba(242,201,76,.08)}
+.nav-item.c-money.active .nav-icon svg{stroke:#F2C94C;filter:drop-shadow(0 0 5px rgba(242,201,76,.6))}
 
 /* Wealth Horizon icon — horizon rays animate on active */
 @keyframes horizonRise{from{transform:translateY(3px);opacity:.4}to{transform:translateY(0);opacity:1}}
@@ -129,7 +149,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 @keyframes arrowIn{from{transform:translateX(-4px);opacity:0}to{transform:translateX(0);opacity:1}}
 .nav-item.active .icon-tx .arrow{animation:arrowIn .3s ease both}
 .nav-item.active .icon-tx .arrow:nth-child(2){animation-delay:.1s}
-.sidebar-bottom{margin-top:auto;padding-top:14px;border-top:1px solid rgba(79,187,168,.15)}
+.nav-scroll{flex:1;overflow-y:auto;overflow-x:hidden;
+  scrollbar-width:thin;scrollbar-color:rgba(79,187,168,.25) transparent;padding-right:2px}
+.nav-scroll::-webkit-scrollbar{width:3px}
+.nav-scroll::-webkit-scrollbar-track{background:transparent}
+.nav-scroll::-webkit-scrollbar-thumb{background:rgba(79,187,168,.25);border-radius:3px}
+.sidebar-bottom{padding-top:14px;border-top:1px solid rgba(79,187,168,.15)}
 .health-mini{background:rgba(79,187,168,.08);border:1px solid rgba(79,187,168,.15);border-radius:10px;padding:10px 12px;margin-bottom:10px}
 .health-mini-label{font-size:10px;color:rgba(79,187,168,.7);margin-bottom:4px;font-weight:600}
 .health-mini-bar{background:rgba(255,255,255,.1);border-radius:3px;height:5px;overflow:hidden}
@@ -184,7 +209,7 @@ input[type=month]{background:var(--surface2);border:1px solid var(--border);colo
 .card.clickable::after{content:'→';position:absolute;bottom:12px;right:14px;font-size:14px;
   color:var(--muted);opacity:0;transition:opacity .2s,transform .2s;transform:translateX(-4px)}
 .card.clickable:hover::after{opacity:1;transform:translateX(0)}
-.card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:5px;border-radius:var(--r) var(--r) 0 0}
 .card-income {background:var(--income-bg)} .card-income::before {background:var(--income-p)}
 .card-expense{background:var(--expense-bg)}.card-expense::before{background:var(--expense-p)}
 .card-invest {background:var(--invest-bg)} .card-invest::before {background:var(--invest-p)}
@@ -325,6 +350,14 @@ tr:hover td{background:var(--surface2)}
 .corpus-bar-pct{font-size:10px;font-weight:700;color:#fff}
 .corpus-stats{display:flex;justify-content:space-between;font-size:11px;color:var(--muted2)}
 .corpus-stat-val{font-weight:600;color:var(--text)}
+/* Corpus goal edit panel */
+.corpus-edit-panel{display:none;background:var(--surface2);border:1px solid var(--border);
+  border-radius:12px;padding:16px;margin-bottom:16px;animation:fadeIn .15s ease}
+.corpus-edit-panel.open{display:block}
+.corpus-edit-row{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:flex-end}
+.corpus-edit-btn{background:none;border:none;cursor:pointer;font-size:13px;color:var(--muted2);
+  padding:4px 7px;border-radius:6px;transition:all .15s}
+.corpus-edit-btn:hover{background:var(--surface2);color:var(--invest)}
 
 /* ─── LOAN TYPE CARDS ─── */
 .loan-type-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px;margin-bottom:20px}
@@ -437,23 +470,38 @@ tr:hover td{background:var(--surface2)}
 /* Vision Board cards */
 .vision-board-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:20px}
 .vision-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;
-  overflow:hidden;transition:transform .2s,box-shadow .2s;position:relative}
-.vision-card:hover{transform:translateY(-4px);box-shadow:0 10px 28px rgba(0,0,0,.12)}
-.vision-card-photo{width:100%;height:160px;object-fit:cover;background:var(--surface2);
-  display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;cursor:pointer}
+  overflow:hidden;transition:transform .2s,box-shadow .2s;position:relative;cursor:pointer}
+.vision-card:hover{transform:translateY(-4px);box-shadow:0 10px 28px rgba(0,0,0,.14)}
+[data-theme="dark"] .vision-card:hover{box-shadow:0 10px 28px rgba(0,0,0,.5)}
+.vision-card-photo{width:100%;height:160px;background:var(--surface2);
+  display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
 .vision-card-photo img{width:100%;height:100%;object-fit:cover;display:block}
 .vision-card-photo-ph{font-size:48px;opacity:.4}
-.vision-card-photo-ov{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;flex-direction:column;
+/* Subtle click-hint overlay on photo hover */
+.vision-card-photo-ov{position:absolute;inset:0;background:rgba(0,0,0,.35);display:flex;flex-direction:column;
   align-items:center;justify-content:center;gap:5px;opacity:0;transition:opacity .2s;color:#fff;font-size:12px;font-weight:600}
-.vision-card-photo:hover .vision-card-photo-ov{opacity:1}
-.vision-card-body{padding:14px 16px}
+.vision-card:hover .vision-card-photo-ov{opacity:1}
+.vision-card-body{padding:14px 16px 42px}
 .vision-card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800;
   margin-bottom:6px;line-height:1.3}
 .vision-card-desc{font-size:12px;color:var(--muted2);line-height:1.6}
-.vision-card-del{position:absolute;top:10px;right:10px;background:rgba(232,115,108,.9);color:#fff;
-  border:none;border-radius:50%;width:24px;height:24px;font-size:12px;cursor:pointer;
-  display:none;align-items:center;justify-content:center;font-weight:700;z-index:2}
-.vision-card:hover .vision-card-del{display:flex}
+/* 3-dot menu */
+.vc-menu-wrap{position:absolute;bottom:10px;right:10px;z-index:10}
+.vc-menu-btn{background:rgba(0,0,0,.45);border:none;color:#fff;border-radius:20px;
+  padding:3px 9px;font-size:15px;cursor:pointer;letter-spacing:1px;line-height:1;
+  transition:background .15s;backdrop-filter:blur(4px)}
+.vc-menu-btn:hover{background:rgba(0,0,0,.7)}
+.vc-menu-dropdown{display:none;position:absolute;bottom:34px;right:0;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:5px;min-width:130px;box-shadow:0 6px 24px rgba(0,0,0,.18);z-index:20;
+  animation:fadeIn .15s ease}
+.vc-menu-dropdown.open{display:block}
+.vc-menu-dropdown button{display:flex;align-items:center;gap:7px;width:100%;
+  padding:8px 11px;background:none;border:none;cursor:pointer;font-size:12px;
+  color:var(--text);border-radius:8px;text-align:left;font-family:'Inter',sans-serif;
+  font-weight:500;transition:background .12s}
+.vc-menu-dropdown button:hover{background:var(--surface2)}
+.vc-menu-dropdown .vc-del-btn{color:var(--expense-p)}
 
 /* Add Vision Card button */
 .vision-add-btn{border:2px dashed var(--border);border-radius:16px;min-height:200px;
@@ -472,12 +520,44 @@ tr:hover td{background:var(--surface2)}
 .status-card-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:24px;font-weight:800;line-height:1;margin-bottom:3px}
 .status-card-target{font-size:11px;color:var(--muted2)}
 .status-card-note{font-size:11px;color:var(--muted2);margin-top:8px;line-height:1.5;border-top:1px solid var(--border);padding-top:8px}
+.status-card-date{font-size:10px;color:var(--muted);margin-top:6px;font-style:italic}
 .status-card-bar{background:var(--border);border-radius:3px;height:4px;overflow:hidden;margin-top:8px}
 .status-card-fill{height:100%;border-radius:3px}
-.status-card-del{position:absolute;top:10px;right:10px;background:var(--expense-d);color:var(--expense);
+.status-card-actions{position:absolute;top:10px;right:10px;display:none;gap:4px}
+.status-card:hover .status-card-actions{display:flex}
+.status-card-del{background:var(--expense-d);color:var(--expense-p);
   border:none;border-radius:50%;width:22px;height:22px;font-size:11px;cursor:pointer;
-  display:none;align-items:center;justify-content:center;font-weight:700}
-.status-card:hover .status-card-del{display:flex}
+  display:flex;align-items:center;justify-content:center;font-weight:700}
+.status-card-hist{background:var(--invest-d);color:var(--invest-p);
+  border:none;border-radius:50%;width:22px;height:22px;font-size:11px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-weight:700;text-decoration:none}
+.status-card-upd{background:rgba(242,201,76,.22);color:#b8870e;
+  border:none;border-radius:50%;width:22px;height:22px;font-size:10px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-weight:700}
+/* Crop modal must render above ALL other modals (opens on top of vision card modal) */
+#cropModal{z-index:1100}
+/* Status card clickable body */
+.status-card.clickable{cursor:pointer;transition:transform .18s,box-shadow .18s}
+.status-card.clickable:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.1)}
+[data-theme="dark"] .status-card.clickable:hover{box-shadow:0 6px 20px rgba(0,0,0,.4)}
+
+/* Emoji picker in status modal */
+.sc-emoji-picker{display:flex;flex-wrap:wrap;gap:5px;background:var(--surface2);
+  border:1px solid var(--border);border-radius:10px;padding:10px;max-height:110px;overflow-y:auto}
+.sc-emoji-btn{font-size:20px;cursor:pointer;padding:3px 5px;border-radius:7px;border:none;
+  background:none;transition:background .15s;line-height:1}
+.sc-emoji-btn:hover{background:var(--invest-d)}
+.sc-emoji-btn.selected{background:var(--invest-d);outline:2px solid var(--invest-p)}
+.sc-emoji-preview{font-size:30px;width:44px;height:44px;border-radius:10px;
+  background:var(--surface2);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* Status history modal */
+.hist-entry{display:flex;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.hist-entry:last-child{border-bottom:none}
+.hist-date{font-size:10px;color:var(--muted2);min-width:80px}
+.hist-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:700;flex:1}
+.hist-note{font-size:11px;color:var(--muted2)}
 
 /* Magnet page header band */
 .magnet-header-band{border-radius:16px;padding:22px 24px;margin-bottom:22px;display:flex;align-items:center;gap:16px}
@@ -713,12 +793,92 @@ tr:hover td{background:var(--surface2)}
 .vb-ds-table td{padding:6px 8px;vertical-align:top;border-bottom:1px solid var(--border);line-height:1.5}
 .vb-ds-table tr:last-child td{border-bottom:none}
 .vb-ds-table code{background:var(--surface3);padding:1px 5px;border-radius:4px;font-size:10px;font-family:monospace}
+
+/* ══════════════════ IMAGE CROP MODAL ═══════════════════════════ */
+#cropModal .modal{width:min(560px,95vw);padding:20px}
+.crop-container{width:100%;height:340px;background:#111;border-radius:10px;overflow:hidden;position:relative}
+.crop-container img{max-width:100%;display:block}
+.crop-ratio-row{display:flex;gap:6px;margin:12px 0 6px;flex-wrap:wrap}
+.crop-ratio-btn{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);
+  color:var(--muted2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'Inter',sans-serif}
+.crop-ratio-btn.active,.crop-ratio-btn:hover{border-color:var(--invest-p);color:var(--invest-p);background:var(--invest-d)}
+.crop-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;align-items:center}
+.crop-hint{font-size:10px;color:var(--muted2);flex:1}
+.crop-zoom-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.crop-zoom-row label{font-size:11px;color:var(--muted2);white-space:nowrap}
+.crop-zoom-row input{flex:1;accent-color:var(--invest-p)}
+/* ══════════════════ MOBILE OVERLAY & HAMBURGER ══════════════════ */
+.mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99;backdrop-filter:blur(3px)}
+.mob-overlay.open{display:block}
+.mob-topbar{display:none;position:fixed;top:0;left:0;right:0;height:54px;
+  background:linear-gradient(90deg,#1a2118,#1e2a1e);
+  align-items:center;padding:0 14px;gap:12px;z-index:98;
+  border-bottom:1px solid rgba(79,187,168,.2)}
+.mob-hamburger{background:none;border:none;cursor:pointer;padding:6px;
+  display:flex;flex-direction:column;gap:5px;flex-shrink:0}
+.mob-hamburger span{display:block;width:22px;height:2px;background:#4FBBA8;border-radius:2px;
+  transition:transform .25s,opacity .25s}
+.mob-hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.mob-hamburger.open span:nth-child(2){opacity:0}
+.mob-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+.mob-logo{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800;color:#fff;
+  flex:1;letter-spacing:-.2px}
+.mob-theme{background:none;border:none;font-size:18px;cursor:pointer;padding:4px}
+
+/* ══════════════════ RESPONSIVE BREAKPOINTS ══════════════════════ */
+@media (max-width:768px){
+  .sidebar{transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:100}
+  .sidebar.mob-open{transform:translateX(0)}
+  .mob-topbar{display:flex}
+  .mob-overlay{display:none}
+  .mob-overlay.open{display:block}
+  .main{margin-left:0;padding:70px 14px 24px;min-height:100vh}
+  .cards-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .charts-row{grid-template-columns:1fr}
+  .charts-row-equal{grid-template-columns:1fr}
+  .breakdown-grid{grid-template-columns:repeat(2,1fr)}
+  .vb-top{flex-direction:column;align-items:stretch}
+  .vb-score-card{flex:none;width:100%}
+  .vb-discipline-grid{grid-template-columns:repeat(2,1fr)}
+  .vb-goals-grid{grid-template-columns:repeat(2,1fr)}
+  .um-hero{grid-template-columns:repeat(2,1fr)}
+  .vision-board-grid{grid-template-columns:1fr}
+  .status-grid{grid-template-columns:repeat(2,1fr)}
+  .health-row{grid-template-columns:1fr}
+  .page-title{font-size:18px}
+  .header{flex-direction:column;gap:10px}
+  .header-actions{flex-wrap:wrap}
+  .modal{width:95vw !important;max-width:95vw !important}
+  .sidebar-bottom{display:none}
+  table{min-width:400px}
+}
+@media (max-width:480px){
+  .cards-grid{grid-template-columns:1fr}
+  .breakdown-grid{grid-template-columns:1fr}
+  .vb-discipline-grid{grid-template-columns:1fr}
+  .vb-goals-grid{grid-template-columns:1fr}
+  .um-hero{grid-template-columns:1fr}
+  .status-grid{grid-template-columns:1fr}
+  .main{padding:66px 10px 20px}
+  .card-value{font-size:22px}
+  .vb-src-grid{grid-template-columns:repeat(2,1fr)}
+}
 </style>
 </head>
 <body>
 
+<!-- ══ MOBILE TOP BAR ══ -->
+<div class="mob-topbar" id="mobTopbar">
+  <button class="mob-hamburger" id="mobHamburger" onclick="toggleMobNav()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="mob-logo">💎 Universe Magnet</div>
+  <button class="mob-theme" onclick="toggleTheme()" title="Toggle theme">🌗</button>
+</div>
+<div class="mob-overlay" id="mobOverlay" onclick="closeMobNav()"></div>
+
 <!-- ══════════════════════ SIDEBAR ══════════════════════ -->
-<aside class="sidebar">
+<aside class="sidebar" id="mainSidebar">
   <div class="logo">
     <span class="logo-em">
       <svg width="28" height="28" viewBox="0 0 26 26" fill="none" style="filter:drop-shadow(0 2px 8px rgba(79,187,168,.5))">
@@ -737,6 +897,7 @@ tr:hover td{background:var(--surface2)}
     <span style="background:linear-gradient(135deg,#4FBBA8,#7AAEC8,#F2C94C);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Universe Magnet</span>
   </div>
 
+  <div class="nav-scroll">
   <div class="nav-section">Magnets</div>
 
   <!-- Universe Home -->
@@ -745,22 +906,22 @@ tr:hover td{background:var(--surface2)}
   </div>
 
   <!-- Health Magnet -->
-  <div class="nav-item" onclick="showPage('health',this)">
+  <div class="nav-item c-health" onclick="showPage('health',this)">
     <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>Health Magnet
   </div>
 
   <!-- Relationship Magnet -->
-  <div class="nav-item" onclick="showPage('relationship',this)">
+  <div class="nav-item c-relate" onclick="showPage('relationship',this)">
     <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Relationship Magnet
   </div>
 
   <!-- Career Magnet -->
-  <div class="nav-item" onclick="showPage('career',this)">
+  <div class="nav-item c-career" onclick="showPage('career',this)">
     <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>Career Magnet
   </div>
 
   <!-- Money Magnet — top-level magnet nav item (same style as Health/Career) -->
-  <div class="nav-item" id="nav-vision" onclick="showPage('vision',this)">
+  <div class="nav-item c-money" id="nav-vision" onclick="showPage('vision',this)">
     <span class="nav-icon">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M6 4v6a6 6 0 0 0 12 0V4"/>
@@ -772,7 +933,7 @@ tr:hover td{background:var(--surface2)}
   </div>
 
   <!-- Dashboard — gauge/speedometer -->
-  <div class="nav-item nav-sub-item" onclick="showPage('dashboard',this)">
+  <div class="nav-item nav-sub-item c-money" onclick="showPage('dashboard',this)">
     <span class="nav-icon">
       <svg class="icon-dash" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 2a10 10 0 0 1 10 10"/>
@@ -788,7 +949,7 @@ tr:hover td{background:var(--surface2)}
   </div>
 
   <!-- Transactions — two-way lightning transfer arrows -->
-  <div class="nav-item nav-sub-item" onclick="showPage('transactions',this)">
+  <div class="nav-item nav-sub-item c-money" onclick="showPage('transactions',this)">
     <span class="nav-icon">
       <svg class="icon-tx" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <polyline class="arrow" points="17 8 21 8 21 4"/>
@@ -802,7 +963,7 @@ tr:hover td{background:var(--surface2)}
   <div class="nav-section">Wealth</div>
 
   <!-- WealthFlow (was Portfolio) — animated bar chart with trend arrow -->
-  <div class="nav-item nav-sub-item" onclick="showPage('portfolio',this)">
+  <div class="nav-item nav-sub-item c-money" onclick="showPage('portfolio',this)">
     <span class="nav-icon">
       <svg class="icon-wflow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <rect class="bar" x="3"  y="14" width="4" height="7" rx="1"/>
@@ -815,7 +976,7 @@ tr:hover td{background:var(--surface2)}
   </div>
 
   <!-- Loans & EMIs — coin stack with arrow -->
-  <div class="nav-item nav-sub-item" onclick="showPage('loans',this)">
+  <div class="nav-item nav-sub-item c-money" onclick="showPage('loans',this)">
     <span class="nav-icon">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <ellipse cx="9" cy="7"  rx="7" ry="2.5"/>
@@ -874,6 +1035,7 @@ tr:hover td{background:var(--surface2)}
       </svg>
     </span>NSE Market
   </div>
+  </div><!-- end .nav-scroll -->
   <div class="sidebar-bottom">
     <div class="health-mini">
       <div class="health-mini-label">Financial Health</div>
@@ -1042,6 +1204,40 @@ tr:hover td{background:var(--surface2)}
   </div>
 </div>
 
+<!-- ────── Image Crop Modal ────── -->
+<div class="modal-overlay" id="cropModal">
+  <div class="modal" style="width:min(560px,95vw)">
+    <div class="modal-title">✂️ Crop Image</div>
+
+    <!-- Zoom slider -->
+    <div class="crop-zoom-row">
+      <label>Zoom</label>
+      <input type="range" id="cropZoom" min="0.1" max="3" step="0.05" value="1"
+             oninput="_cropperInstance&&_cropperInstance.zoomTo(parseFloat(this.value))">
+    </div>
+
+    <!-- Cropper area -->
+    <div class="crop-container" id="cropContainer">
+      <img id="cropImage" src="" alt="crop">
+    </div>
+
+    <!-- Aspect ratio presets -->
+    <div class="crop-ratio-row">
+      <button class="crop-ratio-btn active" onclick="setCropRatio(NaN,this)">Free</button>
+      <button class="crop-ratio-btn" onclick="setCropRatio(1,this)">1 : 1</button>
+      <button class="crop-ratio-btn" onclick="setCropRatio(4/3,this)">4 : 3</button>
+      <button class="crop-ratio-btn" onclick="setCropRatio(16/9,this)">16 : 9</button>
+      <button class="crop-ratio-btn" onclick="setCropRatio(3/4,this)">3 : 4 Portrait</button>
+    </div>
+
+    <div class="crop-actions">
+      <span class="crop-hint">Drag to move · Pinch/scroll to zoom · Drag corners to resize</span>
+      <button class="btn btn-ghost" onclick="cancelCrop()">Cancel</button>
+      <button class="btn btn-primary" onclick="applyCrop()">✓ Use Cropped</button>
+    </div>
+  </div>
+</div>
+
 <!-- ────── Add Vision Card Modal ────── -->
 <div class="modal-overlay" id="visionCardModal">
   <div class="modal" style="width:460px">
@@ -1076,43 +1272,75 @@ tr:hover td{background:var(--surface2)}
 
 <!-- ────── Add Status Card Modal ────── -->
 <div class="modal-overlay" id="statusCardModal">
-  <div class="modal" style="width:420px">
-    <div class="modal-title" id="statusCardModalTitle">📊 Add Status Card</div>
-    <input type="hidden" id="scMagnet"><input type="hidden" id="scEditId">
+  <div class="modal" style="width:460px">
+    <div class="modal-title" id="statusCardModalTitle">📊 Add Status Entry</div>
+    <input type="hidden" id="scMagnet">
+
+    <!-- Emoji picker -->
     <div class="form-group">
-      <label class="form-label">Emoji / Icon</label>
-      <input class="form-input" type="text" id="scEmoji" placeholder="e.g. 💪 or 🏃" maxlength="4" style="width:80px;font-size:20px">
+      <label class="form-label">Pick an Icon</label>
+      <div class="sc-emoji-picker" id="scEmojiPicker"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+        <div class="sc-emoji-preview" id="scEmojiPreview">📌</div>
+        <input class="form-input" type="text" id="scEmoji" placeholder="or type/paste emoji" maxlength="4"
+               style="flex:1;font-size:16px" oninput="document.getElementById('scEmojiPreview').textContent=this.value||'📌'">
+      </div>
     </div>
+
     <div class="form-group">
       <label class="form-label">Metric Name *</label>
-      <input class="form-input" type="text" id="scName" placeholder="e.g. Body Weight">
+      <input class="form-input" type="text" id="scName" placeholder="e.g. Body Weight, Running Distance">
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:13px">
       <div>
         <label class="form-label">Current Value</label>
-        <input class="form-input" type="text" id="scCurrent" placeholder="e.g. 82 kg">
+        <input class="form-input" type="text" id="scCurrent" placeholder="e.g. 73 Kg">
       </div>
       <div>
         <label class="form-label">Target Value</label>
-        <input class="form-input" type="text" id="scTarget" placeholder="e.g. 70 kg">
+        <input class="form-input" type="text" id="scTarget" placeholder="e.g. 68 Kg">
       </div>
     </div>
     <div class="form-group">
       <label class="form-label">Notes</label>
       <textarea class="form-input" id="scNote" rows="2" placeholder="Any context or action plan…" style="resize:vertical"></textarea>
     </div>
+    <div class="form-group">
+      <label class="form-label">Date</label>
+      <input class="form-input" type="date" id="scDate">
+    </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-ghost" onclick="closeModal('statusCardModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveStatusCard()">Save</button>
+      <button class="btn btn-primary" onclick="saveStatusCard()">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- ────── Status History Modal ────── -->
+<div class="modal-overlay" id="statusHistModal">
+  <div class="modal" style="width:min(540px,95vw)">
+    <div class="modal-title" id="statusHistTitle">📈 History</div>
+    <!-- Trend chart — shown only when ≥2 numeric entries exist -->
+    <div id="statusHistChartWrap" style="display:none;background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:12px">
+      <canvas id="statusHistChart" height="120"></canvas>
+    </div>
+    <div id="statusHistBody" style="max-height:260px;overflow-y:auto"></div>
+    <div style="margin-top:14px;text-align:right">
+      <button class="btn btn-ghost" onclick="closeModal('statusHistModal')">Close</button>
     </div>
   </div>
 </div>
 
 <div id="page-vision" class="page">
-  <div class="header">
+  <div class="magnet-header-band" style="background:linear-gradient(135deg,#c9a030,#F2C94C)">
+    <div class="magnet-header-icon">💰</div>
     <div>
-      <div class="page-title">Money Magnet 💰</div>
-      <div class="page-sub" id="vbSub">All-time data · Your discipline rules &amp; goals</div>
+      <div class="magnet-header-title">Money Magnet</div>
+      <div class="magnet-header-sub" id="vbSub">Financial Health · Wealth · Investment Discipline · Goals</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn" style="background:rgba(255,255,255,.25);color:#1a2118;font-weight:700" onclick="openAddVisionCard('vision','vision')">＋ Vision Card</button>
+      <button class="btn" style="background:rgba(255,255,255,.15);color:#1a2118" onclick="openAddStatusCard('vision')">＋ Status</button>
     </div>
   </div>
 
@@ -1299,7 +1527,7 @@ tr:hover td{background:var(--surface2)}
 <!-- ════════════ PORTFOLIO ════════════ -->
 <div id="page-portfolio" class="page">
   <div class="header">
-    <div><div class="page-title">WealthFlow 📊</div><div class="page-sub">Corpus tracker — Goal: ₹2 Crore by Dec 2027</div></div>
+    <div><div class="page-title">WealthFlow 📊</div><div class="page-sub">Corpus tracker — loading…</div></div>
     <div class="header-actions"><button class="btn btn-ghost" onclick="loadPortfolio()">↺ Refresh</button></div>
   </div>
 
@@ -1308,8 +1536,32 @@ tr:hover td{background:var(--surface2)}
 
   <!-- Corpus Progress -->
   <div class="corpus-card">
-    <div class="corpus-title">🎯 Corpus Progress <span id="corpus-eta" style="font-size:12px;color:var(--muted2);font-weight:400;font-family:'Inter',sans-serif"></span></div>
-    <div class="corpus-sub">Target: ₹2,00,00,000 by December 2027</div>
+    <div class="corpus-title">
+      🎯 Corpus Progress
+      <span id="corpus-eta" style="font-size:12px;color:var(--muted2);font-weight:400;font-family:'Inter',sans-serif"></span>
+      <button class="corpus-edit-btn" onclick="toggleCorpusEdit()" title="Edit target">✏️ Edit Target</button>
+    </div>
+    <div class="corpus-sub" id="corpus-sub-text">Loading…</div>
+
+    <!-- Inline edit panel -->
+    <div class="corpus-edit-panel" id="corpusEditPanel">
+      <div class="corpus-edit-row">
+        <div>
+          <label class="form-label" style="font-size:11px">Target Amount (₹ Crore)</label>
+          <input class="form-input" type="number" id="corpusTargetCr" min="0.1" step="0.1" placeholder="e.g. 2" style="font-size:14px;font-weight:700">
+          <div style="font-size:10px;color:var(--muted2);margin-top:3px" id="corpusAmtPreview"></div>
+        </div>
+        <div>
+          <label class="form-label" style="font-size:11px">Target Month</label>
+          <input class="form-input" type="month" id="corpusTargetDate" style="font-size:13px">
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-primary btn-sm" onclick="saveCorpusGoal()">Save</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleCorpusEdit()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <div class="corpus-bar-track">
       <div class="corpus-bar-fill" id="corpus-bar"><span class="corpus-bar-pct" id="corpus-pct-label"></span></div>
     </div>
@@ -1681,8 +1933,47 @@ let _trendData = [];   // cached monthly trend for avg calculations
 function cv(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
 
 let trendChart, donutChart, portfolioDonut, returnBar, loanDonut, loanTrend;
-const CORPUS_TARGET = 20000000;
-const CORPUS_MONTHS_LEFT = 21;
+
+// ── Corpus Goal Config (localStorage-backed, user-configurable) ───────────────
+function getCorpusGoal() {
+  try { return JSON.parse(localStorage.getItem('mt_corpus_goal') || 'null') || { crore: 2, targetDate: '2027-12' }; }
+  catch { return { crore: 2, targetDate: '2027-12' }; }
+}
+function corpusMonthsLeft(targetDate) {
+  const [y, m] = (targetDate || '2027-12').split('-').map(Number);
+  const now = new Date();
+  return Math.max(0, (y - now.getFullYear()) * 12 + (m - (now.getMonth() + 1)));
+}
+function fmtTargetDate(ym) {
+  const [y, m] = (ym || '2027-12').split('-').map(Number);
+  const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${names[m-1]} ${y}`;
+}
+function toggleCorpusEdit() {
+  const panel = document.getElementById('corpusEditPanel');
+  const isOpen = panel.classList.contains('open');
+  if (!isOpen) {
+    const g = getCorpusGoal();
+    document.getElementById('corpusTargetCr').value   = g.crore;
+    document.getElementById('corpusTargetDate').value  = g.targetDate;
+    document.getElementById('corpusAmtPreview').textContent = `= ₹${(g.crore * 1e7).toLocaleString('en-IN')}`;
+    document.getElementById('corpusTargetCr').oninput = function() {
+      const v = parseFloat(this.value) || 0;
+      document.getElementById('corpusAmtPreview').textContent = v ? `= ₹${(v * 1e7).toLocaleString('en-IN')}` : '';
+    };
+  }
+  panel.classList.toggle('open');
+}
+function saveCorpusGoal() {
+  const cr = parseFloat(document.getElementById('corpusTargetCr').value);
+  const dt = document.getElementById('corpusTargetDate').value;
+  if (!cr || cr <= 0) { toast('Enter a valid target amount', 'error'); return; }
+  if (!dt) { toast('Select a target month', 'error'); return; }
+  localStorage.setItem('mt_corpus_goal', JSON.stringify({ crore: cr, targetDate: dt }));
+  document.getElementById('corpusEditPanel').classList.remove('open');
+  loadPortfolio();
+  toast(`Corpus target set: ₹${cr} Crore by ${fmtTargetDate(dt)}`, 'success');
+}
 
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -1812,7 +2103,19 @@ function deltaHtml(d, inverse=false) {
   return `<span class="${cls}">${arrow} ${Math.abs(d)}% vs last month</span>`;
 }
 
+function toggleMobNav() {
+  const open = document.getElementById('mainSidebar').classList.toggle('mob-open');
+  document.getElementById('mobOverlay').classList.toggle('open', open);
+  document.getElementById('mobHamburger').classList.toggle('open', open);
+}
+function closeMobNav() {
+  document.getElementById('mainSidebar').classList.remove('mob-open');
+  document.getElementById('mobOverlay').classList.remove('open');
+  document.getElementById('mobHamburger').classList.remove('open');
+}
+
 function showPage(name, el) {
+  closeMobNav();
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
@@ -1843,34 +2146,34 @@ const AFFIRMATIONS = [
   'My health is my wealth. My relationships are my treasure. My work is my legacy.',
 ];
 
-function loadUniverseHome() {
-  // Update card counts from localStorage
-  ['health','relationship','career'].forEach(key => {
-    const vCards = _umCards(key, 'vision').length;
-    const sCards = _umCards(key, 'status').length;
-    const el = document.getElementById(`um-${key === 'relationship' ? 'relate' : key}-count`);
-    if (el) el.textContent = `${vCards + sCards} card${vCards + sCards !== 1 ? 's' : ''}`;
-  });
-
-  // Summary stats
-  const allVision = ['health','relationship','career'].reduce((s,k) => s + _umCards(k,'vision').length, 0);
-  const allStatus = ['health','relationship','career'].reduce((s,k) => s + _umCards(k,'status').length, 0);
+async function loadUniverseHome() {
+  // Fetch counts from DB
+  const counts = { health:0, relationship:0, career:0 };
+  try {
+    await Promise.all(['health','relationship','career'].map(async key => {
+      const [vr, sr] = await Promise.all([
+        fetch(`/api/um_vision/${key}`).then(r=>r.json()),
+        fetch(`/api/magnet_status/${key}`).then(r=>r.json()),
+      ]);
+      counts[key] = (vr.length || 0) + (sr.latest?.length || 0);
+      const el = document.getElementById(`um-${key === 'relationship' ? 'relate' : key}-count`);
+      if (el) el.textContent = `${counts[key]} card${counts[key] !== 1 ? 's' : ''}`;
+    }));
+  } catch {}
+  const total = Object.values(counts).reduce((s,n) => s+n, 0);
   document.getElementById('umSummaryGrid').innerHTML = `
-    <div class="um-stat"><div class="um-stat-lbl">Vision Cards</div><div class="um-stat-val" style="color:var(--health-c)">${allVision}</div></div>
-    <div class="um-stat"><div class="um-stat-lbl">Status Metrics</div><div class="um-stat-val" style="color:var(--career-c)">${allStatus}</div></div>
+    <div class="um-stat"><div class="um-stat-lbl">Vision Cards</div><div class="um-stat-val" style="color:var(--health-c)">—</div></div>
+    <div class="um-stat"><div class="um-stat-lbl">Status Metrics</div><div class="um-stat-val" style="color:var(--career-c)">—</div></div>
     <div class="um-stat"><div class="um-stat-lbl">Life Areas</div><div class="um-stat-val" style="color:var(--money-c)">4</div></div>
-    <div class="um-stat"><div class="um-stat-lbl">Total Intentions</div><div class="um-stat-val" style="color:var(--relate-c)">${allVision + allStatus}</div></div>`;
-
-  // Rotate affirmation
+    <div class="um-stat"><div class="um-stat-lbl">Total Intentions</div><div class="um-stat-val" style="color:var(--relate-c)">${total}</div></div>`;
   const idx = Math.floor(Date.now() / 86400000) % AFFIRMATIONS.length;
   document.getElementById('umAffirmation').textContent = '"' + AFFIRMATIONS[idx] + '"';
 }
 
-function loadMagnetPage(key) {
-  renderVisionCards(key);
-  renderStatusCards(key);
-  // Reset to vision tab
+async function loadMagnetPage(key) {
   switchMagnetTab(key, 'vision', document.getElementById(`tab-${key}-vision`));
+  await renderVisionCards(key);
+  await renderStatusCards(key);
 }
 
 function switchMagnetTab(magnet, tab, el) {
@@ -1881,35 +2184,122 @@ function switchMagnetTab(magnet, tab, el) {
   document.getElementById(`${magnet}-status-section`).style.display  = tab === 'status'  ? '' : 'none';
 }
 
-// ── Vision Cards ──────────────────────────────────────────────────────────────
-function _umKey(magnet, section) { return `um_${magnet}_${section}`; }
-function _umCards(magnet, section) {
-  try { return JSON.parse(localStorage.getItem(_umKey(magnet, section)) || '[]'); } catch { return []; }
-}
-function _umSave(magnet, section, cards) {
-  localStorage.setItem(_umKey(magnet, section), JSON.stringify(cards));
+// ── Emoji sets per magnet ─────────────────────────────────────────────────────
+const MAGNET_EMOJIS = {
+  health:       ['💪','🏃','🧘','🥗','😴','🧠','❤️','🏋️','🚴','🩺','💊','🦷','👁️','🫁','🎯','⚖️','🥤','🌿'],
+  relationship: ['❤️','👨‍👩‍👧','🤝','💬','🎁','🥂','🏡','💌','🤗','👫','🧡','😊','🫂','🎉','🌹','💑','🙏','✨'],
+  career:       ['💼','📈','🎓','🏆','💡','🖥️','📝','🚀','💰','🤝','🧑‍💻','🎤','📊','🏅','✅','🗂️','⏰','🌐'],
+};
+
+// ── Unified Image Cropper ─────────────────────────────────────────────────────
+let _cropperInstance = null;
+let _cropCallback    = null;   // fn(dataUrl) called after crop confirmed
+let _cropSourceInput = null;   // the file input to reset after use
+
+function openCropper(file, callback) {
+  if (!file) return;
+  _cropCallback = callback;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    // Destroy any previous instance first
+    if (_cropperInstance) { _cropperInstance.destroy(); _cropperInstance = null; }
+
+    const img = document.getElementById('cropImage');
+
+    // ── CRITICAL: assign onload BEFORE setting src ──────────────────────────
+    // If src is set first the browser can fire the load event before the
+    // handler is assigned, leaving _cropperInstance = null.
+    img.onload = () => {
+      _cropperInstance = new Cropper(img, {
+        viewMode: 1,
+        dragMode: 'move',
+        autoCropArea: 0.85,
+        restore: false,
+        guides: true,
+        center: true,
+        highlight: false,
+        cropBoxMovable: true,
+        cropBoxResizable: true,
+        toggleDragModeOnDblclick: false,
+        ready() {
+          document.getElementById('cropZoom').value = 1;
+        },
+        zoom(e) {
+          document.getElementById('cropZoom').value =
+            Math.min(3, Math.max(0.1, e.detail.ratio)).toFixed(2);
+        },
+      });
+    };
+
+    img.src = ev.target.result;   // set src AFTER onload is wired up
+
+    // Reset UI
+    document.getElementById('cropZoom').value = 1;
+    document.querySelectorAll('.crop-ratio-btn')
+      .forEach((b, i) => b.classList.toggle('active', i === 0));
+    document.getElementById('cropModal').classList.add('open');
+  };
+  reader.readAsDataURL(file);
 }
 
+function setCropRatio(ratio, btn) {
+  document.querySelectorAll('.crop-ratio-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (_cropperInstance) _cropperInstance.setAspectRatio(isNaN(ratio) ? NaN : ratio);
+}
+
+function applyCrop() {
+  if (!_cropperInstance) {
+    toast('Cropper not ready — please try again', 'error');
+    return;
+  }
+  try {
+    const canvas = _cropperInstance.getCroppedCanvas({
+      maxWidth: 1400,
+      maxHeight: 1400,
+      imageSmoothingEnabled: true,
+      imageSmoothingQuality: 'high',
+      fillColor: '#fff',
+    });
+    if (!canvas) { toast('Could not read crop area', 'error'); return; }
+    // Use PNG for lossless if small, JPEG otherwise
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    const cb = _cropCallback;   // capture before cancelCrop clears it
+    cancelCrop();               // close + cleanup first
+    if (cb) cb(dataUrl);        // then deliver the result
+  } catch (err) {
+    console.error('Crop error:', err);
+    toast('Crop failed: ' + err.message, 'error');
+  }
+}
+
+function cancelCrop() {
+  document.getElementById('cropModal').classList.remove('open');
+  if (_cropperInstance) { _cropperInstance.destroy(); _cropperInstance = null; }
+  if (_cropSourceInput) { _cropSourceInput.value = ''; _cropSourceInput = null; }
+  _cropCallback = null;
+}
+
+// ── Vision Cards (DB-backed) ───────────────────────────────────────────────────
 let _vcPhotoData = '';
 function vcPreviewPhoto(e) {
   const file = e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    _vcPhotoData = ev.target.result;
-    document.getElementById('vcPhotoPreview').src = _vcPhotoData;
-    document.getElementById('vcPhotoPreview').style.display = 'block';
+  _cropSourceInput = e.target;
+  openCropper(file, dataUrl => {
+    _vcPhotoData = dataUrl;
+    const prev = document.getElementById('vcPhotoPreview');
+    prev.src = dataUrl;
+    prev.style.display = 'block';
     document.getElementById('vcPhotoPlaceholder').style.display = 'none';
-  };
-  reader.readAsDataURL(file);
-  e.target.value = '';
+  });
 }
 
 function openAddVisionCard(magnet, section) {
-  document.getElementById('vcMagnet').value  = magnet;
-  document.getElementById('vcSection').value = section;
-  document.getElementById('vcEditId').value  = '';
-  document.getElementById('vcTitle').value   = '';
-  document.getElementById('vcDesc').value    = '';
+  document.getElementById('vcMagnet').value   = magnet;
+  document.getElementById('vcSection').value  = section;
+  document.getElementById('vcEditId').value   = '';
+  document.getElementById('vcTitle').value    = '';
+  document.getElementById('vcDesc').value     = '';
   document.getElementById('vcPhotoPreview').style.display = 'none';
   document.getElementById('vcPhotoPlaceholder').style.display = '';
   document.getElementById('visionCardModalTitle').textContent = '✨ Add Vision Card';
@@ -1917,58 +2307,92 @@ function openAddVisionCard(magnet, section) {
   document.getElementById('visionCardModal').classList.add('open');
 }
 
-function saveVisionCard() {
-  const magnet  = document.getElementById('vcMagnet').value;
-  const section = document.getElementById('vcSection').value;
-  const editId  = document.getElementById('vcEditId').value;
-  const title   = document.getElementById('vcTitle').value.trim();
+async function saveVisionCard() {
+  const magnet = document.getElementById('vcMagnet').value;
+  const editId = document.getElementById('vcEditId').value;
+  const title  = document.getElementById('vcTitle').value.trim();
   if (!title) { toast('Card title is required', 'error'); return; }
-  const cards = _umCards(magnet, section);
-  if (editId) {
-    const i = cards.findIndex(c => c.id === editId);
-    if (i >= 0) { cards[i] = { ...cards[i], title, desc: document.getElementById('vcDesc').value.trim(), photo: _vcPhotoData || cards[i].photo }; }
-  } else {
-    cards.push({ id: Date.now().toString(), title, desc: document.getElementById('vcDesc').value.trim(), photo: _vcPhotoData, created: new Date().toISOString() });
+  const payload = {
+    id: editId || null,
+    magnet,
+    title,
+    description: document.getElementById('vcDesc').value.trim(),
+    photo_data:  _vcPhotoData || '',
+  };
+  await fetch('/api/um_vision', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+
+  // Auto-seed a status card for this vision item (new cards only, skip if already exists)
+  if (!editId) {
+    try {
+      const existing = await fetch(`/api/magnet_status/${magnet}`).then(r => r.json());
+      const alreadyExists = (existing.latest || []).some(s => s.metric_name === title);
+      if (!alreadyExists) {
+        await fetch('/api/magnet_status', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            magnet, metric_name: title, emoji: '🌟',
+            current_value: '', target_value: '', note: '',
+            recorded_date: new Date().toISOString().slice(0, 10),
+          }),
+        });
+      }
+    } catch(e) { /* non-critical */ }
   }
-  _umSave(magnet, section, cards);
+
   closeModal('visionCardModal');
-  renderVisionCards(magnet);
+  await renderVisionCards(magnet);
+  await renderStatusCards(magnet);
   if (currentPage === 'universe') loadUniverseHome();
   toast('Vision card saved!', 'success');
 }
 
-function renderVisionCards(magnet) {
-  const cards = _umCards(magnet, 'vision');
-  const colorVar = `--${magnet === 'relationship' ? 'relate' : magnet}-c`;
+async function renderVisionCards(magnet) {
   const grid = document.getElementById(`${magnet}-vision-grid`);
   if (!grid) return;
-  grid.innerHTML = cards.map(c => `
-    <div class="vision-card">
-      <button class="vision-card-del" onclick="deleteVisionCard('${magnet}','vision','${c.id}')">✕</button>
-      <div class="vision-card-photo" onclick="openEditVisionCard('${magnet}','vision','${c.id}')">
-        ${c.photo ? `<img src="${c.photo}" alt="${c.title}">` : `<div class="vision-card-photo-ph">🌟</div>`}
-        <div class="vision-card-photo-ov"><span>✏️</span><span>Edit card</span></div>
+  let cards = [];
+  try { const r = await fetch(`/api/um_vision/${magnet}`); cards = await r.json(); } catch {}
+  const color = MAGNET_COLORS[magnet] || '#7AAEC8';
+  grid.innerHTML = cards.map(c => {
+    const safeMagnet = magnet;
+    const safeId     = c.id;
+    const safeTitle  = c.title.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const safeColor  = color;
+    return `
+    <div class="vision-card" onclick="showStatusHistory('${safeMagnet}','${safeTitle}','${safeColor}')" title="Click to view history &amp; trend">
+      <div class="vision-card-photo">
+        ${c.photo_data ? `<img src="${c.photo_data}" alt="${c.title}">` : `<div class="vision-card-photo-ph">🌟</div>`}
+        <div class="vision-card-photo-ov"><span>📈</span><span>View History</span></div>
       </div>
       <div class="vision-card-body">
         <div class="vision-card-title">${c.title}</div>
-        ${c.desc ? `<div class="vision-card-desc">${c.desc}</div>` : ''}
+        ${c.description ? `<div class="vision-card-desc">${c.description}</div>` : ''}
       </div>
-    </div>`).join('') +
+      <div class="vc-menu-wrap">
+        <button class="vc-menu-btn" onclick="event.stopPropagation();vcToggleMenu(this)" title="Options">•••</button>
+        <div class="vc-menu-dropdown">
+          <button onclick="event.stopPropagation();closeVcMenu();openEditVisionCard('${safeMagnet}','${safeId}')">✏️ Edit</button>
+          <button class="vc-del-btn" onclick="event.stopPropagation();closeVcMenu();deleteVisionCard('${safeMagnet}','${safeId}')">🗑️ Delete</button>
+          <button onclick="event.stopPropagation();closeVcMenu()">✕ Close</button>
+        </div>
+      </div>
+    </div>`; }).join('') +
     `<div class="vision-add-btn" onclick="openAddVisionCard('${magnet}','vision')">
       <div class="vision-add-icon">＋</div>
       <div>Add Vision Card</div>
     </div>`;
 }
 
-function openEditVisionCard(magnet, section, id) {
-  const cards = _umCards(magnet, section);
+async function openEditVisionCard(magnet, id) {
+  let cards = [];
+  try { const r = await fetch(`/api/um_vision/${magnet}`); cards = await r.json(); } catch {}
   const card = cards.find(c => c.id === id); if (!card) return;
   document.getElementById('vcMagnet').value  = magnet;
-  document.getElementById('vcSection').value = section;
+  document.getElementById('vcSection').value = 'vision';
   document.getElementById('vcEditId').value  = id;
   document.getElementById('vcTitle').value   = card.title;
-  document.getElementById('vcDesc').value    = card.desc || '';
-  _vcPhotoData = card.photo || '';
+  document.getElementById('vcDesc').value    = card.description || '';
+  _vcPhotoData = card.photo_data || '';
   if (_vcPhotoData) {
     document.getElementById('vcPhotoPreview').src = _vcPhotoData;
     document.getElementById('vcPhotoPreview').style.display = 'block';
@@ -1981,79 +2405,224 @@ function openEditVisionCard(magnet, section, id) {
   document.getElementById('visionCardModal').classList.add('open');
 }
 
-function deleteVisionCard(magnet, section, id) {
-  const cards = _umCards(magnet, section).filter(c => c.id !== id);
-  _umSave(magnet, section, cards);
-  renderVisionCards(magnet);
+async function deleteVisionCard(magnet, id) {
+  await fetch(`/api/um_vision/${id}`, { method:'DELETE' });
+  await renderVisionCards(magnet);
   if (currentPage === 'universe') loadUniverseHome();
 }
 
-// ── Status Cards ──────────────────────────────────────────────────────────────
-const MAGNET_COLORS = { health:'#4FBBA8', relationship:'#E8736C', career:'#7AAEC8' };
+// ── Status Cards (DB-backed with date tracking) ───────────────────────────────
+const MAGNET_COLORS = { health:'#4FBBA8', relationship:'#E8736C', career:'#7AAEC8', vision:'#F2C94C' };
+
+function _buildEmojiPicker(magnet) {
+  const emojis = MAGNET_EMOJIS[magnet] || MAGNET_EMOJIS.health;
+  const picker = document.getElementById('scEmojiPicker');
+  if (!picker) return;
+  picker.innerHTML = emojis.map(e =>
+    `<button type="button" class="sc-emoji-btn" onclick="selectEmoji('${e}')" title="${e}">${e}</button>`
+  ).join('');
+}
+
+function selectEmoji(e) {
+  document.getElementById('scEmoji').value = e;
+  document.getElementById('scEmojiPreview').textContent = e;
+  document.querySelectorAll('.sc-emoji-btn').forEach(b => b.classList.toggle('selected', b.textContent === e));
+}
 
 function openAddStatusCard(magnet) {
   document.getElementById('scMagnet').value  = magnet;
-  document.getElementById('scEditId').value  = '';
   document.getElementById('scEmoji').value   = '';
-  document.getElementById('scName').value    = '';
+  const nameEl = document.getElementById('scName');
+  nameEl.value    = '';
+  nameEl.readOnly = false;
+  nameEl.style.cssText = '';
+  nameEl.placeholder = 'e.g. Body Weight, Running Distance';
   document.getElementById('scCurrent').value = '';
   document.getElementById('scTarget').value  = '';
   document.getElementById('scNote').value    = '';
-  document.getElementById('statusCardModalTitle').textContent = '📊 Add Status Card';
+  document.getElementById('scDate').value    = new Date().toISOString().slice(0,10);
+  document.getElementById('scEmojiPreview').textContent = '📌';
+  document.getElementById('statusCardModalTitle').textContent = '📊 Add Status Metric';
+  _buildEmojiPicker(magnet);
   document.getElementById('statusCardModal').classList.add('open');
 }
 
-function saveStatusCard() {
+// Opens the status modal pre-filled for logging a new update to an existing metric
+function openUpdateStatusCard(magnet, metricName, emoji, lastTarget) {
+  document.getElementById('scMagnet').value  = magnet;
+  const nameEl = document.getElementById('scName');
+  nameEl.value    = metricName;
+  nameEl.readOnly = true;
+  nameEl.style.cssText = 'opacity:.65;background:var(--surface2);cursor:not-allowed';
+  nameEl.placeholder = '';
+  const em = emoji || '📌';
+  document.getElementById('scEmoji').value   = em;
+  document.getElementById('scEmojiPreview').textContent = em;
+  document.getElementById('scCurrent').value = '';
+  document.getElementById('scTarget').value  = lastTarget || '';
+  document.getElementById('scNote').value    = '';
+  document.getElementById('scDate').value    = new Date().toISOString().slice(0,10);
+  document.getElementById('statusCardModalTitle').textContent = `✏️ Update: ${metricName}`;
+  _buildEmojiPicker(magnet);
+  document.getElementById('statusCardModal').classList.add('open');
+  // Focus on current value field
+  setTimeout(() => document.getElementById('scCurrent').focus(), 150);
+}
+
+async function saveStatusCard() {
   const magnet = document.getElementById('scMagnet').value;
-  const editId = document.getElementById('scEditId').value;
   const name   = document.getElementById('scName').value.trim();
   if (!name) { toast('Metric name is required', 'error'); return; }
-  const entry = {
-    id:      editId || Date.now().toString(),
-    emoji:   document.getElementById('scEmoji').value.trim() || '📌',
-    name,
-    current: document.getElementById('scCurrent').value.trim(),
-    target:  document.getElementById('scTarget').value.trim(),
-    note:    document.getElementById('scNote').value.trim(),
-    created: new Date().toISOString(),
+  const payload = {
+    magnet,
+    metric_name:   name,
+    emoji:         document.getElementById('scEmoji').value.trim() || document.getElementById('scEmojiPreview').textContent || '📌',
+    current_value: document.getElementById('scCurrent').value.trim(),
+    target_value:  document.getElementById('scTarget').value.trim(),
+    note:          document.getElementById('scNote').value.trim(),
+    recorded_date: document.getElementById('scDate').value || new Date().toISOString().slice(0,10),
   };
-  const cards = _umCards(magnet, 'status');
-  if (editId) { const i = cards.findIndex(c => c.id === editId); if (i >= 0) cards[i] = entry; }
-  else cards.push(entry);
-  _umSave(magnet, 'status', cards);
-  closeModal('statusCardModal');
-  renderStatusCards(magnet);
-  if (currentPage === 'universe') loadUniverseHome();
-  toast('Status card saved!', 'success');
+  try {
+    await fetch('/api/magnet_status', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    closeModal('statusCardModal');
+    await renderStatusCards(magnet);
+    toast('Status entry saved!', 'success');
+  } catch(e) {
+    toast('Save failed — server error', 'error');
+  }
 }
 
-function renderStatusCards(magnet) {
-  const cards  = _umCards(magnet, 'status');
-  const color  = MAGNET_COLORS[magnet] || 'var(--invest-p)';
-  const grid   = document.getElementById(`${magnet}-status-grid`);
+async function renderStatusCards(magnet) {
+  const color = MAGNET_COLORS[magnet] || '#7AAEC8';
+  const grid  = document.getElementById(`${magnet}-status-grid`);
   if (!grid) return;
-  grid.innerHTML = cards.map(c => `
-    <div class="status-card">
-      <button class="status-card-del" onclick="deleteStatusCard('${magnet}','${c.id}')">✕</button>
-      <div class="status-card-top">
-        <div class="status-card-emoji" style="background:${color}22">${c.emoji}</div>
-        <div class="status-card-name">${c.name}</div>
+  let latest = [], history = [];
+  try {
+    const r = await fetch(`/api/magnet_status/${magnet}`);
+    const d = await r.json();
+    latest  = d.latest  || [];
+    history = d.history || [];
+  } catch {}
+
+  // Group history by metric_name for count display
+  const histMap = {};
+  history.forEach(h => { histMap[h.metric_name] = histMap[h.metric_name] || []; histMap[h.metric_name].push(h); });
+
+  grid.innerHTML = latest.map(c => {
+    const cnt     = (histMap[c.metric_name] || []).length;
+    const safeName = c.metric_name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const safeEmoji= (c.emoji||'📌').replace(/'/g,"\\'");
+    const safeTgt  = (c.target_value||'').replace(/'/g,"\\'");
+    const hasVal   = c.current_value && c.current_value.trim();
+    return `
+    <div class="status-card clickable" onclick="openUpdateStatusCard('${magnet}','${safeName}','${safeEmoji}','${safeTgt}')" title="Click to log an update">
+      <div class="status-card-actions">
+        <button class="status-card-upd" onclick="event.stopPropagation();openUpdateStatusCard('${magnet}','${safeName}','${safeEmoji}','${safeTgt}')" title="Log update">✏️</button>
+        <button class="status-card-hist" onclick="event.stopPropagation();showStatusHistory('${magnet}','${safeName}','${color}')" title="View history &amp; trend">📈</button>
+        <button class="status-card-del"  onclick="event.stopPropagation();deleteLatestStatus(${c.id},'${magnet}')" title="Delete latest entry">✕</button>
       </div>
-      <div class="status-card-val" style="color:${color}">${c.current || '—'}</div>
-      ${c.target ? `<div class="status-card-target">🎯 Target: ${c.target}</div>` : ''}
-      ${c.note   ? `<div class="status-card-note">${c.note}</div>` : ''}
-    </div>`).join('') +
-    `<div class="vision-add-btn" onclick="openAddStatusCard('${magnet}')">
-      <div class="vision-add-icon">＋</div>
-      <div>Add Status Metric</div>
+      <div class="status-card-top">
+        <div class="status-card-emoji" style="background:${color}22">${c.emoji || '📌'}</div>
+        <div class="status-card-name">${c.metric_name}</div>
+      </div>
+      <div class="status-card-val" style="color:${hasVal?color:'var(--muted)'};font-size:${hasVal?'24px':'14px'}">${hasVal ? c.current_value : 'Tap to update'}</div>
+      ${c.target_value ? `<div class="status-card-target">🎯 Target: ${c.target_value}</div>` : ''}
+      ${c.note         ? `<div class="status-card-note">${c.note}</div>` : ''}
+      <div class="status-card-date">📅 ${c.recorded_date}${cnt > 1 ? ` · ${cnt} entries` : ''}</div>
     </div>`;
+  }).join('') +
+  `<div class="vision-add-btn" onclick="openAddStatusCard('${magnet}')">
+    <div class="vision-add-icon">＋</div>
+    <div>Add New Metric</div>
+  </div>`;
 }
 
-function deleteStatusCard(magnet, id) {
-  const cards = _umCards(magnet, 'status').filter(c => c.id !== id);
-  _umSave(magnet, 'status', cards);
-  renderStatusCards(magnet);
-  if (currentPage === 'universe') loadUniverseHome();
+async function deleteLatestStatus(id, magnet) {
+  await fetch(`/api/magnet_status/${id}`, { method:'DELETE' });
+  await renderStatusCards(magnet);
+}
+
+let _statusHistChart = null;
+
+function showStatusHistory(magnet, metricName, color) {
+  document.getElementById('statusHistTitle').textContent = `📈 ${metricName} — History`;
+  document.getElementById('statusHistBody').innerHTML = '<div style="color:var(--muted2);font-size:12px">Loading…</div>';
+  document.getElementById('statusHistChartWrap').style.display = 'none';
+  if (_statusHistChart) { _statusHistChart.destroy(); _statusHistChart = null; }
+  document.getElementById('statusHistModal').classList.add('open');
+
+  fetch(`/api/magnet_status/${magnet}`)
+    .then(r => r.json())
+    .then(d => {
+      // Chronological order: oldest first for chart, newest first for list
+      const all = (d.history || []).filter(h => h.metric_name === metricName);
+      const entries = [...all].reverse(); // newest first for list display
+
+      // ── Trend chart: only when ≥2 entries have parseable numeric values ──
+      const numericRows = all.filter(e => e.current_value && !isNaN(parseFloat(e.current_value)));
+      if (numericRows.length >= 2) {
+        const wrap = document.getElementById('statusHistChartWrap');
+        wrap.style.display = 'block';
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.07)';
+        const tickColor = isDark ? '#6a8470' : '#8a9e8a';
+        _statusHistChart = new Chart(document.getElementById('statusHistChart').getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: numericRows.map(e => e.recorded_date),
+            datasets: [{
+              label: metricName,
+              data: numericRows.map(e => parseFloat(e.current_value)),
+              borderColor: color,
+              backgroundColor: color + '28',
+              fill: true,
+              tension: 0.35,
+              pointBackgroundColor: color,
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              pointRadius: 5,
+              borderWidth: 2.5,
+            }],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: { label: ctx => ` ${ctx.parsed.y}` },
+                bodyFont: { family: 'Inter' },
+              },
+            },
+            scales: {
+              x: {
+                ticks: { color: tickColor, font: { size: 10 }, maxRotation: 35 },
+                grid:  { color: gridColor },
+              },
+              y: {
+                ticks: { color: tickColor, font: { size: 10 } },
+                grid:  { color: gridColor },
+              },
+            },
+          },
+        });
+      }
+
+      // ── Entry list ──
+      document.getElementById('statusHistBody').innerHTML = entries.length
+        ? entries.map(e => `
+          <div class="hist-entry">
+            <span class="hist-date">${e.recorded_date}</span>
+            <span class="hist-val" style="color:${color};font-weight:700">${e.current_value || '—'}</span>
+            ${e.target_value ? `<span class="hist-note">/ ${e.target_value}</span>` : ''}
+            ${e.note ? `<span class="hist-note" style="margin-left:8px;font-style:italic">${e.note}</span>` : ''}
+            <button style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--muted2);font-size:11px;padding:2px 5px"
+                    onclick="deleteLatestStatus(${e.id},'${magnet}');document.getElementById('statusHistModal').classList.remove('open')" title="Delete entry">✕</button>
+          </div>`).join('')
+        : '<div style="color:var(--muted2);font-size:12px;padding:12px 0">No entries yet. Click a status card to log the first update!</div>';
+    })
+    .catch(() => {
+      document.getElementById('statusHistBody').innerHTML = '<div style="color:var(--expense);font-size:12px">Failed to load history.</div>';
+    });
 }
 
 // ─── FINANCIAL HEALTH SCORE ──────────────────────────────────────────────────
@@ -2463,7 +3032,7 @@ async function loadVisionBoard() {
     <button class="btn btn-ghost btn-sm" onclick="vbAddDedExtra()" style="margin-bottom:14px">＋ Add deduction</button>
     <br>
     <button class="btn btn-primary" onclick="saveSalaryDed()">Save Deductions</button>
-    <div class="vb-ded-save-note">💡 These amounts are auto-posted as investment/expense transactions whenever you record a Salary income entry.</div>`;
+    <div class="vb-ded-save-note">💡 These amounts are auto-posted as transactions (sub-category: <strong>Choice Pay Deduction</strong>) whenever you record a Salary income entry.</div>`;
 
   const totalDed = (ded.epf || 0) + (ded.nps || 0) + (ded.others || []).reduce((s, o) => s + (o.amount || 0), 0);
   document.getElementById('vbDedSummary').textContent =
@@ -2545,13 +3114,11 @@ function vbPickPhoto(key) {
 function vbPhotoUploaded(e) {
   const file = e.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    localStorage.setItem('vb-photo-' + _vbPhotoKey, ev.target.result);
-    loadVisionBoard(); // re-render to show uploaded photo
-  };
-  reader.readAsDataURL(file);
-  e.target.value = ''; // reset so same file can be re-selected
+  _cropSourceInput = e.target;
+  openCropper(file, dataUrl => {
+    localStorage.setItem('vb-photo-' + _vbPhotoKey, dataUrl);
+    loadVisionBoard();
+  });
 }
 
 function vbAddDedExtra() {
@@ -2782,21 +3349,39 @@ async function loadPortfolio() {
     </div>
     <div class="card card-gold">
       <div class="card-icon-row"><div class="ci ci-g">${ICON.target}</div><div class="card-label">To Target</div></div>
-      <div class="card-value gold-val">${fmt(Math.max(CORPUS_TARGET - summary.total_value, 0))}</div>
-      <div class="card-sub">Remaining to ₹2 Crore</div>
+      <div class="card-value gold-val" id="portfolio-to-target">—</div>
+      <div class="card-sub" id="portfolio-target-label">—</div>
     </div>
   `;
 
-  // Corpus progress
-  const pct = Math.min(summary.total_value / CORPUS_TARGET * 100, 100);
+  // ── Corpus progress (reads user-configured goal) ──────────────────────────
+  const goal         = getCorpusGoal();
+  const CORPUS_TARGET = goal.crore * 1e7;
+  const moLeft       = corpusMonthsLeft(goal.targetDate);
+  const pct          = Math.min(summary.total_value / CORPUS_TARGET * 100, 100);
+  const remaining    = Math.max(CORPUS_TARGET - summary.total_value, 0);
+  const reached      = summary.total_value >= CORPUS_TARGET;
+
+  // Update "To Target" card (rendered above via innerHTML, so grab by id)
+  document.getElementById('portfolio-to-target').textContent = fmt(remaining);
+  document.getElementById('portfolio-target-label').textContent = `Remaining to ₹${goal.crore} Crore`;
+
+  // Update page subtitle
+  document.querySelector('#page-portfolio .page-sub').textContent =
+    `Corpus tracker — Goal: ₹${goal.crore} Crore by ${fmtTargetDate(goal.targetDate)}`;
+
+  // Corpus card
+  document.getElementById('corpus-sub-text').textContent =
+    `Target: ₹${(CORPUS_TARGET).toLocaleString('en-IN')} by ${fmtTargetDate(goal.targetDate)}`;
   document.getElementById('corpus-bar').style.width = pct.toFixed(1)+'%';
   document.getElementById('corpus-pct-label').textContent = pct.toFixed(1)+'%';
   document.getElementById('corpus-current').textContent = fmt(summary.total_value);
-  document.getElementById('corpus-remaining').textContent = fmt(Math.max(CORPUS_TARGET - summary.total_value, 0));
-  const monthlyNeed = Math.max(CORPUS_TARGET - summary.total_value, 0) / CORPUS_MONTHS_LEFT;
+  document.getElementById('corpus-remaining').textContent = fmt(remaining);
+  const monthlyNeed = remaining / Math.max(moLeft, 1);
   document.getElementById('corpus-monthly-need').textContent = fmt(monthlyNeed)+'/mo';
-  const reached = summary.total_value >= CORPUS_TARGET;
-  document.getElementById('corpus-eta').textContent = reached ? '🎉 Target Reached!' : `${pct.toFixed(1)}% achieved, ${CORPUS_MONTHS_LEFT} months left`;
+  document.getElementById('corpus-eta').textContent = reached
+    ? '🎉 Target Reached!'
+    : `${pct.toFixed(1)}% achieved · ${moLeft} month${moLeft !== 1 ? 's' : ''} left`;
 
   // Portfolio donut by type
   const typeData = summary.by_type;
@@ -2821,29 +3406,66 @@ async function loadPortfolio() {
   });
 
   // Return bar chart by asset
+  // Calculate return % from total_return/total_invested — more reliable than stored return_pct column
   const ctx2 = document.getElementById('returnBar').getContext('2d');
   if (returnBar) returnBar.destroy();
-  const assetsSorted = [...assets].sort((a,b) => b.return_pct - a.return_pct).slice(0,10);
-  returnBar = new Chart(ctx2, {
-    type:'bar',
-    data:{
-      labels: assetsSorted.map(a => a.asset.length > 15 ? a.asset.slice(0,15)+'…' : a.asset),
-      datasets:[{
-        label:'Return %',
-        data: assetsSorted.map(a => parseFloat((a.return_pct*100).toFixed(1))),
-        backgroundColor: assetsSorted.map(a => a.return_pct >= 0 ? 'rgba(0,232,122,.7)' : 'rgba(255,63,96,.7)'),
-        borderRadius:5, borderSkipped:false
-      }]
-    },
-    options:{
-      indexAxis:'y', responsive:true,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.raw}%`}}},
-      scales:{
-        x:{grid:{color:_g},ticks:{color:_t,callback:v=>v+'%',font:{size:10}}},
-        y:{grid:{display:false},ticks:{color:_t,font:{size:10}}}
-      }
-    }
-  });
+  const assetsWithPct = assets
+    .filter(a => a.total_invested > 0)
+    .map(a => ({
+      ...a,
+      calcPct: parseFloat((a.total_return / a.total_invested * 100).toFixed(1)),
+    }));
+  const assetsSorted = [...assetsWithPct]
+    .sort((a, b) => b.calcPct - a.calcPct)
+    .slice(0, 12);
+  if (assetsSorted.length === 0) {
+    document.getElementById('returnBar').parentElement.innerHTML +=
+      '<div style="text-align:center;color:var(--muted2);font-size:12px;padding:20px 0">No portfolio data yet</div>';
+  } else {
+    returnBar = new Chart(ctx2, {
+      type: 'bar',
+      data: {
+        labels: assetsSorted.map(a => a.asset.length > 16 ? a.asset.slice(0, 16) + '…' : a.asset),
+        datasets: [{
+          label: 'Return %',
+          data: assetsSorted.map(a => a.calcPct),
+          backgroundColor: assetsSorted.map(a =>
+            a.calcPct >= 0 ? 'rgba(79,187,168,.75)' : 'rgba(232,115,108,.75)'),
+          borderColor: assetsSorted.map(a =>
+            a.calcPct >= 0 ? '#4FBBA8' : '#E8736C'),
+          borderWidth: 1,
+          borderRadius: 5,
+          borderSkipped: false,
+        }],
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: c => ` ${c.raw >= 0 ? '+' : ''}${c.raw}%`,
+              afterLabel: c => {
+                const a = assetsSorted[c.dataIndex];
+                return `  Invested: ${fmt(a.total_invested)}  ·  Return: ${fmt(a.total_return)}`;
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            grid: { color: _g },
+            ticks: { color: _t, callback: v => v + '%', font: { size: 10 } },
+          },
+          y: {
+            grid: { display: false },
+            ticks: { color: _t, font: { size: 10 } },
+          },
+        },
+      },
+    });
+  }
 
   // Assets by type
   const byType = {};
@@ -3502,25 +4124,38 @@ async function submitTransaction() {
     const salaryEntry = entries.find(e => e.cat.toLowerCase().includes('salary'));
     if (salaryEntry) {
       const ded = JSON.parse(localStorage.getItem('mt_salary_deductions') || '{"epf":0,"nps":0,"others":[]}');
+      const SUB = 'Choice Pay Deduction';   // ← unified sub-category for all deductions
       const dedPosts = [];
+
+      // Total of all deductions (EPF + NPS + others)
+      const dedTotal = (ded.epf || 0) + (ded.nps || 0) + (ded.others || []).reduce((s, o) => s + (o.amount || 0), 0);
+
+      // 1. Income entry: gross deduction amount so net salary balances correctly
+      if (dedTotal > 0) dedPosts.push(fetch('/api/transactions', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ type:'income', category:'Salary', sub_category: SUB, amount: dedTotal, date, note: 'Auto: Gross Salary Deduction Total' }),
+      }));
+
+      // 2. Investment entries (EPF, NPS)
       if ((ded.epf || 0) > 0) dedPosts.push(fetch('/api/transactions', {
         method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ type:'investment', category:'Fixed Return', sub_category:'EPF Contribution', amount: ded.epf, date, note: 'Auto: Salary Deduction' }),
+        body: JSON.stringify({ type:'investment', category:'Fixed Return', sub_category: SUB, amount: ded.epf, date, note: 'Auto: EPF Salary Deduction' }),
       }));
       if ((ded.nps || 0) > 0) dedPosts.push(fetch('/api/transactions', {
         method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ type:'investment', category:'Retirement', sub_category:'NPS Contribution', amount: ded.nps, date, note: 'Auto: Salary Deduction' }),
+        body: JSON.stringify({ type:'investment', category:'Retirement', sub_category: SUB, amount: ded.nps, date, note: 'Auto: NPS Salary Deduction' }),
       }));
+
+      // 3. Expense entries (other deductions)
       (ded.others || []).forEach(o => {
         if (o.amount > 0) dedPosts.push(fetch('/api/transactions', {
           method: 'POST', headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ type:'expense', category:'Salary Deduction', sub_category: o.name, amount: o.amount, date, note: 'Auto: Salary Deduction' }),
+          body: JSON.stringify({ type:'expense', category: o.name, sub_category: SUB, amount: o.amount, date, note: 'Auto: Salary Deduction' }),
         }));
       });
       if (dedPosts.length) {
         await Promise.all(dedPosts);
-        const total = (ded.epf || 0) + (ded.nps || 0) + (ded.others || []).reduce((s, o) => s + (o.amount || 0), 0);
-        toast(`${entries.length} transaction${entries.length > 1 ? 's' : ''} saved + ${dedPosts.length} deduction${dedPosts.length > 1 ? 's' : ''} auto-posted (${fmt(total)})!`, 'success');
+        toast(`${entries.length} transaction${entries.length > 1 ? 's' : ''} saved + ${dedPosts.length} deduction${dedPosts.length > 1 ? 's' : ''} auto-posted (${fmt(dedTotal)})!`, 'success');
         closeModal('addModal');
         if (currentPage === 'dashboard')    loadDashboard();
         if (currentPage === 'transactions') loadTransactions();
@@ -3539,7 +4174,24 @@ async function submitTransaction() {
 
 function openAlertModal() { document.getElementById('alertModal').classList.add('open'); updateAlertForm(); }
 function closeModal(id)    { document.getElementById(id).classList.remove('open'); }
-document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e=>{if(e.target===m)m.classList.remove('open')}));
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e=>{
+  if (e.target === m && m.id !== 'cropModal') m.classList.remove('open');  // crop modal needs explicit confirm/cancel
+}));
+
+// ── Vision card 3-dot menu ────────────────────────────────────────────────────
+function vcToggleMenu(btn) {
+  const dropdown = btn.nextElementSibling;
+  const wasOpen  = dropdown.classList.contains('open');
+  closeVcMenu();                                // close any other open menu
+  if (!wasOpen) dropdown.classList.add('open');
+}
+function closeVcMenu() {
+  document.querySelectorAll('.vc-menu-dropdown.open').forEach(d => d.classList.remove('open'));
+}
+// Dismiss menu on outside click
+document.addEventListener('click', e => {
+  if (!e.target.closest('.vc-menu-wrap')) closeVcMenu();
+});
 
 function toast(msg, type='success') {
   const t = document.getElementById('toast');
