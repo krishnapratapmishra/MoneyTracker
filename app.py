@@ -199,6 +199,28 @@ def api_transactions():
     rows = c.execute(q, p).fetchall(); conn.close()
     return jsonify([dict(r) for r in rows])
 
+@app.route('/api/transactions/last_amounts')
+def api_last_amounts():
+    """Return the most-recently-entered amount per category for a given type.
+    Excludes auto-posted deduction entries (sub_category='Choice Pay Deduction').
+    Used by the Add Transaction modal to pre-fill fields on first open."""
+    ttype = request.args.get('type', '')
+    if not ttype:
+        return jsonify({})
+    conn = get_db(); c = conn.cursor()
+    rows = c.execute(
+        """SELECT category, amount FROM transactions
+           WHERE type=? AND (sub_category IS NULL OR sub_category != 'Choice Pay Deduction')
+           ORDER BY date DESC, id DESC""",
+        (ttype,)
+    ).fetchall()
+    conn.close()
+    seen = {}
+    for r in rows:
+        if r['category'] not in seen:
+            seen[r['category']] = r['amount']
+    return jsonify(seen)
+
 def _tx_to_portfolio_asset(category, sub_category):
     """Map a transaction category/sub_category to portfolio (asset, asset_type)."""
     cat = (category or '').strip()

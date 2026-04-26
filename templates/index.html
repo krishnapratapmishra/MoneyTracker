@@ -750,6 +750,25 @@ tr:hover td{background:var(--surface2)}
 .vb-alloc-fill{height:100%;border-radius:5px;transition:width .9s ease;position:relative;z-index:1}
 .vb-alloc-tag{font-size:9px;font-weight:700;margin-top:3px}
 
+/* ── VB Config Panel ────────────────────────────────────────────────────── */
+.vb-cfg-panel{position:fixed;top:0;right:0;bottom:0;width:340px;background:var(--surface);
+  border-left:1px solid var(--border);box-shadow:-6px 0 32px rgba(0,0,0,.18);z-index:300;
+  display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s ease}
+.vb-cfg-panel.open{transform:translateX(0)}
+.vb-cfg-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;
+  border-bottom:1px solid var(--border);font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:14px}
+.vb-cfg-body{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:18px}
+.vb-cfg-section{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted2);
+  font-weight:700;border-bottom:1px solid var(--border);padding-bottom:6px;margin-top:4px}
+.vb-cfg-row{display:flex;flex-direction:column;gap:4px}
+.vb-cfg-row label{font-size:12px;font-weight:600;color:var(--text)}
+.vb-cfg-row-inp{display:flex;align-items:center;gap:8px}
+.vb-cfg-row-inp input{flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:8px;
+  background:var(--surface2);color:var(--text);font-size:13px;font-weight:600}
+.vb-cfg-hint{font-size:10px;color:var(--muted2);white-space:nowrap}
+.vb-cfg-ftr{display:flex;gap:8px;padding:14px 18px;border-top:1px solid var(--border)}
+.vb-cfg-ftr .btn{flex:1;font-size:12px}
+
 .vb-goals-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin-bottom:20px}
 .vb-goal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:box-shadow .18s}
 .vb-goal:hover{box-shadow:var(--shadow)}
@@ -1338,7 +1357,8 @@ tr:hover td{background:var(--surface2)}
       <div class="magnet-header-title">Money Magnet</div>
       <div class="magnet-header-sub" id="vbSub">Financial Health · Wealth · Investment Discipline · Goals</div>
     </div>
-    <div style="margin-left:auto;display:flex;gap:8px">
+    <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" style="background:rgba(255,255,255,.15);color:#1a2118" onclick="openVbConfigPanel()">⚙️ Targets</button>
       <button class="btn" style="background:rgba(255,255,255,.25);color:#1a2118;font-weight:700" onclick="openAddVisionCard('vision','vision')">＋ Vision Card</button>
       <button class="btn" style="background:rgba(255,255,255,.15);color:#1a2118" onclick="openAddStatusCard('vision')">＋ Status</button>
     </div>
@@ -1410,6 +1430,9 @@ tr:hover td{background:var(--surface2)}
   <div class="section-label">🌟 Vision Goals</div>
   <div class="vb-goals-grid" id="vbGoalsGrid"></div>
 
+  <!-- User-added vision cards for this magnet -->
+  <div class="vision-board-grid" id="vision-vision-grid" style="margin-top:4px"></div>
+
   <!-- Data sources reference -->
   <div class="vb-ds-wrap">
     <div class="vb-ds-toggle" onclick="this.nextElementSibling.classList.toggle('open')">
@@ -1420,6 +1443,103 @@ tr:hover td{background:var(--surface2)}
 
   <!-- Hidden file input for photo upload -->
   <input type="file" id="vb-photo-input" accept="image/*" style="display:none" onchange="vbPhotoUploaded(event)">
+
+  <!-- Config panel (slide-in from right) -->
+  <div class="vb-cfg-panel" id="vbConfigPanel">
+    <div class="vb-cfg-hdr">
+      <span>⚙️ Configure Targets</span>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('vbConfigPanel').classList.remove('open')">✕</button>
+    </div>
+    <div class="vb-cfg-body">
+      <div class="vb-cfg-section">Discipline Rules</div>
+
+      <div class="vb-cfg-row">
+        <label>Min Income Sources</label>
+        <div class="vb-cfg-row-inp">
+          <input type="number" id="vbCfgIncomeSrc" min="1" max="20" step="1">
+          <span class="vb-cfg-hint">Rec: 5 sources</span>
+        </div>
+      </div>
+      <div class="vb-cfg-row">
+        <label>Max Total Expense (% of income)</label>
+        <div class="vb-cfg-row-inp">
+          <input type="number" id="vbCfgExpMax" min="10" max="100" step="1">
+          <span class="vb-cfg-hint">Rec: 60%</span>
+        </div>
+      </div>
+      <div class="vb-cfg-row">
+        <label>Emergency Fund (months)</label>
+        <div class="vb-cfg-row-inp">
+          <input type="number" id="vbCfgEmergMo" min="1" max="24" step="1">
+          <span class="vb-cfg-hint">Rec: 6 months</span>
+        </div>
+      </div>
+      <div class="vb-cfg-row">
+        <label>Min Investment (% of income)</label>
+        <div class="vb-cfg-row-inp">
+          <input type="number" id="vbCfgInvMin" min="5" max="80" step="1">
+          <span class="vb-cfg-hint">Rec: 30%</span>
+        </div>
+      </div>
+      <div class="vb-cfg-row">
+        <label>Max Loan EMI (% of income)</label>
+        <div class="vb-cfg-row-inp">
+          <input type="number" id="vbCfgLoanMax" min="5" max="60" step="1">
+          <span class="vb-cfg-hint">Rec: 15%</span>
+        </div>
+      </div>
+      <div class="vb-cfg-row">
+        <label>Min Charity (% of income)</label>
+        <div class="vb-cfg-row-inp">
+          <input type="number" id="vbCfgCharityMin" min="0" max="20" step="0.5">
+          <span class="vb-cfg-hint">Rec: 2%</span>
+        </div>
+      </div>
+
+      <div class="vb-cfg-section">Investment Allocation Targets</div>
+
+      <div class="vb-cfg-row">
+        <label>Equity (Stocks · MF · ETF) target %</label>
+        <div class="vb-cfg-row-inp">
+          <input type="number" id="vbCfgAllocEq" min="0" max="100" step="1">
+          <span class="vb-cfg-hint">Rec: 70%</span>
+        </div>
+      </div>
+      <div class="vb-cfg-row">
+        <label>Gold (Physical · ETF · SGB) target %</label>
+        <div class="vb-cfg-row-inp">
+          <input type="number" id="vbCfgAllocGold" min="0" max="100" step="1">
+          <span class="vb-cfg-hint">Rec: 10%</span>
+        </div>
+      </div>
+      <div class="vb-cfg-row">
+        <label>Fixed Return (EPF · PPF) target %</label>
+        <div class="vb-cfg-row-inp">
+          <input type="number" id="vbCfgAllocFixed" min="0" max="100" step="1">
+          <span class="vb-cfg-hint">Rec: 20%</span>
+        </div>
+      </div>
+      <div class="vb-cfg-row">
+        <label>Retirement / NPS (% of salary)</label>
+        <div class="vb-cfg-row-inp">
+          <input type="number" id="vbCfgAllocRet" min="0" max="50" step="1">
+          <span class="vb-cfg-hint">Rec: 14%</span>
+        </div>
+      </div>
+      <div class="vb-cfg-row">
+        <label>Real Estate (Land · Flat) target %</label>
+        <div class="vb-cfg-row-inp">
+          <input type="number" id="vbCfgAllocRealEst" min="0" max="100" step="1">
+          <span class="vb-cfg-hint">Rec: 0% (no fixed target)</span>
+        </div>
+      </div>
+    </div>
+    <div class="vb-cfg-ftr">
+      <button class="btn btn-primary" onclick="saveVbConfigPanel()">Save</button>
+      <button class="btn btn-cancel" onclick="document.getElementById('vbConfigPanel').classList.remove('open')">Cancel</button>
+      <button class="btn btn-ghost" onclick="resetVbConfig()" title="Reset to recommended values">Reset</button>
+    </div>
+  </div>
 </div>
 
 <!-- ════════════ DASHBOARD ════════════ -->
@@ -2756,18 +2876,21 @@ async function loadVisionBoard() {
                          .reduce((s, c) => s + c.total, 0);
   const charityPct   = totalIncome > 0 ? charityTotal / totalIncome * 100 : 0;
 
-  // Emergency fund: cumulative net savings vs 6× avg monthly burn
+  // Emergency fund: cumulative net savings vs target months × avg monthly burn
   const cumulativeSavings = trend.reduce((s, m) => s + Math.max(0, m.savings), 0);
   const savingsCoverMos   = avgBurn > 0 ? cumulativeSavings / avgBurn : 0;
 
+  // Load configurable targets
+  const cfg = getVbConfig();
+
   // Each out of 16.67 (6 cards × 16.67 = 100)
   const W = 100 / 6;
-  const srcScore     = Math.min(W, (srcCount / 5) * W);
-  const invScore     = Math.min(W, (investPct / 30) * W);
-  const expScore     = totalExpPct <= 60 ? W : Math.max(0, W * (1 - (totalExpPct - 60) / 40));
-  const loanScore    = loanPct <= 15 ? W : Math.max(0, W * (1 - (loanPct - 15) / 30));
-  const savScore     = Math.min(W, (savingsCoverMos / 6) * W);
-  const charityScore = charityPct >= 2 ? W : Math.min(W, (charityPct / 2) * W);
+  const srcScore     = Math.min(W, (srcCount / cfg.incomeSources) * W);
+  const invScore     = Math.min(W, (investPct / cfg.investMin) * W);
+  const expScore     = totalExpPct <= cfg.expenseMax ? W : Math.max(0, W * (1 - (totalExpPct - cfg.expenseMax) / Math.max(cfg.expenseMax, 1)));
+  const loanScore    = loanPct <= cfg.loanMax ? W : Math.max(0, W * (1 - (loanPct - cfg.loanMax) / Math.max(cfg.loanMax * 2, 1)));
+  const savScore     = Math.min(W, (savingsCoverMos / cfg.emergencyMonths) * W);
+  const charityScore = charityPct >= cfg.charityMin ? W : (cfg.charityMin > 0 ? Math.min(W, (charityPct / cfg.charityMin) * W) : W);
   const overall      = Math.round(srcScore + invScore + expScore + loanScore + savScore + charityScore);
 
   // Ring gauge — use hardcoded ribbon hex so light/dark mode both look right
@@ -2792,31 +2915,37 @@ async function loadVisionBoard() {
   //                   Row 2: Investment, Loan EMI, Charity
   const dc = [
     { lbl:'Income Sources', icon:'💼', bg:'var(--income-d)',
-      actual:`${srcCount}`, unit:' / 5', target:'Min 5 sources',
-      pct: Math.min(100,(srcCount/5)*100), score:srcScore,
-      met: srcCount >= 5, status: srcCount >= 5 ? '✓ Target met' : `Need ${5-srcCount} more` },
+      actual:`${srcCount}`, unit:` / ${cfg.incomeSources}`, target:`Min ${cfg.incomeSources} sources`,
+      pct: Math.min(100,(srcCount/cfg.incomeSources)*100), score:srcScore,
+      met: srcCount >= cfg.incomeSources,
+      status: srcCount >= cfg.incomeSources ? '✓ Target met' : `Need ${cfg.incomeSources-srcCount} more` },
     { lbl:'Total Expense', icon:'💸', bg:'var(--expense-d)',
-      actual:`${totalExpPct.toFixed(0)}`, unit:'%', target:'Max 60% (incl EMI)',
-      pct: Math.min(100,(totalExpPct/60)*100), score:expScore,
-      met: totalExpPct <= 60, status: totalExpPct <= 60 ? '✓ Within limit' : `${(totalExpPct-60).toFixed(0)}% over`,
+      actual:`${totalExpPct.toFixed(0)}`, unit:'%', target:`Max ${cfg.expenseMax}% (incl EMI)`,
+      pct: Math.min(100,(totalExpPct/cfg.expenseMax)*100), score:expScore,
+      met: totalExpPct <= cfg.expenseMax,
+      status: totalExpPct <= cfg.expenseMax ? '✓ Within limit' : `${(totalExpPct-cfg.expenseMax).toFixed(0)}% over`,
       inverse: true },
     { lbl:'Emergency Fund', icon:'🛡️', bg:'var(--savings-d)',
-      actual:`${savingsCoverMos.toFixed(1)}`, unit:' mo', target:'Target 6 months',
-      pct: Math.min(100,(savingsCoverMos/6)*100), score:savScore,
-      met: savingsCoverMos >= 6, status: savingsCoverMos >= 6 ? '✓ Target met' : `${(6-savingsCoverMos).toFixed(1)}mo short` },
+      actual:`${savingsCoverMos.toFixed(1)}`, unit:' mo', target:`Target ${cfg.emergencyMonths} months`,
+      pct: Math.min(100,(savingsCoverMos/cfg.emergencyMonths)*100), score:savScore,
+      met: savingsCoverMos >= cfg.emergencyMonths,
+      status: savingsCoverMos >= cfg.emergencyMonths ? '✓ Target met' : `${(cfg.emergencyMonths-savingsCoverMos).toFixed(1)}mo short` },
     { lbl:'Investment', icon:'📈', bg:'var(--invest-d)',
-      actual:`${investPct.toFixed(0)}`, unit:'%', target:'Min 30% of income',
-      pct: Math.min(100,(investPct/30)*100), score:invScore,
-      met: investPct >= 30, status: investPct >= 30 ? '✓ Target met' : `${(30-investPct).toFixed(0)}% short` },
+      actual:`${investPct.toFixed(0)}`, unit:'%', target:`Min ${cfg.investMin}% of income`,
+      pct: Math.min(100,(investPct/cfg.investMin)*100), score:invScore,
+      met: investPct >= cfg.investMin,
+      status: investPct >= cfg.investMin ? '✓ Target met' : `${(cfg.investMin-investPct).toFixed(0)}% short` },
     { lbl:'Loan EMI', icon:'🏦', bg:'rgba(168,85,247,.1)',
-      actual:`${loanPct.toFixed(0)}`, unit:'%', target:'Max 15% of income',
-      pct: Math.min(100,(loanPct/15)*100), score:loanScore,
-      met: loanPct <= 15, status: loanPct <= 15 ? '✓ Within limit' : `${(loanPct-15).toFixed(0)}% over`,
+      actual:`${loanPct.toFixed(0)}`, unit:'%', target:`Max ${cfg.loanMax}% of income`,
+      pct: Math.min(100,(loanPct/cfg.loanMax)*100), score:loanScore,
+      met: loanPct <= cfg.loanMax,
+      status: loanPct <= cfg.loanMax ? '✓ Within limit' : `${(loanPct-cfg.loanMax).toFixed(0)}% over`,
       inverse: true },
     { lbl:'Charity', icon:'🤝', bg:'rgba(236,72,153,.1)',
-      actual:`${charityPct.toFixed(1)}`, unit:'%', target:'Min 2% of income',
-      pct: Math.min(100,(charityPct/2)*100), score:charityScore,
-      met: charityPct >= 2, status: charityPct >= 2 ? '✓ Target met' : `${(2-charityPct).toFixed(1)}% short`,
+      actual:`${charityPct.toFixed(1)}`, unit:'%', target:`Min ${cfg.charityMin}% of income`,
+      pct: cfg.charityMin > 0 ? Math.min(100,(charityPct/cfg.charityMin)*100) : 100, score:charityScore,
+      met: charityPct >= cfg.charityMin,
+      status: charityPct >= cfg.charityMin ? '✓ Target met' : `${(cfg.charityMin-charityPct).toFixed(1)}% short`,
       sub: fmt(charityTotal) + ' total' },
   ];
   document.getElementById('vbDisciplineGrid').innerHTML = dc.map(d => {
@@ -2844,16 +2973,18 @@ async function loadVisionBoard() {
   const totalPort = portSum.total_value || 1;
 
   const allocRows = [
-    { name:'Equity', sub:'Stocks + Mutual Fund',  color:'#8b7dff', target:70,
+    { name:'Equity', sub:'Stocks · MF · ETF',       color:'#8b7dff', target:cfg.allocEquity,
       actual: getVal('Equity') / totalPort * 100 },
-    { name:'Gold',   sub:'Physical · ETF · SGB',  color:'#fbbf24', target:10,
+    { name:'Gold',   sub:'Physical · ETF · SGB',    color:'#fbbf24', target:cfg.allocGold,
       actual: getVal('Gold') / totalPort * 100 },
-    { name:'Fixed Return', sub:'EPF · PPF · Sukanya', color:'#06c4a8', target:20,
+    { name:'Fixed Return', sub:'EPF · PPF · Sukanya', color:'#06c4a8', target:cfg.allocFixed,
       actual: getVal('Fixed Return') / totalPort * 100 },
-    { name:'Retirement',   sub:'NPS · Pension',        color:'#f59e0b', target:null,
-      actual: getVal('Retirement') / totalPort * 100, targetLabel:'14% of salary' },
-    { name:'Real Estate',  sub:'Land · Flat',           color:'#ec4899', target:0,
-      actual: getVal('Real State') / totalPort * 100, targetLabel:'No target yet' },
+    { name:'Retirement',   sub:'NPS · Pension',       color:'#f59e0b', target:null,
+      actual: getVal('Retirement') / totalPort * 100, targetLabel:`${cfg.allocRetirement}% of salary` },
+    { name:'Real Estate',  sub:'Land · Flat',          color:'#ec4899',
+      target: cfg.allocRealEstate > 0 ? cfg.allocRealEstate : 0,
+      actual: getVal('Real State') / totalPort * 100,
+      targetLabel: cfg.allocRealEstate > 0 ? `Target ${cfg.allocRealEstate}%` : 'No target yet' },
   ];
   document.getElementById('vbAllocRows').innerHTML = allocRows.map(r => {
     const tgt = r.target != null ? r.target : 14;
@@ -2891,8 +3022,6 @@ async function loadVisionBoard() {
       current: fixedVal,   target: 50000000,  color:'#06c4a8', photo:true },   // hybrid
     { key:'gold10l',     icon:'🥇', name:'10L Gold Investment',  year:'Ongoing goal',
       current: goldVal,    target: 1000000,   color:'#fbbf24' },
-    { key:'car',         icon:'🚗', name:'Luxury Car',           year:'Dream goal', photo:true, photoOnly:true },
-    { key:'villa',       icon:'🏠', name:'My Own Villa',          year:'Dream goal', photo:true, photoOnly:true },
   ];
 
   document.getElementById('vbGoalsGrid').innerHTML = goals.map(g => {
@@ -2959,9 +3088,9 @@ async function loadVisionBoard() {
     return weight * Math.max(0, 1 - dev / Math.max(target, 1));
   }
   const invDisciplineScore = Math.round(
-    allocScore(eqPct, 70, 33) +
-    allocScore(gdPct, 15, 33) +
-    allocScore(frPct, 15, 34)
+    allocScore(eqPct, cfg.allocEquity, 33) +
+    allocScore(gdPct, cfg.allocGold,   33) +
+    allocScore(frPct, cfg.allocFixed,  34)
   );
 
   const invRingFill = document.getElementById('vb-inv-ring-fill');
@@ -3096,6 +3225,9 @@ async function loadVisionBoard() {
       </tbody>
     </table>`;
 
+  // Render user-added vision cards (added via "+ Vision Card" button on this page)
+  await renderVisionCards('vision');
+
   } catch(err) {
     console.error('loadVisionBoard error:', err);
     const num = document.getElementById('vb-score-num');
@@ -3103,6 +3235,58 @@ async function loadVisionBoard() {
     const grid = document.getElementById('vbDisciplineGrid');
     if (grid) grid.innerHTML = `<div style="grid-column:1/-1;padding:16px;color:#E8736C;font-size:12px">⚠️ Could not load data — check the server is running: ${err.message}</div>`;
   }
+}
+
+// ── VB Config (discipline + allocation targets) ───────────────────────────────
+const VB_CFG_DEF = {
+  incomeSources:5, expenseMax:60, emergencyMonths:6,
+  investMin:30, loanMax:15, charityMin:2,
+  allocEquity:70, allocGold:10, allocFixed:20, allocRetirement:14, allocRealEstate:0
+};
+function getVbConfig() {
+  try { return {...VB_CFG_DEF, ...JSON.parse(localStorage.getItem('mt_vb_config')||'{}')}; }
+  catch { return {...VB_CFG_DEF}; }
+}
+function openVbConfigPanel() {
+  const c = getVbConfig();
+  document.getElementById('vbCfgIncomeSrc').value  = c.incomeSources;
+  document.getElementById('vbCfgExpMax').value      = c.expenseMax;
+  document.getElementById('vbCfgEmergMo').value     = c.emergencyMonths;
+  document.getElementById('vbCfgInvMin').value      = c.investMin;
+  document.getElementById('vbCfgLoanMax').value     = c.loanMax;
+  document.getElementById('vbCfgCharityMin').value  = c.charityMin;
+  document.getElementById('vbCfgAllocEq').value     = c.allocEquity;
+  document.getElementById('vbCfgAllocGold').value   = c.allocGold;
+  document.getElementById('vbCfgAllocFixed').value  = c.allocFixed;
+  document.getElementById('vbCfgAllocRet').value       = c.allocRetirement;
+  document.getElementById('vbCfgAllocRealEst').value   = c.allocRealEstate;
+  document.getElementById('vbConfigPanel').classList.add('open');
+}
+function saveVbConfigPanel() {
+  const g = id => parseFloat(document.getElementById(id).value) || 0;
+  const c = {
+    incomeSources:   Math.max(1, Math.round(g('vbCfgIncomeSrc'))),
+    expenseMax:      Math.max(1, g('vbCfgExpMax')),
+    emergencyMonths: Math.max(1, g('vbCfgEmergMo')),
+    investMin:       Math.max(0, g('vbCfgInvMin')),
+    loanMax:         Math.max(1, g('vbCfgLoanMax')),
+    charityMin:      Math.max(0, g('vbCfgCharityMin')),
+    allocEquity:     Math.max(0, g('vbCfgAllocEq')),
+    allocGold:       Math.max(0, g('vbCfgAllocGold')),
+    allocFixed:      Math.max(0, g('vbCfgAllocFixed')),
+    allocRetirement:  Math.max(0, g('vbCfgAllocRet')),
+    allocRealEstate:  Math.max(0, g('vbCfgAllocRealEst')),
+  };
+  localStorage.setItem('mt_vb_config', JSON.stringify(c));
+  document.getElementById('vbConfigPanel').classList.remove('open');
+  loadVisionBoard();
+  toast('Targets updated!', 'success');
+}
+function resetVbConfig() {
+  localStorage.removeItem('mt_vb_config');
+  document.getElementById('vbConfigPanel').classList.remove('open');
+  loadVisionBoard();
+  toast('Targets reset to recommended values', 'success');
 }
 
 // Photo upload helpers for vision goals
@@ -3983,8 +4167,31 @@ async function renderAddBody(type, prePopulate = false) {
         </div>`;
       return;
     }
+    let _lastLoan = {};
+    const _lsLoan = localStorage.getItem('mt_last_tx_loan');
+    if (_lsLoan) {
+      try { _lastLoan = JSON.parse(_lsLoan); } catch(e) {}
+    } else {
+      // No localStorage yet — seed from DB (most recent amount per loan name = sub_category)
+      try {
+        const _dbLoan = await fetch('/api/transactions/last_amounts?type=expense').then(r => r.json());
+        // Loan transactions are stored as expense with sub_category = loan_name
+        // We'll look them up by fetching actual loan EMI transactions
+        const _loanRows = await fetch('/api/transactions?type=expense').then(r => r.json());
+        const _loanNames = new Set(activeLoans.map(l => l.loan_name));
+        const _seenLoan = {};
+        for (const tx of _loanRows) {
+          if (tx.category === 'Loan EMI' && _loanNames.has(tx.sub_category) && !_seenLoan[tx.sub_category]) {
+            _seenLoan[tx.sub_category] = tx.amount;
+          }
+        }
+        _lastLoan = _seenLoan;
+        if (Object.keys(_lastLoan).length) localStorage.setItem('mt_last_tx_loan', JSON.stringify(_lastLoan));
+      } catch(e) {}
+    }
     const rows = activeLoans.map(loan => {
-      const defaultAmt = prePopulate ? Math.round(loan.expected_emi || 0) : 0;
+      const _saved = _lastLoan[loan.loan_name];
+      const defaultAmt = _saved !== undefined ? _saved : (prePopulate ? Math.round(loan.expected_emi || 0) : 0);
       return `
       <div class="cat-row">
         <div style="flex:1;min-width:0">
@@ -4022,8 +4229,22 @@ async function renderAddBody(type, prePopulate = false) {
     return 0;
   };
 
+  // Last saved values for this tab (override deduction defaults when present)
+  let _lastVals = {};
+  const _lsKey = `mt_last_tx_${type}`;
+  const _lsRaw = localStorage.getItem(_lsKey);
+  if (_lsRaw) {
+    try { _lastVals = JSON.parse(_lsRaw); } catch(e) {}
+  } else {
+    // No localStorage yet — seed from DB (most recent amount per category)
+    try {
+      _lastVals = await fetch(`/api/transactions/last_amounts?type=${type}`).then(r => r.json());
+      localStorage.setItem(_lsKey, JSON.stringify(_lastVals));
+    } catch(e) {}
+  }
+
   const rows = cats.map(cat => {
-    const defVal = _dedDefault(cat);
+    const defVal = (_lastVals[cat] !== undefined) ? _lastVals[cat] : _dedDefault(cat);
     return `
     <div class="cat-row">
       <div class="cat-row-name">${cat}</div>
@@ -4101,6 +4322,26 @@ async function submitTransaction() {
   }
 
   if (!entries.length) { toast('Enter at least one amount greater than 0', 'error'); return; }
+
+  // ── Persist all current form values so next open pre-fills them ───────────
+  if (type === 'loan') {
+    const _lv = {};
+    document.querySelectorAll('#addTxBody input[id^="amt_loan_"]').forEach(el => {
+      _lv[decodeURIComponent(el.id.replace('amt_loan_', ''))] = parseFloat(el.value) || 0;
+    });
+    localStorage.setItem('mt_last_tx_loan', JSON.stringify(_lv));
+  } else {
+    const _lv = {};
+    _allCats(type).forEach(cat => {
+      const el = document.getElementById(`amt_${type}_${encodeURIComponent(cat)}`);
+      if (el) _lv[cat] = parseFloat(el.value) || 0;
+    });
+    const _newName = (document.getElementById(`newCatName_${type}`)?.value || '').trim();
+    const _newAmt  = parseFloat(document.getElementById(`newCatAmt_${type}`)?.value || '0') || 0;
+    if (_newName && _newAmt > 0) _lv[_newName] = _newAmt;
+    localStorage.setItem(`mt_last_tx_${type}`, JSON.stringify(_lv));
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   const isLoan = type === 'loan';
   const statusEl = document.getElementById('addTxStatus');
