@@ -143,6 +143,8 @@ def init_schema():
         "ALTER TABLE portfolio ADD COLUMN return_pct REAL DEFAULT 0",
         "ALTER TABLE portfolio ADD COLUMN updated_at TEXT",
         "ALTER TABLE assets ADD COLUMN purpose TEXT",
+        "ALTER TABLE wealth ADD COLUMN target_date TEXT",
+        "ALTER TABLE assets ADD COLUMN target_pct REAL DEFAULT 25",
     ]:
         try:
             conn.execute(migration)
@@ -1138,20 +1140,21 @@ def api_assets_patch(aid):
     row = conn.execute("SELECT * FROM assets WHERE id=?", (aid,)).fetchone()
     if not row:
         conn.close(); return jsonify({'error': 'Not found'}), 404
-    ltp       = float(d.get('ltp',       row['ltp']))
-    qty       = float(d.get('qty',       row['qty']))
-    avg_price = float(d.get('avg_price', row['avg_price']))
-    symbol    = d.get('symbol', row['symbol'] or '')
-    invested  = qty * avg_price
-    current   = qty * ltp
-    pnl       = current - invested
-    pnl_pct   = (pnl / invested * 100) if invested > 0 else 0
+    ltp        = float(d.get('ltp',        row['ltp']       or 0))
+    qty        = float(d.get('qty',        row['qty']       or 0))
+    avg_price  = float(d.get('avg_price',  row['avg_price'] or 0))
+    symbol     = d.get('symbol', row['symbol'] or '')
+    target_pct = float(d.get('target_pct', row['target_pct'] if row['target_pct'] is not None else 25))
+    invested   = qty * avg_price
+    current    = qty * ltp
+    pnl        = current - invested
+    pnl_pct    = (pnl / invested * 100) if invested > 0 else 0
     conn.execute("""
-        UPDATE assets SET ltp=?, qty=?, avg_price=?, symbol=?,
+        UPDATE assets SET ltp=?, qty=?, avg_price=?, symbol=?, target_pct=?,
             invested_value=?, current_value=?, pnl=?, pnl_pct=?,
             last_synced=datetime('now'), updated_at=datetime('now')
         WHERE id=?
-    """, (ltp, qty, avg_price, symbol, invested, current, pnl, pnl_pct, aid))
+    """, (ltp, qty, avg_price, symbol, target_pct, invested, current, pnl, pnl_pct, aid))
     conn.commit(); conn.close()
     return jsonify({'success': True})
 
@@ -1534,8 +1537,10 @@ def _wt_cascade(conn, asset_type, purpose=None):
 @app.route('/api/wealth')
 def api_wealth_list():
     """All wealth goals with computed current_value / achieved_pct from portfolio."""
+    from datetime import date as _date, datetime as _datetime
     conn = get_db(); c = conn.cursor()
     goals = [dict(r) for r in c.execute("SELECT * FROM wealth ORDER BY id").fetchall()]
+    today = _date.today()
     for g in goals:
         row = c.execute("""
             SELECT COALESCE(SUM(current_value),0) cv,
@@ -1548,6 +1553,28 @@ def api_wealth_list():
         g['total_return']   = round(cv - ti, 2)
         g['achieved_pct']   = round(cv / g['target'] * 100, 2) if g['target'] > 0 else 0
         g['remaining']      = round(max(0.0, g['target'] - cv), 2)
+        # Time remaining fields
+        td = g.get('target_date')
+        if td:
+            try:
+                target_d = _date.fromisoformat(td[:10])
+                days_left = (target_d - today).days
+                g['days_remaining'] = days_left
+                # Created date for elapsed % calculation
+                created_raw = g.get('created_at', '')
+                if created_raw:
+                    created_d = _datetime.fromisoformat(created_raw[:10]).date()
+                    total_days = (target_d - created_d).days
+                    elapsed    = (today - created_d).days
+                    g['time_elapsed_pct'] = round(min(100, max(0, elapsed / total_days * 100)), 1) if total_days > 0 else 0
+                else:
+                    g['time_elapsed_pct'] = 0
+            except Exception:
+                g['days_remaining']   = None
+                g['time_elapsed_pct'] = 0
+        else:
+            g['days_remaining']   = None
+            g['time_elapsed_pct'] = 0
     conn.close()
     return jsonify(goals)
 
@@ -1557,10 +1584,12 @@ def api_wealth_add():
     purpose = (d.get('purpose') or '').strip()
     if not purpose:
         return jsonify({'error': 'purpose required'}), 400
-    target = float(d.get('target', 0))
+    target      = float(d.get('target', 0))
+    target_date = (d.get('target_date') or '').strip() or None
     conn = get_db()
     try:
-        conn.execute("INSERT INTO wealth (purpose, target) VALUES (?,?)", (purpose, target))
+        conn.execute("INSERT INTO wealth (purpose, target, target_date) VALUES (?,?,?)",
+                     (purpose, target, target_date))
         conn.commit()
     except Exception as e:
         conn.close()
@@ -1573,8 +1602,9 @@ def api_wealth_add():
 def api_wealth_update(wid):
     d = request.json or {}; conn = get_db()
     fields = []; params = []
-    if 'purpose' in d: fields.append("purpose=?"); params.append(d['purpose'].strip())
-    if 'target'  in d: fields.append("target=?");  params.append(float(d['target']))
+    if 'purpose'     in d: fields.append("purpose=?");     params.append(d['purpose'].strip())
+    if 'target'      in d: fields.append("target=?");      params.append(float(d['target']))
+    if 'target_date' in d: fields.append("target_date=?"); params.append((d['target_date'] or '').strip() or None)
     if fields:
         params.append(wid)
         conn.execute(f"UPDATE wealth SET {','.join(fields)} WHERE id=?", params)
@@ -1923,6 +1953,93 @@ def api_monthly_calc_refresh():
     cnt = conn.execute("SELECT COUNT(*) FROM monthly_investment_calc").fetchone()[0]
     conn.close()
     return jsonify({'success': True, 'rows': cnt})
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TRADING STRATEGY
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.route('/api/trading_strategy')
+def api_trading_strategy():
+    """Return shares from assets table enriched with NSE live data + last tx."""
+    conn = get_db()
+    # Shares assets joined with NSE live data
+    assets = conn.execute("""
+        SELECT a.id, a.asset, a.asset_type, a.symbol,
+               a.qty, a.avg_price, a.ltp AS db_ltp,
+               COALESCE(a.target_pct, 25) AS target_pct,
+               a.invested_value, a.current_value,
+               COALESCE(n.ltp,        a.ltp, 0)            AS ltp,
+               COALESCE(n.high_52w,   0)                    AS high_52w,
+               COALESCE(n.low_52w,    0)                    AS low_52w,
+               COALESCE(n.from_52w_high_pct, 0)            AS from_52w_high_pct,
+               COALESCE(n.change_pct, 0)                    AS day_change_pct,
+               COALESCE(n.company_name, a.asset)            AS company_name,
+               n.updated_at AS nse_updated
+        FROM assets a
+        LEFT JOIN nse_master n ON UPPER(TRIM(a.symbol)) = UPPER(TRIM(n.symbol))
+        WHERE LOWER(a.asset_type) LIKE '%share%'
+           OR LOWER(a.asset_type) = 'equity'
+        ORDER BY a.symbol
+    """).fetchall()
+
+    # Last buy per symbol from invest_transactions
+    last_buys = conn.execute("""
+        SELECT t.stock_name, t.price, t.entry_date, t.quantity
+        FROM invest_transactions t
+        INNER JOIN (
+            SELECT stock_name, MAX(entry_date) AS max_date
+            FROM invest_transactions WHERE LOWER(action)='buy'
+            GROUP BY stock_name
+        ) m ON t.stock_name = m.stock_name AND t.entry_date = m.max_date
+        WHERE LOWER(t.action) = 'buy'
+    """).fetchall()
+    last_buy_map = {r['stock_name']: dict(r) for r in last_buys}
+
+    # Last sell per symbol
+    last_sells = conn.execute("""
+        SELECT t.stock_name, t.price, t.entry_date, t.quantity
+        FROM invest_transactions t
+        INNER JOIN (
+            SELECT stock_name, MAX(entry_date) AS max_date
+            FROM invest_transactions WHERE LOWER(action)='sell'
+            GROUP BY stock_name
+        ) m ON t.stock_name = m.stock_name AND t.entry_date = m.max_date
+        WHERE LOWER(t.action) = 'sell'
+    """).fetchall()
+    last_sell_map = {r['stock_name']: dict(r) for r in last_sells}
+
+    rows = []
+    for a in assets:
+        sym  = (a['symbol'] or '').strip().upper()
+        name = (a['asset'] or '').strip()
+        lb   = last_buy_map.get(sym) or last_buy_map.get(name) or {}
+        ls   = last_sell_map.get(sym) or last_sell_map.get(name) or {}
+        rows.append({
+            'id':                a['id'],
+            'symbol':            sym,
+            'asset':             name,
+            'company_name':      a['company_name'] or name,
+            'qty':               float(a['qty'] or 0),
+            'avg_price':         float(a['avg_price'] or 0),
+            'ltp':               float(a['ltp'] or 0),
+            'invested_value':    float(a['invested_value'] or 0),
+            'current_value':     float(a['current_value'] or 0),
+            'high_52w':          float(a['high_52w'] or 0),
+            'low_52w':           float(a['low_52w'] or 0),
+            'from_52w_high_pct': float(a['from_52w_high_pct'] or 0),
+            'day_change_pct':    float(a['day_change_pct'] or 0),
+            'target_pct':        float(a['target_pct'] or 25),
+            'nse_updated':       a['nse_updated'] or '',
+            'last_buy':  {'price': float(lb.get('price') or 0),
+                          'date':  lb.get('entry_date',''),
+                          'qty':   float(lb.get('quantity') or 0)},
+            'last_sell': {'price': float(ls.get('price') or 0),
+                          'date':  ls.get('entry_date',''),
+                          'qty':   float(ls.get('quantity') or 0)},
+        })
+    conn.close()
+    return jsonify(rows)
+
 
 if __name__ == '__main__':
     # Auto-install yfinance if missing (YF_AVAILABLE is module-level, no global needed here)
