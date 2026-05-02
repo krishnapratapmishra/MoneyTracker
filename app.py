@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 import sqlite3, os, tempfile, urllib.request, urllib.parse, json as _json
 from datetime import datetime
 import pandas as pd
@@ -32,11 +32,13 @@ def init_schema():
             month TEXT NOT NULL, loan_type TEXT NOT NULL, amount REAL NOT NULL DEFAULT 0
         );
         CREATE TABLE IF NOT EXISTS portfolio (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, asset TEXT NOT NULL, asset_type TEXT NOT NULL,
-            invested_pre_nov25 REAL DEFAULT 0, value_pre_nov25 REAL DEFAULT 0,
-            invested_since_nov25 REAL DEFAULT 0, current_value REAL DEFAULT 0,
-            total_invested REAL DEFAULT 0, total_return REAL DEFAULT 0,
-            return_pct REAL DEFAULT 0, updated_at TEXT DEFAULT (datetime('now'))
+            AssetID       TEXT PRIMARY KEY REFERENCES InvestMapping(AssetID),
+            InvestedValue REAL DEFAULT 0,
+            CurrentValue  REAL DEFAULT 0,
+            ReturnValue   REAL DEFAULT 0,
+            Purpose       TEXT,
+            ReturnPCT     REAL DEFAULT 0,
+            UpdateAt      TEXT DEFAULT (datetime('now'))
         );
         CREATE TABLE IF NOT EXISTS invest_transactions (
             id INTEGER PRIMARY KEY AUTOINCREMENT, entry_date TEXT, stock_name TEXT,
@@ -114,19 +116,19 @@ def init_schema():
             updated_at TEXT DEFAULT (datetime('now'))
         );
         CREATE TABLE IF NOT EXISTS assets (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            asset TEXT NOT NULL,
-            asset_type TEXT NOT NULL,
-            symbol TEXT DEFAULT '',
-            qty REAL DEFAULT 0,
-            avg_price REAL DEFAULT 0,
-            ltp REAL DEFAULT 0,
-            invested_value REAL DEFAULT 0,
-            current_value REAL DEFAULT 0,
-            pnl REAL DEFAULT 0,
-            pnl_pct REAL DEFAULT 0,
-            last_synced TEXT,
-            updated_at TEXT DEFAULT (datetime('now'))
+            AssetEntryID  INTEGER PRIMARY KEY AUTOINCREMENT,
+            MappingID     INTEGER NOT NULL REFERENCES AssetMapping(MappingID),
+            purpose       TEXT,
+            qty           REAL DEFAULT 0,
+            avgprice      REAL DEFAULT 0,
+            ltp           REAL DEFAULT 0,
+            investedvalue REAL DEFAULT 0,
+            currentvalue  REAL DEFAULT 0,
+            pnl           REAL DEFAULT 0,
+            pnlpct        REAL DEFAULT 0,
+            lastsynced    TEXT,
+            updatedat     TEXT DEFAULT (datetime('now')),
+            targetpct     REAL DEFAULT 25
         );
         CREATE TABLE IF NOT EXISTS wealth (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -134,17 +136,164 @@ def init_schema():
             target REAL NOT NULL DEFAULT 0,
             created_at TEXT DEFAULT (datetime('now'))
         );
+        CREATE TABLE IF NOT EXISTS raw_upload_meta (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_type TEXT    NOT NULL,
+            file_name   TEXT,
+            row_count   INTEGER DEFAULT 0,
+            uploaded_at TEXT    DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS raw_upload_data (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            upload_id   INTEGER NOT NULL REFERENCES raw_upload_meta(id) ON DELETE CASCADE,
+            source_type TEXT    NOT NULL,
+            broker      TEXT    NOT NULL,
+            instrument  TEXT    NOT NULL,
+            data_type   TEXT    NOT NULL,
+            name        TEXT,
+            symbol      TEXT,
+            isin        TEXT,
+            trade_type  TEXT,
+            trade_date  TEXT,
+            quantity    REAL,
+            price       REAL,
+            amount      REAL,
+            exchange    TEXT,
+            order_id    TEXT,
+            status      TEXT,
+            raw_data    TEXT,
+            uploaded_at TEXT    DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS InvestMapping (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            AssetClass   TEXT NOT NULL,
+            AssetCategory TEXT NOT NULL,
+            AssetType    TEXT NOT NULL,
+            UNIQUE(AssetClass, AssetCategory, AssetType)
+        );
     """)
     conn.commit()
-    # Migrate: add category column to nse_master if it doesn't exist yet
+
+    # Seed InvestMapping reference data (insert if not already present)
+    _INVEST_MAPPING_SEED = [
+        ('Commodities', 'Gold',           'Bonds'),
+        ('Commodities', 'Gold',           'Physical Gold'),
+        ('Commodities', 'Gold',           'Digital Gold'),
+        ('Commodities', 'Gold',           'Mutual Fund'),
+        ('Commodities', 'Gold',           'ETF'),
+        ('Commodities', 'Silver',         'ETF'),
+        ('Growth',      'Equity',         'Stocks'),
+        ('Growth',      'Equity',         'Mutual Fund'),
+        ('Growth',      'Equity',         'ETF'),
+        ('Liquidity',   'Emergency Fund', 'Savings Account'),
+        ('Liquidity',   'Emergency Fund', 'Liquid Mutual Fund'),
+        ('Liquidity',   'Emergency Fund', 'Short-term FD'),
+        ('Real State',  'Real Estate',    'Plot'),
+        ('Real State',  'Real Estate',    'Flat'),
+        ('Retirement',  'Hybrid',         'Pension Scheme'),
+        ('Stability',   'Fixed Income',   'PPF'),
+        ('Stability',   'Fixed Income',   'EPF'),
+        ('Stability',   'Fixed Income',   'Government Bond/Yojana'),
+    ]
+    conn.executemany(
+        "INSERT OR IGNORE INTO InvestMapping (AssetClass, AssetCategory, AssetType) VALUES (?,?,?)",
+        _INVEST_MAPPING_SEED
+    )
+    conn.commit()
+
+    # Add AssetID column to InvestMapping (formatted primary key: Asset01, Asset02, …)
+    try:
+        conn.execute("ALTER TABLE InvestMapping ADD COLUMN AssetID TEXT")
+        conn.commit()
+    except Exception:
+        pass  # Column already exists
+
+    # Backfill AssetID for any row where it is NULL
+    conn.execute("""
+        UPDATE InvestMapping
+        SET AssetID = 'Asset' || printf('%02d', id)
+        WHERE AssetID IS NULL OR AssetID = ''
+    """)
+    conn.commit()
+
+    # Trigger: auto-set AssetID on every new INSERT
+    conn.execute("""
+        CREATE TRIGGER IF NOT EXISTS trg_investmapping_assetid
+        AFTER INSERT ON InvestMapping
+        FOR EACH ROW
+        WHEN NEW.AssetID IS NULL OR NEW.AssetID = ''
+        BEGIN
+            UPDATE InvestMapping
+            SET AssetID = 'Asset' || printf('%02d', NEW.id)
+            WHERE id = NEW.id;
+        END
+    """)
+    conn.commit()
+
+    # Rebuild AssetMapping with new structure (MappingID PK) if old schema exists
+    am_cols = {row[1] for row in conn.execute("PRAGMA table_info(AssetMapping)").fetchall()}
+    if 'MappingID' not in am_cols:
+        conn.execute("DROP TABLE IF EXISTS AssetMapping")
+        conn.execute("""
+            CREATE TABLE AssetMapping (
+                MappingID   INTEGER PRIMARY KEY AUTOINCREMENT,
+                AssetName   TEXT NOT NULL,
+                AssetSymbol TEXT DEFAULT '',
+                AssetId     TEXT NOT NULL REFERENCES InvestMapping(AssetID)
+            )
+        """)
+        conn.commit()
+
+    # Drop old assets table if it uses old schema (id column instead of AssetEntryID)
+    assets_cols = {row[1] for row in conn.execute("PRAGMA table_info(assets)").fetchall()}
+    if assets_cols and 'AssetEntryID' not in assets_cols:
+        conn.execute("DROP TABLE IF EXISTS assets")
+        conn.execute("""
+            CREATE TABLE assets (
+                AssetEntryID  INTEGER PRIMARY KEY AUTOINCREMENT,
+                MappingID     INTEGER NOT NULL REFERENCES AssetMapping(MappingID),
+                purpose       TEXT,
+                qty           REAL DEFAULT 0,
+                avgprice      REAL DEFAULT 0,
+                ltp           REAL DEFAULT 0,
+                investedvalue REAL DEFAULT 0,
+                currentvalue  REAL DEFAULT 0,
+                pnl           REAL DEFAULT 0,
+                pnlpct        REAL DEFAULT 0,
+                lastsynced    TEXT,
+                updatedat     TEXT DEFAULT (datetime('now')),
+                targetpct     REAL DEFAULT 25
+            )
+        """)
+        conn.commit()
+
+    # Drop old portfolio table if it has old schema (integer PK / asset column)
+    port_cols = {row[1] for row in conn.execute("PRAGMA table_info(portfolio)").fetchall()}
+    if port_cols and 'AssetID' not in port_cols:
+        conn.execute("DROP TABLE IF EXISTS portfolio")
+        conn.execute("""
+            CREATE TABLE portfolio (
+                AssetID       TEXT PRIMARY KEY REFERENCES InvestMapping(AssetID),
+                InvestedValue REAL DEFAULT 0,
+                CurrentValue  REAL DEFAULT 0,
+                ReturnValue   REAL DEFAULT 0,
+                Purpose       TEXT,
+                ReturnPCT     REAL DEFAULT 0,
+                UpdateAt      TEXT DEFAULT (datetime('now'))
+            )
+        """)
+        conn.commit()
+
+    # Migrate: add columns to other non-portfolio tables if missing
     for migration in [
         "ALTER TABLE nse_master ADD COLUMN category TEXT DEFAULT 'Shares'",
-        "ALTER TABLE portfolio ADD COLUMN purpose TEXT",
-        "ALTER TABLE portfolio ADD COLUMN return_pct REAL DEFAULT 0",
-        "ALTER TABLE portfolio ADD COLUMN updated_at TEXT",
-        "ALTER TABLE assets ADD COLUMN purpose TEXT",
         "ALTER TABLE wealth ADD COLUMN target_date TEXT",
-        "ALTER TABLE assets ADD COLUMN target_pct REAL DEFAULT 25",
+        # InvestMapping: price-fetch configuration columns
+        "ALTER TABLE InvestMapping ADD COLUMN PriceFetchMode TEXT DEFAULT 'MANUAL'",
+        "ALTER TABLE InvestMapping ADD COLUMN Symbol        TEXT DEFAULT ''",
+        "ALTER TABLE InvestMapping ADD COLUMN WeightGrams   REAL DEFAULT 1",
+        "ALTER TABLE InvestMapping ADD COLUMN Purity        TEXT DEFAULT '24K'",
+        "ALTER TABLE InvestMapping ADD COLUMN InterestRate  REAL DEFAULT 0",
     ]:
         try:
             conn.execute(migration)
@@ -152,48 +301,65 @@ def init_schema():
         except Exception:
             pass
 
-    # Migrate: replace UNIQUE(asset, asset_type) with expression index on
-    # (asset, asset_type, purpose, symbol) so each holding can differ by purpose/symbol.
-    idx_exists = conn.execute(
-        "SELECT 1 FROM sqlite_master WHERE type='index' AND name='idx_assets_key'"
-    ).fetchone()
-    if not idx_exists:
-        try:
-            conn.execute("ALTER TABLE assets RENAME TO _assets_old")
-            conn.execute("""
-                CREATE TABLE assets (
-                    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-                    asset        TEXT    NOT NULL,
-                    asset_type   TEXT    NOT NULL,
-                    purpose      TEXT    DEFAULT NULL,
-                    symbol       TEXT    DEFAULT '',
-                    qty          REAL    DEFAULT 0,
-                    avg_price    REAL    DEFAULT 0,
-                    ltp          REAL    DEFAULT 0,
-                    invested_value REAL  DEFAULT 0,
-                    current_value  REAL  DEFAULT 0,
-                    pnl          REAL    DEFAULT 0,
-                    pnl_pct      REAL    DEFAULT 0,
-                    last_synced  TEXT,
-                    updated_at   TEXT    DEFAULT (datetime('now'))
-                )
-            """)
-            conn.execute("""
-                CREATE UNIQUE INDEX idx_assets_key
-                ON assets(asset, asset_type, COALESCE(purpose,''), COALESCE(symbol,''))
-            """)
-            conn.execute("""
-                INSERT OR IGNORE INTO assets
-                    (id, asset, asset_type, purpose, symbol, qty, avg_price, ltp,
-                     invested_value, current_value, pnl, pnl_pct, last_synced, updated_at)
-                SELECT id, asset, asset_type, purpose, symbol, qty, avg_price, ltp,
-                       invested_value, current_value, pnl, pnl_pct, last_synced, updated_at
-                FROM _assets_old
-            """)
-            conn.execute("DROP TABLE _assets_old")
-            conn.commit()
-        except Exception:
-            pass
+    # Ensure InvestMapping.AssetID has a UNIQUE index so foreign-key references
+    # from AssetMapping and portfolio are valid in strict FK mode (DB Browser, etc.)
+    conn.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_investmapping_assetid
+        ON InvestMapping(AssetID)
+    """)
+    conn.commit()
+
+    # Backfill PriceFetchMode + defaults for the 15 seed InvestMapping rows
+    # Uses (AssetClass, AssetCategory, AssetType) as natural key
+    # Only updates rows where PriceFetchMode is still NULL / empty / 'MANUAL'
+    # so user-edited rows are not overwritten.
+    _IM_DEFAULTS = [
+        # (AssetClass, AssetCategory, AssetType,        Mode,              Symbol, WeightGrams, Purity,  Rate)
+        ('Commodities','Gold',        'Bonds',           'EQUITY',          '',     1,           '24K',   0),
+        ('Commodities','Gold',        'Physical Gold',   'COMMODITY_GOLD',  '',     1,           '24K',   0),
+        ('Commodities','Gold',        'Digital Gold',    'COMMODITY_GOLD',  '',     1,           '24K',   0),
+        ('Commodities','Gold',        'Mutual Fund',     'MF',              '',     1,           '24K',   0),
+        ('Commodities','Gold',        'ETF',             'EQUITY',          '',     1,           '24K',   0),
+        ('Commodities','Silver',      'ETF',             'EQUITY',          '',     1,           '24K',   0),
+        ('Growth',     'Equity',      'Stocks',          'EQUITY',          '',     1,           '24K',   0),
+        ('Growth',     'Equity',      'Mutual Fund',     'MF',              '',     1,           '24K',   0),
+        ('Growth',     'Equity',      'ETF',             'EQUITY',          '',     1,           '24K',   0),
+        ('Liquidity',  'Emergency Fund','Savings Account', 'RATE_BASED',      '',     1,           '24K',   3.5),
+        ('Liquidity',  'Emergency Fund','Liquid Mutual Fund','MF',           '',     1,           '24K',   0),
+        ('Liquidity',  'Emergency Fund','Short-term FD',  'RATE_BASED',      '',     1,           '24K',   7.0),
+        ('Real State', 'Real Estate', 'Plot',            'MANUAL',          '',     1,           '24K',   0),
+        ('Real State', 'Real Estate', 'Flat',            'MANUAL',          '',     1,           '24K',   0),
+        ('Retirement', 'Hybrid',      'Pension Scheme',  'RATE_BASED',      '',     1,           '24K',   10.0),
+        ('Stability',  'Fixed Income','PPF',             'RATE_BASED',      '',     1,           '24K',   7.1),
+        ('Stability',  'Fixed Income','EPF',             'RATE_BASED',      '',     1,           '24K',   8.25),
+        ('Stability',  'Fixed Income','Government Bond/Yojana', 'RATE_BASED','',   1,           '24K',   8.2),
+    ]
+    for row in _IM_DEFAULTS:
+        cls, cat, typ, mode, sym, wt, purity, rate = row
+        conn.execute("""
+            UPDATE InvestMapping
+            SET PriceFetchMode = ?,
+                Symbol         = CASE WHEN (Symbol IS NULL OR Symbol = '') THEN ? ELSE Symbol END,
+                WeightGrams    = CASE WHEN (WeightGrams IS NULL OR WeightGrams = 0) THEN ? ELSE WeightGrams END,
+                Purity         = CASE WHEN (Purity IS NULL OR Purity = '') THEN ? ELSE Purity END,
+                InterestRate   = CASE WHEN (InterestRate IS NULL OR InterestRate = 0) THEN ? ELSE InterestRate END
+            WHERE AssetClass=? AND AssetCategory=? AND AssetType=?
+              AND (PriceFetchMode IS NULL OR PriceFetchMode = '' OR PriceFetchMode = 'MANUAL')
+        """, (mode, sym, wt, purity, rate, cls, cat, typ))
+    # Force-set rates for RATE_BASED rows even if already RATE_BASED (so corrections are applied)
+    _RATE_UPDATES = [
+        ('Retirement', 'Hybrid',      'Pension Scheme',  10.0),
+        ('Stability',  'Fixed Income','PPF',              7.1),
+        ('Stability',  'Fixed Income','EPF',              8.25),
+        ('Stability',  'Fixed Income','Government Bond/Yojana', 8.2),
+    ]
+    for cls, cat, typ, rate in _RATE_UPDATES:
+        conn.execute("""
+            UPDATE InvestMapping SET InterestRate=?
+            WHERE AssetClass=? AND AssetCategory=? AND AssetType=?
+              AND (InterestRate IS NULL OR InterestRate = 0)
+        """, (rate, cls, cat, typ))
+    conn.commit()
 
     conn.close()
 
@@ -204,6 +370,28 @@ def dashboard():
 @app.route('/palette')
 def palette():
     return render_template('palette.html')
+
+@app.route('/docs/<path:filename>')
+def serve_docs(filename):
+    """Serve project markdown documents (SOP.md, PROJECT_DOCUMENT.md)."""
+    allowed = {'SOP.md', 'PROJECT_DOCUMENT.md'}
+    if filename not in allowed:
+        return jsonify({'error': 'Not found'}), 404
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), filename)
+
+@app.route('/api/docs/<docname>')
+def api_docs(docname):
+    """Return markdown file contents as plain text for in-app rendering."""
+    allowed = {'sop': 'SOP.md', 'project': 'PROJECT_DOCUMENT.md'}
+    fname = allowed.get(docname)
+    if not fname:
+        return jsonify({'error': 'Unknown document'}), 404
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), fname)
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return f.read(), 200, {'Content-Type': 'text/plain; charset=utf-8'}
+    except FileNotFoundError:
+        return jsonify({'error': f'{fname} not found'}), 404
 
 @app.route('/api/summary')
 def api_summary():
@@ -389,70 +577,12 @@ def api_last_amounts():
             seen[r['category']] = r['amount']
     return jsonify(seen)
 
-def _tx_to_portfolio_asset(category, sub_category):
-    """Map a transaction category/sub_category to portfolio (asset, asset_type)."""
-    cat = (category or '').strip()
-    sub = (sub_category or '').strip()
-    mapping = {
-        ('Stocks',        ''               ): ('Stocks',             'Equity'),
-        ('Stocks',        'Direct Equity'  ): ('Stocks',             'Equity'),
-        ('Mutual Fund',   'MF SIP'         ): ('Mutual Fund',        'Equity'),
-        ('Mutual Fund',   ''               ): ('Mutual Fund',        'Equity'),
-        ('Gold',          'Gold Mutual Fund'): ('Gold MF',           'Gold'),
-        ('Gold',          'Gold ETF'       ): ('Gold ETF',           'Gold'),
-        ('Gold',          'SGB'            ): ('SGB',                'Gold'),
-        ('Gold',          ''               ): ('Gold',               'Gold'),
-        ('Fixed Return',  'EPF Contribution'): ('EPF/PPF',           'Fixed Return'),
-        ('Fixed Return',  'Sukanya Samriddhi'): ('Sukanya Samriddhi','Fixed Return'),
-        ('Fixed Return',  'PPF'            ): ('EPF/PPF',            'Fixed Return'),
-        ('Fixed Return',  ''               ): ('EPF/PPF',            'Fixed Return'),
-        ('Sukanya Samriddhi', ''           ): ('Sukanya Samriddhi',  'Fixed Return'),
-        ('EPF',           ''               ): ('EPF/PPF',            'Fixed Return'),
-        ('Retirement',    'NPS Contribution'): ('NPS',               'Retirement'),
-        ('Retirement',    ''               ): ('NPS',                'Retirement'),
-        ('NPS',           ''               ): ('NPS',                'Retirement'),
-        ('Real Estate',   ''               ): ('Flat',               'Real State'),
-    }
-    # Exact match first
-    result = mapping.get((cat, sub))
-    if result:
-        return result
-    # Category-only fallback
-    result = mapping.get((cat, ''))
-    if result:
-        return result
-    return None
-
 @app.route('/api/transactions', methods=['POST'])
 def add_transaction():
     d = request.json; conn = get_db()
     conn.execute("INSERT INTO transactions (type,category,sub_category,amount,date,note) VALUES (?,?,?,?,?,?)",
                  (d['type'], d['category'], d.get('sub_category',''), float(d['amount']), d['date'], d.get('note','')))
     conn.commit(); nid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-
-    # Auto-update portfolio when an investment transaction is posted
-    if d['type'] == 'investment':
-        portfolio_map = _tx_to_portfolio_asset(d.get('category',''), d.get('sub_category',''))
-        if portfolio_map:
-            asset, asset_type = portfolio_map
-            amt = float(d['amount'])
-            existing = conn.execute("SELECT id FROM portfolio WHERE asset=?", (asset,)).fetchone()
-            if existing:
-                conn.execute("""UPDATE portfolio
-                                SET total_invested = total_invested + ?,
-                                    current_value  = current_value  + ?,
-                                    total_return   = current_value + ? - total_invested,
-                                    return_pct     = CASE WHEN (total_invested + ?) > 0
-                                                     THEN (current_value + ? - (total_invested + ?)) / (total_invested + ?) * 100
-                                                     ELSE 0 END,
-                                    updated_at     = datetime('now')
-                                WHERE asset=?""",
-                             (amt, amt, amt, amt, amt, amt, amt, asset))
-            else:
-                conn.execute("""INSERT INTO portfolio (asset,asset_type,total_invested,current_value,total_return,return_pct)
-                                VALUES (?,?,?,?,0,0)""", (asset, asset_type, amt, amt))
-            conn.commit()
-
     conn.close()
     return jsonify({'success': True, 'id': nid})
 
@@ -463,59 +593,115 @@ def delete_transaction(tid):
 
 @app.route('/api/portfolio')
 def api_portfolio():
-    conn = get_db(); c = conn.cursor()
-    rows = c.execute("""SELECT * FROM portfolio WHERE total_invested > 0
-                        ORDER BY asset_type, current_value DESC""").fetchall()
+    """All portfolio rows joined to InvestMapping for AssetClass/Category/Type tree."""
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT p.AssetID        AS asset_id,
+               im.AssetClass    AS asset_class,
+               im.AssetCategory AS asset_category,
+               im.AssetType     AS asset_type,
+               p.InvestedValue  AS invested_value,
+               p.CurrentValue   AS current_value,
+               p.ReturnValue    AS return_value,
+               p.ReturnPCT      AS return_pct,
+               p.Purpose        AS purpose,
+               p.UpdateAt       AS updated_at
+        FROM portfolio p
+        JOIN InvestMapping im ON p.AssetID = im.AssetID
+        WHERE (p.InvestedValue > 0 OR p.CurrentValue > 0)
+        ORDER BY im.AssetClass, im.AssetCategory, im.AssetType
+    """).fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
 
 @app.route('/api/portfolio/asset_types')
 def api_portfolio_asset_types():
-    """Distinct asset_type values from portfolio (drives Live Market tabs)."""
+    """Distinct asset_type values from portfolio joined to InvestMapping."""
     conn = get_db()
-    rows = conn.execute(
-        "SELECT DISTINCT asset_type FROM portfolio WHERE asset_type IS NOT NULL ORDER BY asset_type"
-    ).fetchall()
+    rows = conn.execute("""
+        SELECT DISTINCT im.AssetType
+        FROM portfolio p
+        JOIN InvestMapping im ON p.AssetID = im.AssetID
+        WHERE im.AssetType IS NOT NULL ORDER BY im.AssetType
+    """).fetchall()
     conn.close()
-    return jsonify([r['asset_type'] for r in rows])
+    return jsonify([r['AssetType'] for r in rows])
 
 @app.route('/api/portfolio/summary')
 def api_portfolio_summary():
+    """Portfolio summary grouped by AssetClass, plus per-type rows and grand totals."""
     conn = get_db(); c = conn.cursor()
-    rows = c.execute("""SELECT asset_type,
-                               COALESCE(SUM(total_invested), 0)  AS invested,
-                               COALESCE(SUM(current_value),  0)  AS current_val,
-                               COALESCE(SUM(total_return),   0)  AS total_ret
-                        FROM portfolio WHERE total_invested > 0
-                        GROUP BY asset_type ORDER BY current_val DESC""").fetchall()
-    rows = [dict(r) for r in rows]
-    total_inv = sum(r['invested']    for r in rows)
-    total_val = sum(r['current_val'] for r in rows)
+
+    # Group by AssetClass (tree level 1)
+    by_class = c.execute("""
+        SELECT im.AssetClass    AS asset_class,
+               COALESCE(SUM(p.InvestedValue), 0) AS invested_value,
+               COALESCE(SUM(p.CurrentValue),  0) AS current_value,
+               COALESCE(SUM(p.ReturnValue),   0) AS return_value
+        FROM portfolio p
+        JOIN InvestMapping im ON p.AssetID = im.AssetID
+        GROUP BY im.AssetClass ORDER BY current_value DESC
+    """).fetchall()
+    by_class = [dict(r) for r in by_class]
+    for r in by_class:
+        r['return_pct'] = round(r['return_value'] / r['invested_value'] * 100, 2) if r['invested_value'] > 0 else 0
+
+    # Individual rows (AssetType level) for drilldown / charts
+    by_type = c.execute("""
+        SELECT p.AssetID        AS asset_id,
+               im.AssetClass    AS asset_class,
+               im.AssetCategory AS asset_category,
+               im.AssetType     AS asset_type,
+               p.InvestedValue  AS invested_value,
+               p.CurrentValue   AS current_value,
+               p.ReturnValue    AS return_value,
+               p.ReturnPCT      AS return_pct,
+               p.Purpose        AS purpose
+        FROM portfolio p
+        JOIN InvestMapping im ON p.AssetID = im.AssetID
+        ORDER BY im.AssetClass, im.AssetCategory, im.AssetType
+    """).fetchall()
+    by_type = [dict(r) for r in by_type]
+
+    total_inv = sum(r['invested_value'] for r in by_class)
+    total_val = sum(r['current_value']  for r in by_class)
     conn.close()
     return jsonify({
-        'by_type': rows, 'total_invested': total_inv, 'total_value': total_val,
-        'total_return': total_val - total_inv,
+        'by_class':     by_class,
+        'by_type':      by_type,
+        'total_invested': total_inv,
+        'total_value':    total_val,
+        'total_current':  total_val,   # alias for backward compat
+        'total_return':   total_val - total_inv,
         'return_pct': round((total_val - total_inv) / total_inv * 100, 2) if total_inv else 0,
     })
 
-@app.route('/api/portfolio/<int:pid>', methods=['PATCH'])
-def patch_portfolio(pid):
-    """Update current_value (and recalc total_return) for a single portfolio row by id."""
+@app.route('/api/portfolio/<asset_id>', methods=['PATCH'])
+def patch_portfolio(asset_id):
+    """Update CurrentValue for a portfolio row identified by InvestMapping.AssetID."""
     d = request.json; conn = get_db()
     cv = float(d.get('current_value', 0))
-    conn.execute("""UPDATE portfolio SET current_value=?,
-                    total_return=?-total_invested,
-                    updated_at=datetime('now') WHERE id=?""", (cv, cv, pid))
+    row = conn.execute("SELECT InvestedValue FROM portfolio WHERE AssetID=?", (asset_id,)).fetchone()
+    iv  = float(row['InvestedValue']) if row else 0
+    ret     = cv - iv
+    ret_pct = (ret / iv * 100) if iv > 0 else 0
+    conn.execute("""UPDATE portfolio SET CurrentValue=?, ReturnValue=?, ReturnPCT=?, UpdateAt=datetime('now')
+                    WHERE AssetID=?""", (cv, ret, ret_pct, asset_id))
     conn.commit(); conn.close()
     return jsonify({'success': True})
 
 @app.route('/api/portfolio/update', methods=['POST'])
 def update_portfolio():
+    """Update CurrentValue by asset_id (InvestMapping.AssetID)."""
     d = request.json; conn = get_db()
+    asset_id = (d.get('asset_id') or d.get('asset') or '').strip()
     cv = float(d['current_value'])
-    conn.execute("""UPDATE portfolio SET current_value=?,
-                    total_return=current_value-total_invested,
-                    updated_at=datetime('now') WHERE asset=?""", (cv, d['asset']))
+    row = conn.execute("SELECT InvestedValue FROM portfolio WHERE AssetID=?", (asset_id,)).fetchone()
+    iv  = float(row['InvestedValue']) if row else 0
+    ret     = cv - iv
+    ret_pct = (ret / iv * 100) if iv > 0 else 0
+    conn.execute("""UPDATE portfolio SET CurrentValue=?, ReturnValue=?, ReturnPCT=?, UpdateAt=datetime('now')
+                    WHERE AssetID=?""", (cv, ret, ret_pct, asset_id))
     conn.commit(); conn.close()
     return jsonify({'success': True})
 
@@ -594,6 +780,62 @@ def api_loans_summary():
     for r in result:
         r['is_active'] = r['current_emi'] > 0
     return jsonify(result)
+
+@app.route('/api/expense_categories')
+def api_expense_categories():
+    """Return distinct expense categories from transactions table."""
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT DISTINCT category FROM transactions WHERE type='expense' AND category IS NOT NULL AND category!='' ORDER BY category"
+    ).fetchall()
+    conn.close()
+    return jsonify([r['category'] for r in rows])
+
+@app.route('/api/loans/emi_month')
+def api_loans_emi_month():
+    """Return expected vs paid EMI totals for a given month."""
+    month = request.args.get('month', datetime.now().strftime('%Y-%m'))
+    conn = get_db(); c = conn.cursor()
+    # Expected: sum expected_emi of active loans (calculated same as api_loan_master_list)
+    loans = [dict(r) for r in c.execute(
+        "SELECT * FROM loan_master WHERE status='active'"
+    ).fetchall()]
+    today_dt = datetime.now()
+    expected_total = 0.0
+    next_to_close  = None
+    min_balance    = float('inf')
+    for loan in loans:
+        total_paid = c.execute(
+            "SELECT COALESCE(SUM(amount),0) FROM transactions WHERE type='expense' AND category='Loan EMI' AND sub_category=?",
+            (loan['loan_name'],)
+        ).fetchone()[0]
+        balance = max(0.0, loan['total_repayment'] - total_paid)
+        try:
+            target_dt = datetime.strptime(loan['target_close_date'], '%Y-%m-%d')
+        except Exception:
+            target_dt = today_dt
+        months_remaining = max(1, (target_dt.year - today_dt.year) * 12 + (target_dt.month - today_dt.month))
+        expected_emi = round(balance / months_remaining, 0) if balance > 0 else 0.0
+        expected_total += expected_emi
+        if balance > 0 and balance < min_balance:
+            min_balance   = balance
+            next_to_close = {'name': loan['loan_name'], 'balance': round(balance, 2), 'expected_emi': expected_emi}
+    # Paid: sum of Loan EMI expense transactions this month
+    paid_total = c.execute(
+        "SELECT COALESCE(SUM(amount),0) FROM transactions WHERE type='expense' AND category='Loan EMI' AND date LIKE ?",
+        (f'{month}%',)
+    ).fetchone()[0]
+    conn.close()
+    deficit = expected_total - paid_total
+    deficit_pct = round(deficit / expected_total * 100, 1) if expected_total > 0 else 0.0
+    return jsonify({
+        'expected_total': round(expected_total, 2),
+        'paid_total':     round(paid_total, 2),
+        'deficit':        round(deficit, 2),
+        'deficit_pct':    deficit_pct,
+        'next_to_close':  next_to_close,
+        'month':          month,
+    })
 
 @app.route('/api/loan_master')
 def api_loan_master_list():
@@ -899,31 +1141,9 @@ def _xl_investments(conn, xlsx):
     return len(rows)
 
 def _xl_portfolio(conn, xlsx):
-    df = pd.read_excel(xlsx, sheet_name='Corpus', header=2)
-    df.columns = [str(c).strip() for c in df.columns]
-    df = df[df['Asset'].notna() & df['Type'].notna()].copy()
-    df = df[~df['Asset'].astype(str).str.lower().isin(['total','nan','asset'])].copy()
-    rows = []
-    for _, row in df.iterrows():
-        asset = str(row.get('Asset','')).strip()
-        atype = str(row.get('Type','')).strip()
-        if not asset or asset == 'nan': continue
-        rows.append((
-            asset, atype,
-            _xl_safe(row.get('Invested Till Oct 25',0)),
-            _xl_safe(row.get('Actual Till Oct-25',0)),
-            _xl_safe(row.get('Invested Since Nov-25',0)),
-            _xl_safe(row.get('Current Value',0)),
-            _xl_safe(row.get('Invested',0)),
-            _xl_safe(row.get('Return',0)),
-            _xl_safe(row.get('Return%',0)) if str(row.get('Return%','')).replace('.','').replace('-','').isdigit() else 0.0,
-        ))
-    conn.executemany("""INSERT INTO portfolio
-       (asset,asset_type,invested_pre_nov25,value_pre_nov25,invested_since_nov25,
-        current_value,total_invested,total_return,return_pct)
-       VALUES (?,?,?,?,?,?,?,?,?)""", rows)
-    conn.commit()
-    return len(rows)
+    """Portfolio is now derived from the assets table via InvestMapping JOINs.
+    Excel Corpus sheet import is skipped — add assets via the Add Asset modal or CSV upload."""
+    return 0
 
 def _xl_invest_tx(conn, xlsx):
     df = pd.read_excel(xlsx, sheet_name='Investment Transactions', header=1)
@@ -997,164 +1217,97 @@ def _refresh_monthly_calc(conn):
     conn.commit()
 
 # ── ASSETS TABLE HELPERS ─────────────────────────────────────────────────────
-def _get_portfolio_asset_key(asset_type):
-    """Map assets.asset_type → portfolio.asset for current_value aggregation."""
-    at = (asset_type or '').strip().lower()
-    if at in ('stocks', 'equity', 'direct equity'):
-        return 'Stocks'
-    if 'mutual' in at or at == 'mf':
-        return 'Mutual Fund'
-    if at == 'etf':
-        return 'ETF'
-    if at == 'gold etf':
-        return 'Gold ETF'
-    if at == 'gold mf':
-        return 'Gold MF'
-    if at in ('physical gold', 'gold', 'gold physical'):
-        return 'Gold'
-    if at == 'sgb':
-        return 'SGB'
-    if at in ('fixed return', 'epf', 'ppf', 'epf/ppf'):
-        return 'EPF/PPF'
-    if at in ('nps', 'retirement'):
-        return 'NPS'
-    return None
 
 def _update_portfolio_from_assets(conn):
-    """Update portfolio.current_value from assets table.
-
-    Two-pass strategy
-    -----------------
-    Pass 1 – SQL correlated subquery:
-        Updates every portfolio row whose `asset` column directly matches an
-        `assets.asset_type` value  (e.g. portfolio.asset='Mutual Fund' ← SUM
-        of all assets WHERE asset_type='Mutual Fund').
-        Join key:  portfolio.asset = assets.asset_type
-        This is safe because each portfolio.asset name is unique, so even
-        though multiple portfolio rows share the same asset_type (e.g. several
-        Gold rows), only the row whose .asset literally equals the asset_type
-        string gets updated.
-
-    Pass 2 – Python mapping fallback:
-        Handles asset_types whose label differs from the target portfolio bucket
-        (e.g. assets.asset_type='Equity' → portfolio.asset='Shares').
-        Only asset_types that have NO matching portfolio.asset row are processed
-        here, so there is no double-counting with Pass 1.
+    """Recompute all portfolio rows by aggregating assets per InvestMapping.AssetID.
+    Always uses the full 3-table JOIN: assets → AssetMapping → InvestMapping.
     """
-    # ── Pass 1: SQL – direct match: portfolio.asset = assets.asset_type ─────
     conn.execute("""
-        UPDATE portfolio
-        SET current_value = COALESCE((
-                SELECT SUM(a.current_value) FROM assets a
-                WHERE a.asset_type = portfolio.asset
-            ), 0),
-            total_return  = COALESCE((
-                SELECT SUM(a.current_value) FROM assets a
-                WHERE a.asset_type = portfolio.asset
-            ), 0) - total_invested,
-            return_pct    = CASE WHEN total_invested > 0
-                            THEN (
-                                COALESCE((
-                                    SELECT SUM(a.current_value) FROM assets a
-                                    WHERE a.asset_type = portfolio.asset
-                                ), 0) - total_invested
-                            ) / total_invested * 100
-                            ELSE 0 END,
-            updated_at    = datetime('now')
-        WHERE EXISTS (
-            SELECT 1 FROM assets a WHERE a.asset_type = portfolio.asset
-        )
+        INSERT OR REPLACE INTO portfolio (AssetID, InvestedValue, CurrentValue, ReturnValue, ReturnPCT, UpdateAt)
+        SELECT
+            im.AssetID,
+            COALESCE(SUM(a.investedvalue), 0),
+            COALESCE(SUM(a.currentvalue),  0),
+            COALESCE(SUM(a.currentvalue),  0) - COALESCE(SUM(a.investedvalue), 0),
+            CASE WHEN COALESCE(SUM(a.investedvalue), 0) > 0
+                 THEN (COALESCE(SUM(a.currentvalue), 0) - COALESCE(SUM(a.investedvalue), 0))
+                      / SUM(a.investedvalue) * 100
+                 ELSE 0 END,
+            datetime('now')
+        FROM assets a
+        JOIN AssetMapping am ON a.MappingID = am.MappingID
+        JOIN InvestMapping im ON am.AssetId = im.AssetID
+        GROUP BY im.AssetID
     """)
-
-    # ── Pass 2: Python mapping – asset_types with no direct portfolio.asset ──
-    # Only fetch types not already handled by Pass 1 (avoids redundant updates)
-    rows = conn.execute("""
-        SELECT asset_type, SUM(current_value) AS total_current
-        FROM assets
-        WHERE current_value > 0
-          AND asset_type NOT IN (SELECT asset FROM portfolio)
-        GROUP BY asset_type
-    """).fetchall()
-    for r in rows:
-        portfolio_asset = _get_portfolio_asset_key(r['asset_type'])
-        if not portfolio_asset:
-            continue
-        cv = float(r['total_current'])
-        conn.execute("""
-            UPDATE portfolio
-            SET current_value = ?,
-                total_return  = ? - total_invested,
-                return_pct    = CASE WHEN total_invested > 0
-                                THEN (? - total_invested) / total_invested * 100
-                                ELSE 0 END,
-                updated_at    = datetime('now')
-            WHERE asset = ?
-        """, (cv, cv, cv, portfolio_asset))
     conn.commit()
 
 # ── ASSETS ENDPOINTS ──────────────────────────────────────────────────────────
+# Base SELECT used by all read routes — returns old-style aliases for frontend compatibility
+_ASSETS_SELECT = """
+    SELECT
+        a.AssetEntryID          AS id,
+        a.AssetEntryID,
+        a.MappingID,
+        am.AssetName            AS asset,
+        am.AssetSymbol          AS symbol,
+        im.AssetType            AS asset_type,
+        im.AssetClass           AS asset_class,
+        im.AssetCategory        AS asset_category,
+        im.AssetID              AS invest_id,
+        a.purpose,
+        a.qty,
+        a.avgprice              AS avg_price,
+        a.ltp,
+        a.investedvalue         AS invested_value,
+        a.currentvalue          AS current_value,
+        a.pnl,
+        a.pnlpct                AS pnl_pct,
+        a.lastsynced            AS last_synced,
+        a.updatedat             AS updated_at,
+        a.targetpct             AS target_pct
+    FROM assets a
+    JOIN AssetMapping am ON a.MappingID = am.MappingID
+    JOIN InvestMapping im ON am.AssetId = im.AssetID
+"""
+
 @app.route('/api/assets')
 def api_assets_list():
     asset_type = request.args.get('type', '')
     conn = get_db()
-    q = "SELECT * FROM assets WHERE 1=1"; p = []
+    q = _ASSETS_SELECT + " WHERE 1=1"; p = []
     if asset_type:
-        q += " AND LOWER(asset_type) LIKE ?"; p.append(f'%{asset_type.lower()}%')
-    q += " ORDER BY asset_type, asset"
+        q += " AND LOWER(im.AssetType) LIKE ?"; p.append(f'%{asset_type.lower()}%')
+    q += " ORDER BY im.AssetType, am.AssetName"
     rows = conn.execute(q, p).fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
 
 @app.route('/api/assets/rebuild', methods=['POST'])
 def api_assets_rebuild():
-    """Rebuild assets from invest_transactions net holdings (BUY − SELL)."""
-    conn = get_db()
-    holdings = conn.execute("""
-        SELECT stock_name AS asset, asset_type,
-               SUM(CASE WHEN UPPER(action)='BUY' THEN quantity     ELSE -quantity     END) AS net_units,
-               SUM(CASE WHEN UPPER(action)='BUY' THEN invested_value ELSE -invested_value END) AS net_invested
-        FROM invest_transactions
-        WHERE stock_name IS NOT NULL AND stock_name != ''
-        GROUP BY stock_name, asset_type
-        HAVING net_units > 0
-        ORDER BY asset_type, stock_name
-    """).fetchall()
-    conn.execute("DELETE FROM assets")
-    count = 0
-    for h in holdings:
-        qty      = float(h['net_units'])
-        invested = float(h['net_invested'])
-        avg_price = invested / qty if qty > 0 else 0
-        conn.execute("""
-            INSERT INTO assets
-                (asset, asset_type, qty, avg_price, ltp, invested_value, current_value, pnl, pnl_pct, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, datetime('now'))
-        """, (h['asset'], h['asset_type'], qty, avg_price, avg_price, invested, invested))
-        count += 1
-    conn.commit(); conn.close()
-    return jsonify({'success': True, 'count': count})
+    """Not supported — assets now require an AssetMapping entry (MappingID FK)."""
+    return jsonify({'error': 'Rebuild not supported with new asset schema. Add assets via the Add Asset modal.'}), 400
 
 @app.route('/api/assets/<int:aid>', methods=['PATCH'])
 def api_assets_patch(aid):
     d = request.json; conn = get_db()
-    row = conn.execute("SELECT * FROM assets WHERE id=?", (aid,)).fetchone()
+    row = conn.execute("SELECT * FROM assets WHERE AssetEntryID=?", (aid,)).fetchone()
     if not row:
         conn.close(); return jsonify({'error': 'Not found'}), 404
     ltp        = float(d.get('ltp',        row['ltp']       or 0))
     qty        = float(d.get('qty',        row['qty']       or 0))
-    avg_price  = float(d.get('avg_price',  row['avg_price'] or 0))
-    symbol     = d.get('symbol', row['symbol'] or '')
-    target_pct = float(d.get('target_pct', row['target_pct'] if row['target_pct'] is not None else 25))
+    avg_price  = float(d.get('avg_price',  row['avgprice']  or 0))
+    target_pct = float(d.get('target_pct', row['targetpct'] if row['targetpct'] is not None else 25))
+    purpose    = d.get('purpose', row['purpose'] or '') or None
     invested   = qty * avg_price
     current    = qty * ltp
     pnl        = current - invested
     pnl_pct    = (pnl / invested * 100) if invested > 0 else 0
     conn.execute("""
-        UPDATE assets SET ltp=?, qty=?, avg_price=?, symbol=?, target_pct=?,
-            invested_value=?, current_value=?, pnl=?, pnl_pct=?,
-            last_synced=datetime('now'), updated_at=datetime('now')
-        WHERE id=?
-    """, (ltp, qty, avg_price, symbol, target_pct, invested, current, pnl, pnl_pct, aid))
+        UPDATE assets SET ltp=?, qty=?, avgprice=?, targetpct=?, purpose=?,
+            investedvalue=?, currentvalue=?, pnl=?, pnlpct=?,
+            lastsynced=datetime('now'), updatedat=datetime('now')
+        WHERE AssetEntryID=?
+    """, (ltp, qty, avg_price, target_pct, purpose, invested, current, pnl, pnl_pct, aid))
     conn.commit(); conn.close()
     return jsonify({'success': True})
 
@@ -1164,12 +1317,13 @@ def api_assets_sync_stocks():
     if not YF_AVAILABLE:
         return jsonify({'error': 'yfinance not installed — run: pip install yfinance'}), 503
     conn = get_db()
-    rows = conn.execute("""
-        SELECT * FROM assets
-        WHERE UPPER(asset_type) IN ('STOCKS','EQUITY','DIRECT EQUITY','ETF')
-           OR UPPER(asset_type) LIKE '%ETF%'
-           OR UPPER(asset_type) LIKE '%STOCK%'
-    """).fetchall()
+    rows = conn.execute(
+        _ASSETS_SELECT + """
+        WHERE UPPER(im.AssetType) IN ('STOCKS','EQUITY','DIRECT EQUITY','ETF')
+           OR UPPER(im.AssetType) LIKE '%ETF%'
+           OR UPPER(im.AssetType) LIKE '%STOCK%'
+        """
+    ).fetchall()
     if not rows:
         conn.close()
         return jsonify({'success': True, 'synced': 0, 'message': 'No stock/ETF assets found'})
@@ -1187,9 +1341,9 @@ def api_assets_sync_stocks():
                 pnl      = current - invested
                 pnl_pct  = (pnl / invested * 100) if invested > 0 else 0
                 conn.execute("""
-                    UPDATE assets SET ltp=?, current_value=?, pnl=?, pnl_pct=?,
-                        last_synced=datetime('now'), updated_at=datetime('now')
-                    WHERE id=?
+                    UPDATE assets SET ltp=?, currentvalue=?, pnl=?, pnlpct=?,
+                        lastsynced=datetime('now'), updatedat=datetime('now')
+                    WHERE AssetEntryID=?
                 """, (ltp, current, pnl, pnl_pct, r['id']))
                 results.append({'asset': r['asset'], 'ltp': ltp, 'status': 'ok'})
             else:
@@ -1207,10 +1361,9 @@ def api_assets_sync_mf():
     """Sync NAV for Mutual Fund assets via MFAPI.in, then update portfolio."""
     import time
     conn = get_db()
-    rows = conn.execute("""
-        SELECT * FROM assets
-        WHERE LOWER(asset_type) LIKE '%mutual%' OR LOWER(asset_type) = 'mf'
-    """).fetchall()
+    rows = conn.execute(
+        _ASSETS_SELECT + " WHERE LOWER(im.AssetType) LIKE '%mutual%' OR LOWER(im.AssetType) = 'mf'"
+    ).fetchall()
     if not rows:
         conn.close()
         return jsonify({'success': True, 'synced': 0, 'message': 'No mutual fund assets found'})
@@ -1226,7 +1379,10 @@ def api_assets_sync_mf():
                     matches = _json.loads(resp.read())
                 if matches:
                     scheme_code = str(matches[0]['schemeCode'])
-                    conn.execute("UPDATE assets SET symbol=? WHERE id=?", (scheme_code, r['id']))
+                    conn.execute(
+                        "UPDATE AssetMapping SET AssetSymbol=? WHERE MappingID=?",
+                        (scheme_code, r['MappingID'])
+                    )
             if scheme_code:
                 req2 = urllib.request.Request(
                     f'https://api.mfapi.in/mf/{scheme_code}',
@@ -1242,9 +1398,9 @@ def api_assets_sync_mf():
                 pnl      = current - invested
                 pnl_pct  = (pnl / invested * 100) if invested > 0 else 0
                 conn.execute("""
-                    UPDATE assets SET ltp=?, current_value=?, pnl=?, pnl_pct=?,
-                        last_synced=datetime('now'), updated_at=datetime('now')
-                    WHERE id=?
+                    UPDATE assets SET ltp=?, currentvalue=?, pnl=?, pnlpct=?,
+                        lastsynced=datetime('now'), updatedat=datetime('now')
+                    WHERE AssetEntryID=?
                 """, (nav, current, pnl, pnl_pct, r['id']))
                 results.append({'asset': r['asset'], 'nav': nav, 'status': 'ok'})
             else:
@@ -1278,13 +1434,14 @@ def api_assets_sync_gold():
         return jsonify({'error': f'Failed to fetch gold price: {e}'}), 500
 
     conn = get_db()
-    rows = conn.execute("""
-        SELECT * FROM assets
-        WHERE LOWER(asset_type) LIKE '%gold%'
-          AND LOWER(asset_type) NOT LIKE '%etf%'
-          AND LOWER(asset_type) NOT LIKE '%mf%'
-          AND LOWER(asset_type) NOT LIKE '%mutual%'
-    """).fetchall()
+    rows = conn.execute(
+        _ASSETS_SELECT + """
+        WHERE LOWER(im.AssetType) LIKE '%gold%'
+          AND LOWER(im.AssetType) NOT LIKE '%etf%'
+          AND LOWER(im.AssetType) NOT LIKE '%mf%'
+          AND LOWER(im.AssetType) NOT LIKE '%mutual%'
+        """
+    ).fetchall()
     count = 0
     for r in rows:
         qty      = float(r['qty'])
@@ -1293,9 +1450,9 @@ def api_assets_sync_gold():
         pnl      = current - invested
         pnl_pct  = (pnl / invested * 100) if invested > 0 else 0
         conn.execute("""
-            UPDATE assets SET ltp=?, current_value=?, pnl=?, pnl_pct=?,
-                last_synced=datetime('now'), updated_at=datetime('now')
-            WHERE id=?
+            UPDATE assets SET ltp=?, currentvalue=?, pnl=?, pnlpct=?,
+                lastsynced=datetime('now'), updatedat=datetime('now')
+            WHERE AssetEntryID=?
         """, (inr_per_gram, current, pnl, pnl_pct, r['id']))
         count += 1
     conn.commit()
@@ -1317,7 +1474,7 @@ def upload_excel():
         f.save(tmp.name); tmp.close()
         conn = get_db()
         if mode == 'replace':
-            for tbl in ('transactions', 'loans', 'portfolio', 'invest_transactions'):
+            for tbl in ('transactions', 'loans', 'invest_transactions'):
                 conn.execute(f'DELETE FROM {tbl}')
             conn.commit()
         results, errors = {}, {}
@@ -1334,32 +1491,10 @@ def upload_excel():
             except Exception as e:
                 errors[key] = str(e)
         _refresh_monthly_calc(conn)
-        # Auto-rebuild assets table from invest_transactions after upload
-        try:
-            holdings = conn.execute("""
-                SELECT stock_name AS asset, asset_type,
-                       SUM(CASE WHEN UPPER(action)='BUY' THEN quantity      ELSE -quantity      END) AS net_units,
-                       SUM(CASE WHEN UPPER(action)='BUY' THEN invested_value ELSE -invested_value END) AS net_invested
-                FROM invest_transactions
-                WHERE stock_name IS NOT NULL AND stock_name != ''
-                GROUP BY stock_name, asset_type
-                HAVING net_units > 0
-                ORDER BY asset_type, stock_name
-            """).fetchall()
-            conn.execute("DELETE FROM assets")
-            for h in holdings:
-                qty       = float(h['net_units'])
-                invested  = float(h['net_invested'])
-                avg_price = invested / qty if qty > 0 else 0
-                conn.execute("""
-                    INSERT INTO assets
-                        (asset, asset_type, qty, avg_price, ltp, invested_value, current_value, pnl, pnl_pct, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, datetime('now'))
-                """, (h['asset'], h['asset_type'], qty, avg_price, avg_price, invested, invested))
-            conn.commit()
-            results['assets_rebuilt'] = len(holdings)
-        except Exception as e:
-            errors['assets_rebuild'] = str(e)
+        # Portfolio is now derived from the assets table via _update_portfolio_from_assets.
+        # invest_transactions → assets auto-rebuild is not supported in new schema
+        # (assets require an AssetMapping entry). Skipping auto-rebuild.
+        results['assets_rebuilt'] = 0
         conn.close()
         return jsonify({'success': True, 'mode': mode, 'results': results, 'errors': errors})
     except Exception as e:
@@ -1405,10 +1540,14 @@ def api_nse_auto_add():
     d   = request.get_json(silent=True) or {}
     tab = (d.get('tab') or 'Shares').strip()
     conn = get_db()
-    rows = conn.execute(
-        "SELECT DISTINCT symbol FROM assets WHERE LOWER(asset) LIKE LOWER(?) AND symbol IS NOT NULL AND symbol != ''",
-        (f'%{tab}%',)
-    ).fetchall()
+    rows = conn.execute("""
+        SELECT DISTINCT am.AssetSymbol AS symbol
+        FROM assets a
+        JOIN AssetMapping am ON a.MappingID = am.MappingID
+        JOIN InvestMapping im ON am.AssetId = im.AssetID
+        WHERE LOWER(im.AssetType) LIKE LOWER(?)
+          AND am.AssetSymbol IS NOT NULL AND am.AssetSymbol != ''
+    """, (f'%{tab}%',)).fetchall()
     added = 0
     for r in rows:
         sym = r['symbol'].strip().upper()
@@ -1491,48 +1630,171 @@ def api_nse_sync():
     ok = sum(1 for r in results if r['status'] == 'ok')
     return jsonify({'success': True, 'synced': ok, 'failed': len(results) - ok, 'results': results})
 
+# ── INVEST MAPPING ────────────────────────────────────────────────────────────
+
+@app.route('/api/invest_mapping')
+def api_invest_mapping():
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT id, AssetID, AssetClass, AssetCategory, AssetType,
+               PriceFetchMode, Symbol, WeightGrams, Purity, InterestRate
+        FROM InvestMapping
+        ORDER BY AssetClass, AssetCategory, AssetType
+    """).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route('/api/invest_mapping', methods=['POST'])
+def api_invest_mapping_add():
+    """Add a new InvestMapping row (AssetClass + AssetCategory + AssetType must be unique)."""
+    d = request.json or {}
+    cls = (d.get('AssetClass') or '').strip()
+    cat = (d.get('AssetCategory') or '').strip()
+    typ = (d.get('AssetType') or '').strip()
+    if not cls or not cat or not typ:
+        return jsonify({'error': 'AssetClass, AssetCategory and AssetType are required'}), 400
+    mode   = (d.get('PriceFetchMode') or 'MANUAL').strip().upper()
+    sym    = (d.get('Symbol') or '').strip()
+    wt     = float(d.get('WeightGrams') or 1)
+    purity = (d.get('Purity') or '24K').strip()
+    rate   = float(d.get('InterestRate') or 0)
+    conn = get_db()
+    try:
+        conn.execute("""
+            INSERT INTO InvestMapping
+                (AssetClass, AssetCategory, AssetType, PriceFetchMode, Symbol, WeightGrams, Purity, InterestRate)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (cls, cat, typ, mode, sym, wt, purity, rate))
+        conn.commit()
+        row = conn.execute("""
+            SELECT id, AssetID, AssetClass, AssetCategory, AssetType,
+                   PriceFetchMode, Symbol, WeightGrams, Purity, InterestRate
+            FROM InvestMapping WHERE AssetClass=? AND AssetCategory=? AND AssetType=?
+        """, (cls, cat, typ)).fetchone()
+        conn.close()
+        return jsonify(dict(row)), 201
+    except Exception as e:
+        conn.close()
+        if 'UNIQUE' in str(e).upper():
+            return jsonify({'error': f'"{cls} › {cat} › {typ}" already exists'}), 409
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/invest_mapping/<asset_id>', methods=['PATCH'])
+def api_invest_mapping_patch(asset_id):
+    """Update PriceFetchMode and related fields for a single InvestMapping row."""
+    d = request.json or {}
+    allowed = {'PriceFetchMode', 'Symbol', 'WeightGrams', 'Purity', 'InterestRate',
+               'AssetClass', 'AssetCategory', 'AssetType'}
+    updates = {k: v for k, v in d.items() if k in allowed}
+    if not updates:
+        return jsonify({'error': 'No valid fields to update'}), 400
+    conn = get_db()
+    row = conn.execute("SELECT id FROM InvestMapping WHERE AssetID=?", (asset_id,)).fetchone()
+    if not row:
+        conn.close(); return jsonify({'error': 'Not found'}), 404
+    set_clause = ', '.join(f'{k}=?' for k in updates)
+    conn.execute(f"UPDATE InvestMapping SET {set_clause} WHERE AssetID=?",
+                 list(updates.values()) + [asset_id])
+    conn.commit(); conn.close()
+    return jsonify({'success': True})
+
+@app.route('/api/invest_mapping/<asset_id>', methods=['DELETE'])
+def api_invest_mapping_delete(asset_id):
+    """Cascade-delete an InvestMapping row and all dependent data:
+       assets → AssetMapping → portfolio → InvestMapping
+    """
+    conn = get_db()
+    im_row = conn.execute(
+        "SELECT id, AssetClass, AssetCategory, AssetType FROM InvestMapping WHERE AssetID=?",
+        (asset_id,)
+    ).fetchone()
+    if not im_row:
+        conn.close(); return jsonify({'error': 'Not found'}), 404
+
+    # 1. Find all AssetMapping rows that reference this InvestMapping
+    mapping_rows = conn.execute(
+        "SELECT MappingID FROM AssetMapping WHERE AssetId=?", (asset_id,)
+    ).fetchall()
+    mapping_ids = [r['MappingID'] for r in mapping_rows]
+
+    removed_assets = 0
+    if mapping_ids:
+        placeholders = ','.join('?' * len(mapping_ids))
+        # 2. Count + delete all assets rows linked via AssetMapping
+        removed_assets = conn.execute(
+            f"SELECT COUNT(*) FROM assets WHERE MappingID IN ({placeholders})", mapping_ids
+        ).fetchone()[0]
+        conn.execute(
+            f"DELETE FROM assets WHERE MappingID IN ({placeholders})", mapping_ids
+        )
+        # 3. Delete AssetMapping rows
+        conn.execute("DELETE FROM AssetMapping WHERE AssetId=?", (asset_id,))
+
+    # 4. Delete portfolio row (FK → InvestMapping.AssetID)
+    conn.execute("DELETE FROM portfolio WHERE AssetID=?", (asset_id,))
+
+    # 5. Delete InvestMapping row itself
+    conn.execute("DELETE FROM InvestMapping WHERE AssetID=?", (asset_id,))
+    conn.commit()
+
+    # 6. Recompute portfolio totals from remaining assets
+    _update_portfolio_from_assets(conn)
+    conn.commit()
+    conn.close()
+
+    label = f"{im_row['AssetClass']} › {im_row['AssetCategory']} › {im_row['AssetType']}"
+    return jsonify({
+        'success':          True,
+        'label':            label,
+        'removed_assets':   removed_assets,
+        'removed_mappings': len(mapping_ids),
+    })
+
+@app.route('/api/market/prices')
+def api_market_prices():
+    """Return current gold/silver spot prices and USD→INR rate."""
+    result = {'gold_per_gram_24k': None, 'silver_per_gram': None, 'usd_inr': None, 'error': None}
+    try:
+        req_xau = urllib.request.Request('https://api.gold-api.com/price/XAU',
+            headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req_xau, timeout=6) as r: xau = _json.loads(r.read())
+        req_xag = urllib.request.Request('https://api.gold-api.com/price/XAG',
+            headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req_xag, timeout=6) as r: xag = _json.loads(r.read())
+        req_fx = urllib.request.Request('https://api.frankfurter.app/latest?from=USD&to=INR',
+            headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req_fx, timeout=6) as r: fx = _json.loads(r.read())
+        usd_inr = float(fx['rates']['INR'])
+        result['usd_inr']           = round(usd_inr, 2)
+        result['gold_per_gram_24k'] = round((float(xau['price']) * usd_inr) / 31.1035, 2)
+        result['silver_per_gram']   = round((float(xag['price']) * usd_inr) / 31.1035, 2)
+    except Exception as e:
+        result['error'] = str(e)
+    return jsonify(result)
+
 # ── WEALTH TRACKER ────────────────────────────────────────────────────────────
 
-def _wt_cascade(conn, asset_type, purpose=None):
-    """After a single asset changes, update the affected portfolio row.
-
-    Uses the same two-pass strategy as _update_portfolio_from_assets but
-    scoped to the single asset_type that changed:
-      Pass 1 – SQL: portfolio.asset = asset_type  (exact name match)
-      Pass 2 – Python mapping fallback (e.g. 'Equity' → 'Shares')
+def _wt_cascade(conn, asset_id):
+    """Recompute the portfolio row for the given InvestMapping.AssetID.
+    Uses assets → AssetMapping → InvestMapping JOIN tree.
     """
-    if not asset_type:
+    if not asset_id:
         return
-
-    # Aggregate current total for this asset_type from assets table
-    cv_row = conn.execute(
-        "SELECT COALESCE(SUM(current_value), 0) AS cv FROM assets WHERE LOWER(asset_type) = LOWER(?)",
-        (asset_type,)
-    ).fetchone()
-    cv = float(cv_row['cv']) if cv_row else 0.0
-
-    _sql_update_portfolio = """
-        UPDATE portfolio
-        SET current_value = ?,
-            total_return  = ? - total_invested,
-            return_pct    = CASE WHEN total_invested > 0
-                            THEN (? - total_invested) / total_invested * 100
-                            ELSE 0 END,
-            updated_at    = datetime('now')
-        WHERE LOWER(asset) = LOWER(?)
-    """
-
-    # Pass 1: direct match — portfolio.asset = assets.asset_type
-    conn.execute(_sql_update_portfolio, (cv, cv, cv, asset_type))
-
-    # Pass 2: Python mapping fallback — only if no direct match exists
-    direct_hit = conn.execute(
-        "SELECT 1 FROM portfolio WHERE LOWER(asset) = LOWER(?)", (asset_type,)
-    ).fetchone()
-    if not direct_hit:
-        portfolio_asset = _get_portfolio_asset_key(asset_type)
-        if portfolio_asset:
-            conn.execute(_sql_update_portfolio, (cv, cv, cv, portfolio_asset))
+    row = conn.execute("""
+        SELECT COALESCE(SUM(a.investedvalue), 0) AS iv,
+               COALESCE(SUM(a.currentvalue),  0) AS cv
+        FROM assets a
+        JOIN AssetMapping am ON a.MappingID = am.MappingID
+        WHERE am.AssetId = ?
+    """, (asset_id,)).fetchone()
+    iv = float(row['iv'] or 0)
+    cv = float(row['cv'] or 0)
+    ret     = cv - iv
+    ret_pct = (ret / iv * 100) if iv > 0 else 0
+    conn.execute("""
+        INSERT OR REPLACE INTO portfolio (AssetID, InvestedValue, CurrentValue, ReturnValue, ReturnPCT, UpdateAt)
+        VALUES (?, ?, ?, ?, ?, datetime('now'))
+    """, (asset_id, iv, cv, ret, ret_pct))
 
 @app.route('/api/wealth')
 def api_wealth_list():
@@ -1543,9 +1805,9 @@ def api_wealth_list():
     today = _date.today()
     for g in goals:
         row = c.execute("""
-            SELECT COALESCE(SUM(current_value),0) cv,
-                   COALESCE(SUM(total_invested),0) ti
-            FROM portfolio WHERE purpose=?
+            SELECT COALESCE(SUM(CurrentValue),0)  cv,
+                   COALESCE(SUM(InvestedValue),0) ti
+            FROM portfolio WHERE Purpose=?
         """, (g['purpose'],)).fetchone()
         cv = float(row['cv']); ti = float(row['ti'])
         g['current_value']  = round(cv, 2)
@@ -1621,36 +1883,62 @@ def api_wealth_delete(wid):
 
 @app.route('/api/wt/portfolio')
 def api_wt_portfolio_list():
+    """Portfolio rows joined to InvestMapping for full asset class/category/type tree."""
     conn = get_db()
     purpose = request.args.get('purpose', '')
-    q = "SELECT * FROM portfolio WHERE 1=1"; p = []
-    if purpose: q += " AND purpose=?"; p.append(purpose)
-    q += " ORDER BY purpose, asset_type, asset"
-    rows = conn.execute(q, p).fetchall()
+    q = """
+        SELECT p.AssetID        AS asset_id,
+               im.AssetClass    AS asset_class,
+               im.AssetCategory AS asset_category,
+               im.AssetType     AS asset_type,
+               p.InvestedValue  AS invested_value,
+               p.CurrentValue   AS current_value,
+               p.ReturnValue    AS return_value,
+               p.ReturnPCT      AS return_pct,
+               p.Purpose        AS purpose
+        FROM portfolio p
+        JOIN InvestMapping im ON p.AssetID = im.AssetID
+        WHERE 1=1
+    """
+    params = []
+    if purpose:
+        q += " AND p.Purpose=?"; params.append(purpose)
+    q += " ORDER BY im.AssetClass, im.AssetCategory, im.AssetType"
+    rows = conn.execute(q, params).fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
 
 @app.route('/api/wt/portfolio/assign', methods=['POST'])
 def api_wt_portfolio_assign():
-    """Assign a purpose to a portfolio row (by id or asset name)."""
+    """Assign a Purpose to a portfolio row by AssetID (preferred) or asset_type fallback."""
     d = request.json or {}; conn = get_db()
     purpose = d.get('purpose', '') or None
-    if 'id' in d:
-        conn.execute("UPDATE portfolio SET purpose=? WHERE id=?", (purpose, d['id']))
+    if 'asset_id' in d:
+        conn.execute("UPDATE portfolio SET Purpose=? WHERE AssetID=?", (purpose, d['asset_id']))
+    elif 'asset_type' in d:
+        conn.execute("""UPDATE portfolio SET Purpose=?
+                        WHERE AssetID IN (SELECT AssetID FROM InvestMapping WHERE AssetType=?)""",
+                     (purpose, d['asset_type']))
     elif 'asset' in d:
-        conn.execute("UPDATE portfolio SET purpose=? WHERE asset=?", (purpose, d['asset']))
+        # Legacy: match by AssetType or AssetClass name
+        conn.execute("""UPDATE portfolio SET Purpose=?
+                        WHERE AssetID IN (
+                            SELECT AssetID FROM InvestMapping WHERE AssetType=? OR AssetClass=?
+                        )""", (purpose, d['asset'], d['asset']))
     conn.commit(); conn.close()
     return jsonify({'success': True})
 
 @app.route('/api/wt/assets')
 def api_wt_assets_list():
     conn = get_db()
-    purpose    = request.args.get('purpose', '')
-    asset_type = request.args.get('asset_type', '')
-    q = "SELECT * FROM assets WHERE 1=1"; p = []
-    if purpose:    q += " AND purpose=?";                 p.append(purpose)
-    if asset_type: q += " AND LOWER(asset_type) LIKE ?";  p.append(f'%{asset_type.lower()}%')
-    q += " ORDER BY asset_type, asset"
+    purpose     = request.args.get('purpose', '')
+    asset_type  = request.args.get('asset_type', '')
+    asset_class = request.args.get('asset_class', '')
+    q = _ASSETS_SELECT + " WHERE 1=1"; p = []
+    if purpose:     q += " AND a.purpose=?";                     p.append(purpose)
+    if asset_class: q += " AND im.AssetClass=?";                 p.append(asset_class)
+    if asset_type:  q += " AND LOWER(im.AssetType) LIKE ?";      p.append(f'%{asset_type.lower()}%')
+    q += " ORDER BY im.AssetType, am.AssetName"
     rows = conn.execute(q, p).fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
@@ -1658,77 +1946,103 @@ def api_wt_assets_list():
 @app.route('/api/wt/assets', methods=['POST'])
 def api_wt_assets_add():
     d = request.json or {}; conn = get_db()
-    qty       = float(d.get('qty', 0))
-    avg_price = float(d.get('avg_price', 0))
-    ltp       = float(d.get('ltp', avg_price))
-    invested  = qty * avg_price
-    current   = qty * ltp
-    pnl       = current - invested
-    pnl_pct   = (pnl / invested * 100) if invested > 0 else 0
-    purpose   = (d.get('purpose') or '').strip() or None
-    conn.execute("""
-        INSERT INTO assets (asset, asset_type, purpose, symbol, qty, avg_price, ltp,
-            invested_value, current_value, pnl, pnl_pct, updated_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,datetime('now'))
-        ON CONFLICT(asset, asset_type) DO UPDATE SET
-            purpose=excluded.purpose, symbol=excluded.symbol,
-            qty=excluded.qty, avg_price=excluded.avg_price, ltp=excluded.ltp,
-            invested_value=excluded.invested_value, current_value=excluded.current_value,
-            pnl=excluded.pnl, pnl_pct=excluded.pnl_pct, updated_at=datetime('now')
-    """, (d.get('asset',''), d.get('asset_type',''), purpose, d.get('symbol',''),
-          qty, avg_price, ltp, invested, current, pnl, pnl_pct))
-    conn.commit()
-    _wt_cascade(conn, d.get('asset_type',''), purpose)
-    conn.commit(); conn.close()
-    return jsonify({'success': True})
+
+    # ── New flow: asset_id from InvestMapping ──────────────────────────────────
+    invest_id = (d.get('invest_id') or '').strip()
+    if invest_id:
+        im = conn.execute(
+            "SELECT AssetID, AssetClass, AssetCategory, AssetType FROM InvestMapping WHERE AssetID=?",
+            (invest_id,)
+        ).fetchone()
+        if not im:
+            conn.close(); return jsonify({'error': f'InvestMapping ID {invest_id!r} not found'}), 400
+
+        asset_name   = (d.get('asset_name') or '').strip()
+        asset_symbol = (d.get('asset_symbol') or '').strip()
+        if not asset_name:
+            conn.close(); return jsonify({'error': 'Asset Name is required'}), 400
+
+        qty       = float(d.get('qty', 0) or 0)
+        avg_price = float(d.get('avg_price', 0) or 0)
+        ltp_raw   = d.get('ltp')
+        ltp       = float(ltp_raw) if ltp_raw not in (None, '', 0) and float(ltp_raw or 0) > 0 else avg_price
+        invested  = qty * avg_price
+        current   = qty * ltp
+        pnl       = current - invested
+        pnl_pct   = (pnl / invested * 100) if invested > 0 else 0
+
+        # Upsert AssetMapping — one row per (AssetId, AssetName, AssetSymbol) combo
+        existing = conn.execute(
+            "SELECT MappingID FROM AssetMapping WHERE AssetId=? AND AssetName=? AND AssetSymbol=?",
+            (invest_id, asset_name, asset_symbol)
+        ).fetchone()
+        if existing:
+            mapping_id = existing['MappingID']
+        else:
+            cur = conn.execute(
+                "INSERT INTO AssetMapping (AssetName, AssetSymbol, AssetId) VALUES (?,?,?)",
+                (asset_name, asset_symbol, invest_id)
+            )
+            mapping_id = cur.lastrowid
+        conn.commit()
+
+        conn.execute("""
+            INSERT INTO assets
+                (MappingID, purpose, qty, avgprice, ltp,
+                 investedvalue, currentvalue, pnl, pnlpct, updatedat)
+            VALUES (?,?,?,?,?,?,?,?,?,datetime('now'))
+        """, (mapping_id, None, qty, avg_price, ltp, invested, current, pnl, pnl_pct))
+        conn.commit()
+        _wt_cascade(conn, invest_id)
+        conn.commit(); conn.close()
+        return jsonify({'success': True})
+
+    conn.close()
+    return jsonify({'error': 'invest_id is required'}), 400
 
 @app.route('/api/wt/assets/<int:aid>', methods=['PATCH'])
 def api_wt_assets_patch(aid):
     d = request.json or {}; conn = get_db()
-    row = conn.execute("SELECT * FROM assets WHERE id=?", (aid,)).fetchone()
+    row = conn.execute(_ASSETS_SELECT + " WHERE a.AssetEntryID=?", (aid,)).fetchone()
     if not row:
         conn.close(); return jsonify({'error': 'Not found'}), 404
-    ltp       = float(d.get('ltp',       row['ltp']))
-    qty       = float(d.get('qty',       row['qty']))
-    avg_price = float(d.get('avg_price', row['avg_price']))
-    symbol    = d.get('symbol',  row['symbol'] or '')
+    ltp       = float(d.get('ltp',       row['ltp']       or 0))
+    qty       = float(d.get('qty',       row['qty']       or 0))
+    avg_price = float(d.get('avg_price', row['avg_price'] or 0))
     purpose   = (d.get('purpose', row['purpose'] or '') or '') or None
     invested  = qty * avg_price
     current   = qty * ltp
     pnl       = current - invested
     pnl_pct   = (pnl / invested * 100) if invested > 0 else 0
     conn.execute("""
-        UPDATE assets SET ltp=?, qty=?, avg_price=?, symbol=?, purpose=?,
-            invested_value=?, current_value=?, pnl=?, pnl_pct=?,
-            last_synced=datetime('now'), updated_at=datetime('now')
-        WHERE id=?
-    """, (ltp, qty, avg_price, symbol, purpose, invested, current, pnl, pnl_pct, aid))
+        UPDATE assets SET ltp=?, qty=?, avgprice=?, purpose=?,
+            investedvalue=?, currentvalue=?, pnl=?, pnlpct=?,
+            lastsynced=datetime('now'), updatedat=datetime('now')
+        WHERE AssetEntryID=?
+    """, (ltp, qty, avg_price, purpose, invested, current, pnl, pnl_pct, aid))
     conn.commit()
-    _wt_cascade(conn, row['asset_type'], purpose)
+    _wt_cascade(conn, row['invest_id'])
     conn.commit(); conn.close()
     return jsonify({'success': True})
 
 @app.route('/api/wt/assets/<int:aid>', methods=['DELETE'])
 def api_wt_assets_delete(aid):
     conn = get_db()
-    row = conn.execute("SELECT asset_type, purpose FROM assets WHERE id=?", (aid,)).fetchone()
-    conn.execute("DELETE FROM assets WHERE id=?", (aid,))
+    row = conn.execute(_ASSETS_SELECT + " WHERE a.AssetEntryID=?", (aid,)).fetchone()
+    conn.execute("DELETE FROM assets WHERE AssetEntryID=?", (aid,))
     conn.commit()
     if row:
-        _wt_cascade(conn, row['asset_type'], row['purpose'])
+        _wt_cascade(conn, row['invest_id'])
         conn.commit()
     conn.close()
     return jsonify({'success': True})
 
 @app.route('/api/wt/assets/csv_upload', methods=['POST'])
 def api_wt_assets_csv_upload():
-    """Bulk-import assets from a CSV file.
-    Required columns : asset, asset_type, qty, avg_price
-    Optional columns : purpose, symbol, ltp
-    Each row is inserted as an individual holding.
-    Rows where (asset, asset_type, purpose, symbol) all match an existing record
-    are replaced (qty/price/ltp updated).
-    After all rows are saved, portfolio current_values are refreshed."""
+    """Bulk-import assets from CSV.
+    Required: invest_id, asset_name, qty, avg_price
+    Optional: asset_symbol, ltp
+    For each row: upserts AssetMapping then inserts into assets."""
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
     f = request.files['file']
@@ -1739,7 +2053,7 @@ def api_wt_assets_csv_upload():
         f.save(tmp.name); tmp.close()
         df = pd.read_csv(tmp.name)
         df.columns = [c.strip().lower() for c in df.columns]
-        required = {'asset', 'asset_type', 'qty', 'avg_price'}
+        required = {'invest_id', 'asset_name', 'qty', 'avg_price'}
         missing  = required - set(df.columns)
         if missing:
             return jsonify({'error': f'Missing columns: {", ".join(missing)}'}), 400
@@ -1748,65 +2062,54 @@ def api_wt_assets_csv_upload():
         ok = 0; errors = []
         for i, row in df.iterrows():
             try:
-                asset     = str(row.get('asset', '')).strip()
-                atype     = str(row.get('asset_type', '')).strip()
-                if not asset or not atype or asset.lower() == 'nan' or atype.lower() == 'nan':
-                    errors.append(f'Row {i+2}: asset and asset_type required'); continue
-                purpose   = str(row.get('purpose', '')).strip() or None
-                symbol    = str(row.get('symbol',  '')).strip()
-                qty       = float(row.get('qty',       0) or 0)
+                invest_id    = str(row.get('invest_id', '')).strip()
+                asset_name   = str(row.get('asset_name', '')).strip()
+                asset_symbol = str(row.get('asset_symbol', '')).strip() if 'asset_symbol' in row else ''
+                if not invest_id or not asset_name or invest_id.lower() == 'nan' or asset_name.lower() == 'nan':
+                    errors.append(f'Row {i+2}: invest_id and asset_name required'); continue
+
+                im = conn.execute(
+                    "SELECT AssetID, AssetClass, AssetCategory, AssetType FROM InvestMapping WHERE AssetID=?",
+                    (invest_id,)
+                ).fetchone()
+                if not im:
+                    errors.append(f'Row {i+2}: InvestMapping ID {invest_id!r} not found'); continue
+
+                qty       = float(row.get('qty', 0) or 0)
                 avg_price = float(row.get('avg_price', 0) or 0)
-                ltp_raw   = str(row.get('ltp', '')).strip()
+                ltp_raw   = str(row.get('ltp', '')).strip() if 'ltp' in row else ''
                 ltp       = float(ltp_raw) if ltp_raw not in ('', 'nan', '0') and float(ltp_raw or 0) > 0 else avg_price
                 invested  = qty * avg_price
                 current   = qty * ltp
                 pnl       = current - invested
                 pnl_pct   = (pnl / invested * 100) if invested > 0 else 0.0
 
-                # If symbol is provided, try to update existing row with that symbol first
-                updated = 0
-                if symbol:
-                    updated = conn.execute("""
-                        UPDATE assets SET
-                            asset=?, asset_type=?, purpose=?, qty=?, avg_price=?, ltp=?,
-                            invested_value=?, current_value=?, pnl=?, pnl_pct=?,
-                            updated_at=datetime('now')
-                        WHERE symbol=?
-                    """, (asset, atype, purpose, qty, avg_price, ltp,
-                          invested, current, pnl, pnl_pct, symbol)).rowcount
+                # Upsert AssetMapping
+                existing = conn.execute(
+                    "SELECT MappingID FROM AssetMapping WHERE AssetId=? AND AssetName=? AND AssetSymbol=?",
+                    (invest_id, asset_name, asset_symbol)
+                ).fetchone()
+                if existing:
+                    mapping_id = existing['MappingID']
+                else:
+                    cur = conn.execute(
+                        "INSERT INTO AssetMapping (AssetName, AssetSymbol, AssetId) VALUES (?,?,?)",
+                        (asset_name, asset_symbol, invest_id)
+                    )
+                    mapping_id = cur.lastrowid
 
-                if not updated:
-                    conn.execute("""
-                        INSERT INTO assets
-                            (asset, asset_type, purpose, symbol, qty, avg_price, ltp,
-                             invested_value, current_value, pnl, pnl_pct, updated_at)
-                        VALUES (?,?,?,?,?,?,?,?,?,?,?,datetime('now'))
-                    """, (asset, atype, purpose, symbol, qty, avg_price, ltp,
-                          invested, current, pnl, pnl_pct))
+                conn.execute("""
+                    INSERT INTO assets
+                        (MappingID, qty, avgprice, ltp, investedvalue, currentvalue, pnl, pnlpct, updatedat)
+                    VALUES (?,?,?,?,?,?,?,?,datetime('now'))
+                """, (mapping_id, qty, avg_price, ltp, invested, current, pnl, pnl_pct))
                 ok += 1
             except Exception as e:
                 errors.append(f'Row {i+2}: {e}')
 
         conn.commit()
-
-        # Refresh portfolio current_values from assets
-        conn.execute("""
-            UPDATE portfolio AS B
-            SET current_value = (
-                SELECT SUM(A.current_value)
-                FROM assets A
-                WHERE A.asset = B.asset
-                  AND A.asset_type = B.asset_type
-            )
-            WHERE EXISTS (
-                SELECT 1
-                FROM assets A
-                WHERE A.asset = B.asset
-                  AND A.asset_type = B.asset_type
-            )
-        """)
-        conn.commit()
-        conn.close()
+        _update_portfolio_from_assets(conn)
+        conn.commit(); conn.close()
         return jsonify({'success': True, 'imported': ok, 'errors': errors})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1816,16 +2119,20 @@ def api_wt_assets_csv_upload():
 
 @app.route('/api/wt/assets/sample_csv')
 def api_wt_assets_sample_csv():
-    """Download a sample CSV template for bulk asset import."""
+    """Download a sample CSV template — new schema (invest_id, asset_name, asset_symbol, qty, avg_price, ltp).
+    invest_id references InvestMapping.AssetID (Asset01–Asset15)."""
     sample = (
-        "asset,asset_type,purpose,symbol,qty,avg_price,ltp\n"
-        "NIFTY 50 ETF,ETF,Ira Corpus,NIFTYBEES,500,200,250\n"
-        "Axis ELSS Tax Saver Direct Plan Growth,Mutual Fund,Corpus,147070,303.371,75.07,\n"
-        "Physical Gold,Gold,Gold Corpus,,100,5500,\n"
-        "Sukanya Samriddhi,Fixed Return,Ira Corpus,,1,921405,921405\n"
-        "Employer PF,Fixed Return,Corpus,,1,500000,550000\n"
-        "NPS,Retirement,Corpus,,1,400000,450000\n"
-        "ADANIGREEN,Equity,Corpus,ADANIGREEN,50,800,950\n"
+        "invest_id,asset_name,asset_symbol,qty,avg_price,ltp\n"
+        "Asset09,NIFTY 50 ETF,NIFTYBEES,500,200,250\n"
+        "Asset08,Axis ELSS Tax Saver Direct Plan Growth,147070,303.371,75.07,\n"
+        "Asset02,Physical Gold,,100,5500,\n"
+        "Asset13,PPF Account,,1,500000,550000\n"
+        "Asset14,Employer PF,,1,300000,350000\n"
+        "Asset12,NPS Tier 1,,1,400000,450000\n"
+        "Asset07,Reliance Industries,RELIANCE,50,2400,2650\n"
+        "Asset05,Gold ETF,GOLDBEES,200,55,62\n"
+        "Asset10,Plot - Sector 12,,1,2500000,2800000\n"
+        "Asset15,PM Kisaan Yojana,,1,50000,50000\n"
     )
     from flask import Response
     return Response(
@@ -1834,106 +2141,247 @@ def api_wt_assets_sample_csv():
         headers={'Content-Disposition': 'attachment; filename=wealthflow_assets_sample.csv'}
     )
 
+@app.route('/api/wt/last_sync')
+def api_wt_last_sync():
+    """Return the most recent lastsynced timestamp across all assets."""
+    conn = get_db()
+    row = conn.execute(
+        "SELECT MAX(lastsynced) AS last_synced FROM assets WHERE lastsynced IS NOT NULL"
+    ).fetchone()
+    conn.close()
+    return jsonify({'last_synced': row['last_synced'] if row else None})
+
 @app.route('/api/wt/sync', methods=['POST'])
 def api_wt_sync():
-    """Sync LTP for stocks/ETF/MF/gold assets, cascade to portfolio + wealth."""
+    """Sync LTP for all assets, routed by InvestMapping.PriceFetchMode."""
     import time as _time
     results = []
     conn = get_db()
 
-    # 1. Stocks + ETF via yfinance
-    if YF_AVAILABLE:
-        rows = conn.execute("""
-            SELECT * FROM assets
-            WHERE UPPER(asset_type) IN ('STOCKS','EQUITY','DIRECT EQUITY','ETF')
-               OR UPPER(asset_type) LIKE '%ETF%' OR UPPER(asset_type) LIKE '%STOCK%'
-        """).fetchall()
-        for r in rows:
-            sym = (r['symbol'] or r['asset']).strip().upper()
-            try:
-                info = yf.Ticker(sym + '.NS').info
-                ltp  = float(info.get('currentPrice') or info.get('regularMarketPrice') or 0)
-                if ltp > 0:
-                    qty = float(r['qty']); invested = float(r['invested_value'])
-                    current = qty * ltp; pnl = current - invested
-                    pnl_pct = (pnl / invested * 100) if invested > 0 else 0
-                    conn.execute("""UPDATE assets SET ltp=?, current_value=?, pnl=?, pnl_pct=?,
-                        last_synced=datetime('now'), updated_at=datetime('now') WHERE id=?""",
-                        (ltp, current, pnl, pnl_pct, r['id']))
-                    results.append({'asset': r['asset'], 'ltp': ltp, 'status': 'ok'})
-                else:
-                    results.append({'asset': r['asset'], 'status': 'no_price'})
-            except Exception as e:
-                results.append({'asset': r['asset'], 'status': 'error', 'error': str(e)})
-
-    # 2. Mutual Funds via MFAPI
-    mf_rows = conn.execute("""
-        SELECT * FROM assets WHERE LOWER(asset_type) LIKE '%mutual%' OR LOWER(asset_type)='mf'
+    # Fetch all assets with their InvestMapping fetch configuration
+    all_rows = conn.execute("""
+        SELECT a.AssetEntryID,
+               am.AssetName   AS asset_name,
+               am.AssetSymbol AS asset_symbol,
+               am.MappingID,
+               im.AssetID     AS invest_id,
+               im.AssetType   AS asset_type,
+               im.AssetClass  AS asset_class,
+               im.PriceFetchMode,
+               im.Symbol      AS im_symbol,
+               im.WeightGrams,
+               im.Purity,
+               im.InterestRate,
+               a.qty,
+               a.avgprice,
+               a.investedvalue,
+               a.currentvalue,
+               a.ltp
+        FROM assets a
+        JOIN AssetMapping am ON a.MappingID = am.MappingID
+        JOIN InvestMapping im ON am.AssetId = im.AssetID
+        ORDER BY im.PriceFetchMode, im.AssetType
     """).fetchall()
-    for r in mf_rows:
-        try:
-            sc = (r['symbol'] or '').strip()
-            if not sc:
-                req = urllib.request.Request(
-                    'https://api.mfapi.in/mf/search?q=' + urllib.parse.quote(r['asset']),
-                    headers={'User-Agent': 'Mozilla/5.0'})
-                with urllib.request.urlopen(req, timeout=6) as resp:
-                    matches = _json.loads(resp.read())
-                if matches:
-                    sc = str(matches[0]['schemeCode'])
-                    conn.execute("UPDATE assets SET symbol=? WHERE id=?", (sc, r['id']))
-            if sc:
-                req2 = urllib.request.Request(f'https://api.mfapi.in/mf/{sc}',
-                    headers={'User-Agent': 'Mozilla/5.0'})
-                with urllib.request.urlopen(req2, timeout=6) as resp2:
-                    nav_data = _json.loads(resp2.read())
-                nav = float(nav_data['data'][0]['nav'])
-                if nav > 0:
-                    qty = float(r['qty']); invested = float(r['invested_value'])
-                    current = qty * nav; pnl = current - invested
-                    pnl_pct = (pnl / invested * 100) if invested > 0 else 0
-                    conn.execute("""UPDATE assets SET ltp=?, current_value=?, pnl=?, pnl_pct=?,
-                        last_synced=datetime('now'), updated_at=datetime('now') WHERE id=?""",
-                        (nav, current, pnl, pnl_pct, r['id']))
-                    results.append({'asset': r['asset'], 'ltp': nav, 'status': 'ok'})
-                else:
-                    results.append({'asset': r['asset'], 'status': 'no_nav'})
-            _time.sleep(0.2)
-        except Exception as e:
-            results.append({'asset': r['asset'], 'status': 'error', 'error': str(e)})
 
-    # 3. Gold (physical / non-ETF / non-MF)
-    try:
-        req_xau = urllib.request.Request('https://api.gold-api.com/price/XAU',
-            headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req_xau, timeout=6) as r: xau = _json.loads(r.read())
-        req_fx = urllib.request.Request('https://api.frankfurter.app/latest?from=USD&to=INR',
-            headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req_fx, timeout=6) as r: fx = _json.loads(r.read())
-        gold_inr = round((float(xau['price']) * float(fx['rates']['INR'])) / 31.1035)
-        gold_rows = conn.execute("""
-            SELECT * FROM assets
-            WHERE LOWER(asset_type) LIKE '%gold%'
-              AND LOWER(asset_type) NOT LIKE '%etf%'
-              AND LOWER(asset_type) NOT LIKE '%mf%'
-              AND LOWER(asset_type) NOT LIKE '%mutual%'
-        """).fetchall()
-        for r in gold_rows:
-            qty = float(r['qty']); invested = float(r['invested_value'])
-            current = qty * gold_inr; pnl = current - invested
-            pnl_pct = (pnl / invested * 100) if invested > 0 else 0
-            conn.execute("""UPDATE assets SET ltp=?, current_value=?, pnl=?, pnl_pct=?,
-                last_synced=datetime('now'), updated_at=datetime('now') WHERE id=?""",
-                (gold_inr, current, pnl, pnl_pct, r['id']))
-            results.append({'asset': r['asset'], 'ltp': gold_inr, 'status': 'ok'})
-    except Exception:
-        pass
+    if not all_rows:
+        conn.close()
+        return jsonify({'success': True, 'synced': 0, 'failed': 0, 'skipped': 0, 'results': []})
+
+    # Group rows by PriceFetchMode
+    by_mode = {}
+    for r in all_rows:
+        mode = (r['PriceFetchMode'] or 'MANUAL').upper()
+        by_mode.setdefault(mode, []).append(r)
+
+    # Shared forex/commodity cache (fetched once per sync call)
+    _fx_rate   = None   # USD → INR
+    _gold_gram = None   # INR per gram 24K
+    _silver_gram = None # INR per gram
+
+    def _get_forex():
+        nonlocal _fx_rate
+        if _fx_rate is None:
+            req = urllib.request.Request('https://api.frankfurter.app/latest?from=USD&to=INR',
+                headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                _fx_rate = float(_json.loads(resp.read())['rates']['INR'])
+        return _fx_rate
+
+    # ── 1. EQUITY — yfinance (stocks, ETF, SGB, listed bonds) ─────────────────
+    if 'EQUITY' in by_mode:
+        if not YF_AVAILABLE:
+            for r in by_mode['EQUITY']:
+                results.append({'asset': r['asset_name'], 'status': 'error',
+                                 'error': 'yfinance not installed', 'mode': 'EQUITY'})
+        else:
+            for r in by_mode['EQUITY']:
+                # Priority: per-asset symbol (AssetMapping) > InvestMapping default symbol
+                sym = (r['asset_symbol'] or r['im_symbol'] or '').strip().upper()
+                if not sym:
+                    results.append({'asset': r['asset_name'], 'status': 'no_symbol', 'mode': 'EQUITY',
+                                    'hint': 'Set NSE ticker in asset symbol field'})
+                    continue
+                if '.' not in sym:
+                    sym += '.NS'
+                try:
+                    info = yf.Ticker(sym).info
+                    ltp  = float(info.get('currentPrice') or info.get('regularMarketPrice') or 0)
+                    if ltp > 0:
+                        qty = float(r['qty'] or 0); inv = float(r['investedvalue'] or 0)
+                        cur = qty * ltp; pnl = cur - inv
+                        pnl_pct = (pnl / inv * 100) if inv > 0 else 0
+                        conn.execute("""UPDATE assets SET ltp=?,currentvalue=?,pnl=?,pnlpct=?,
+                            lastsynced=datetime('now'),updatedat=datetime('now')
+                            WHERE AssetEntryID=?""", (ltp, cur, pnl, pnl_pct, r['AssetEntryID']))
+                        results.append({'asset': r['asset_name'], 'symbol': sym, 'ltp': ltp,
+                                        'status': 'ok', 'mode': 'EQUITY'})
+                    else:
+                        results.append({'asset': r['asset_name'], 'symbol': sym,
+                                        'status': 'no_price', 'mode': 'EQUITY'})
+                except Exception as e:
+                    results.append({'asset': r['asset_name'], 'symbol': sym,
+                                    'status': 'error', 'error': str(e)[:120], 'mode': 'EQUITY'})
+                _time.sleep(0.15)
+
+    # ── 2. MF — MFAPI.in (AMFI scheme code as asset_symbol) ───────────────────
+    if 'MF' in by_mode:
+        for r in by_mode['MF']:
+            sc = (r['asset_symbol'] or '').strip()
+            try:
+                if not sc or not sc.isdigit():
+                    # Auto-search by fund name
+                    req = urllib.request.Request(
+                        'https://api.mfapi.in/mf/search?q=' + urllib.parse.quote(r['asset_name']),
+                        headers={'User-Agent': 'Mozilla/5.0'})
+                    with urllib.request.urlopen(req, timeout=8) as resp:
+                        matches = _json.loads(resp.read())
+                    if matches:
+                        sc = str(matches[0]['schemeCode'])
+                        # Save scheme code back to AssetMapping so next sync is instant
+                        conn.execute("UPDATE AssetMapping SET AssetSymbol=? WHERE MappingID=?",
+                                     (sc, r['MappingID']))
+                if sc and sc.isdigit():
+                    req2 = urllib.request.Request(f'https://api.mfapi.in/mf/{sc}',
+                        headers={'User-Agent': 'Mozilla/5.0'})
+                    with urllib.request.urlopen(req2, timeout=8) as resp2:
+                        nav_data = _json.loads(resp2.read())
+                    nav = float(nav_data['data'][0]['nav'])
+                    if nav > 0:
+                        qty = float(r['qty'] or 0); inv = float(r['investedvalue'] or 0)
+                        cur = qty * nav; pnl = cur - inv
+                        pnl_pct = (pnl / inv * 100) if inv > 0 else 0
+                        conn.execute("""UPDATE assets SET ltp=?,currentvalue=?,pnl=?,pnlpct=?,
+                            lastsynced=datetime('now'),updatedat=datetime('now')
+                            WHERE AssetEntryID=?""", (nav, cur, pnl, pnl_pct, r['AssetEntryID']))
+                        results.append({'asset': r['asset_name'], 'scheme_code': sc, 'nav': nav,
+                                        'status': 'ok', 'mode': 'MF'})
+                    else:
+                        results.append({'asset': r['asset_name'], 'scheme_code': sc,
+                                        'status': 'no_nav', 'mode': 'MF'})
+                else:
+                    results.append({'asset': r['asset_name'], 'status': 'no_scheme_code',
+                                    'mode': 'MF', 'hint': 'Set AMFI scheme code in asset symbol field'})
+                _time.sleep(0.2)
+            except Exception as e:
+                results.append({'asset': r['asset_name'], 'status': 'error',
+                                 'error': str(e)[:120], 'mode': 'MF'})
+
+    # ── 3. COMMODITY_GOLD — physical gold priced by purity + weight ────────────
+    if 'COMMODITY_GOLD' in by_mode:
+        try:
+            req_xau = urllib.request.Request('https://api.gold-api.com/price/XAU',
+                headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req_xau, timeout=8) as rr:
+                xau_usd = float(_json.loads(rr.read())['price'])
+            fx = _get_forex()
+            gold_per_gram_24k = (xau_usd * fx) / 31.1035   # INR per gram pure gold
+            _gold_gram = gold_per_gram_24k
+            PURITY = {'24K': 1.0, '22K': 22/24, '20K': 20/24, '18K': 18/24}
+            for r in by_mode['COMMODITY_GOLD']:
+                pf  = PURITY.get((r['Purity'] or '24K').strip(), 1.0)
+                wt  = float(r['WeightGrams'] or 1)
+                ltp = round(gold_per_gram_24k * pf * wt, 2)
+                qty = float(r['qty'] or 0); inv = float(r['investedvalue'] or 0)
+                cur = qty * ltp; pnl = cur - inv
+                pnl_pct = (pnl / inv * 100) if inv > 0 else 0
+                conn.execute("""UPDATE assets SET ltp=?,currentvalue=?,pnl=?,pnlpct=?,
+                    lastsynced=datetime('now'),updatedat=datetime('now')
+                    WHERE AssetEntryID=?""", (ltp, cur, pnl, pnl_pct, r['AssetEntryID']))
+                results.append({'asset': r['asset_name'], 'ltp': ltp,
+                                 'purity': r['Purity'], 'weight_g': wt,
+                                 'status': 'ok', 'mode': 'COMMODITY_GOLD'})
+        except Exception as e:
+            for r in by_mode.get('COMMODITY_GOLD', []):
+                results.append({'asset': r['asset_name'], 'status': 'error',
+                                 'error': str(e)[:120], 'mode': 'COMMODITY_GOLD'})
+
+    # ── 4. COMMODITY_SILVER — physical silver priced per gram ──────────────────
+    if 'COMMODITY_SILVER' in by_mode:
+        try:
+            req_xag = urllib.request.Request('https://api.gold-api.com/price/XAG',
+                headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req_xag, timeout=8) as rr:
+                xag_usd = float(_json.loads(rr.read())['price'])
+            fx = _get_forex()
+            silver_per_gram = (xag_usd * fx) / 31.1035
+            _silver_gram = silver_per_gram
+            for r in by_mode['COMMODITY_SILVER']:
+                wt  = float(r['WeightGrams'] or 1)
+                ltp = round(silver_per_gram * wt, 2)
+                qty = float(r['qty'] or 0); inv = float(r['investedvalue'] or 0)
+                cur = qty * ltp; pnl = cur - inv
+                pnl_pct = (pnl / inv * 100) if inv > 0 else 0
+                conn.execute("""UPDATE assets SET ltp=?,currentvalue=?,pnl=?,pnlpct=?,
+                    lastsynced=datetime('now'),updatedat=datetime('now')
+                    WHERE AssetEntryID=?""", (ltp, cur, pnl, pnl_pct, r['AssetEntryID']))
+                results.append({'asset': r['asset_name'], 'ltp': ltp, 'weight_g': wt,
+                                 'status': 'ok', 'mode': 'COMMODITY_SILVER'})
+        except Exception as e:
+            for r in by_mode.get('COMMODITY_SILVER', []):
+                results.append({'asset': r['asset_name'], 'status': 'error',
+                                 'error': str(e)[:120], 'mode': 'COMMODITY_SILVER'})
+
+    # ── 5. RATE_BASED — PPF / EPF / SSY / NPS / FD (annual interest accrual) ──
+    if 'RATE_BASED' in by_mode:
+        for r in by_mode['RATE_BASED']:
+            rate = float(r['InterestRate'] or 0)
+            if rate <= 0:
+                results.append({'asset': r['asset_name'], 'status': 'no_rate',
+                                 'mode': 'RATE_BASED',
+                                 'hint': 'Set InterestRate % in InvestMapping config'})
+                continue
+            try:
+                inv = float(r['investedvalue'] or 0)
+                # Current value = principal × (1 + annual_rate/100)
+                # User maintains the principal (balance); we apply one year's accrual
+                cur     = inv * (1 + rate / 100)
+                pnl     = cur - inv
+                pnl_pct = rate   # return % = the interest rate itself
+                ltp     = rate   # ltp field stores the current interest rate for display
+                conn.execute("""UPDATE assets SET ltp=?,currentvalue=?,pnl=?,pnlpct=?,
+                    lastsynced=datetime('now'),updatedat=datetime('now')
+                    WHERE AssetEntryID=?""", (ltp, cur, pnl, pnl_pct, r['AssetEntryID']))
+                results.append({'asset': r['asset_name'], 'rate': rate, 'current_value': cur,
+                                 'status': 'ok', 'mode': 'RATE_BASED'})
+            except Exception as e:
+                results.append({'asset': r['asset_name'], 'status': 'error',
+                                 'error': str(e)[:120], 'mode': 'RATE_BASED'})
+
+    # ── 6. MANUAL — user manages values; skip silently ─────────────────────────
+    for r in by_mode.get('MANUAL', []):
+        results.append({'asset': r['asset_name'], 'status': 'skipped', 'mode': 'MANUAL'})
 
     conn.commit()
     _update_portfolio_from_assets(conn)
     conn.commit(); conn.close()
-    ok = sum(1 for r in results if r['status'] == 'ok')
-    return jsonify({'success': True, 'synced': ok, 'failed': len(results) - ok, 'results': results})
+
+    ok      = sum(1 for r in results if r['status'] == 'ok')
+    skipped = sum(1 for r in results if r['status'] == 'skipped')
+    failed  = len(results) - ok - skipped
+    return jsonify({
+        'success': True, 'synced': ok, 'failed': failed, 'skipped': skipped,
+        'results': results,
+    })
 
 # ── MONTHLY INVESTMENT CALC ───────────────────────────────────────────────────
 @app.route('/api/monthly_investment_calc')
@@ -1962,24 +2410,36 @@ def api_monthly_calc_refresh():
 def api_trading_strategy():
     """Return shares from assets table enriched with NSE live data + last tx."""
     conn = get_db()
-    # Shares assets joined with NSE live data
+    # Use the canonical 3-table JOIN (assets → AssetMapping → InvestMapping)
+    # then LEFT JOIN nse_master for live price data
     assets = conn.execute("""
-        SELECT a.id, a.asset, a.asset_type, a.symbol,
-               a.qty, a.avg_price, a.ltp AS db_ltp,
-               COALESCE(a.target_pct, 25) AS target_pct,
-               a.invested_value, a.current_value,
-               COALESCE(n.ltp,        a.ltp, 0)            AS ltp,
-               COALESCE(n.high_52w,   0)                    AS high_52w,
-               COALESCE(n.low_52w,    0)                    AS low_52w,
-               COALESCE(n.from_52w_high_pct, 0)            AS from_52w_high_pct,
-               COALESCE(n.change_pct, 0)                    AS day_change_pct,
-               COALESCE(n.company_name, a.asset)            AS company_name,
-               n.updated_at AS nse_updated
+        SELECT
+            a.AssetEntryID          AS id,
+            am.AssetName            AS asset,
+            am.AssetSymbol          AS symbol,
+            im.AssetType            AS asset_type,
+            a.qty,
+            a.avgprice              AS avg_price,
+            a.ltp                   AS db_ltp,
+            COALESCE(a.targetpct, 25) AS target_pct,
+            a.investedvalue         AS invested_value,
+            a.currentvalue          AS current_value,
+            a.lastsynced            AS last_synced,
+            COALESCE(n.ltp,        a.ltp, 0)            AS ltp,
+            COALESCE(n.high_52w,   0)                    AS high_52w,
+            COALESCE(n.low_52w,    0)                    AS low_52w,
+            COALESCE(n.from_52w_high_pct, 0)            AS from_52w_high_pct,
+            COALESCE(n.change_pct, 0)                    AS day_change_pct,
+            COALESCE(n.company_name, am.AssetName)       AS company_name,
+            n.updated_at AS nse_updated
         FROM assets a
-        LEFT JOIN nse_master n ON UPPER(TRIM(a.symbol)) = UPPER(TRIM(n.symbol))
-        WHERE LOWER(a.asset_type) LIKE '%share%'
-           OR LOWER(a.asset_type) = 'equity'
-        ORDER BY a.symbol
+        JOIN AssetMapping am ON a.MappingID = am.MappingID
+        JOIN InvestMapping im ON am.AssetId = im.AssetID
+        LEFT JOIN nse_master n ON UPPER(TRIM(am.AssetSymbol)) = UPPER(TRIM(n.symbol))
+        WHERE LOWER(im.AssetType) LIKE '%share%'
+           OR LOWER(im.AssetType) = 'equity'
+           OR LOWER(im.AssetClass) = 'growth'
+        ORDER BY am.AssetSymbol
     """).fetchall()
 
     # Last buy per symbol from invest_transactions
@@ -2039,6 +2499,229 @@ def api_trading_strategy():
         })
     conn.close()
     return jsonify(rows)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BROKER RAW DATA UPLOAD
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Parsing configuration for each source type
+_BROKER_PARSERS = {
+    'groww_mf_orders': {
+        'broker': 'groww', 'instrument': 'mutual_fund', 'data_type': 'orders',
+        'sheet': 0,           # first sheet
+        'header_hint': 'Scheme Name',   # scan rows until this cell found in col 0
+        'col_map': {
+            'Scheme Name': 'name', 'Transaction Type': 'trade_type',
+            'Units': 'quantity', 'NAV': 'price', 'Amount': 'amount', 'Date': 'trade_date'
+        }
+    },
+    'groww_stock_orders': {
+        'broker': 'groww', 'instrument': 'stocks', 'data_type': 'orders',
+        'sheet': 0,
+        'header_hint': 'Stock name',
+        'col_map': {
+            'Stock name': 'name', 'Symbol': 'symbol', 'ISIN': 'isin',
+            'Type': 'trade_type', 'Quantity': 'quantity', 'Value': 'amount',
+            'Exchange': 'exchange', 'Exchange Order Id': 'order_id',
+            'Execution date and time': 'trade_date', 'Order status': 'status'
+        }
+    },
+    'zerodha_stock_trades': {
+        'broker': 'zerodha', 'instrument': 'stocks', 'data_type': 'trades',
+        'sheet': 0,
+        'header_hint': 'Symbol',
+        'col_map': {
+            'Symbol': 'symbol', 'ISIN': 'isin', 'Trade Date': 'trade_date',
+            'Exchange': 'exchange', 'Trade Type': 'trade_type',
+            'Quantity': 'quantity', 'Price': 'price', 'Order ID': 'order_id',
+            'Order Execution Time': 'status'
+        }
+    },
+    'groww_mf_holdings': {
+        'broker': 'groww', 'instrument': 'mutual_fund', 'data_type': 'holdings',
+        'sheet': 0, 'header_hint': None, 'col_map': {}
+    },
+    'groww_stock_holdings': {
+        'broker': 'groww', 'instrument': 'stocks', 'data_type': 'holdings',
+        'sheet': 0, 'header_hint': None, 'col_map': {}
+    },
+    'zerodha_stock_holdings': {
+        'broker': 'zerodha', 'instrument': 'stocks', 'data_type': 'holdings',
+        'sheet': 0, 'header_hint': None, 'col_map': {}
+    },
+}
+
+def _parse_broker_file(file_storage, source_type):
+    """Parse uploaded Excel/CSV file into list of dicts based on source_type config."""
+    import openpyxl, io, csv, json as _json
+    cfg = _BROKER_PARSERS.get(source_type)
+    if not cfg:
+        raise ValueError(f"Unknown source_type: {source_type}")
+
+    fname = file_storage.filename or ''
+    content = file_storage.read()
+
+    rows_raw = []
+    if fname.lower().endswith('.csv'):
+        text = content.decode('utf-8-sig', errors='replace')
+        reader = csv.reader(io.StringIO(text))
+        rows_raw = list(reader)
+    else:
+        wb = openpyxl.load_workbook(io.BytesIO(content), data_only=True)
+        sheet_idx = cfg.get('sheet', 0)
+        ws = wb.worksheets[sheet_idx] if isinstance(sheet_idx, int) else wb[sheet_idx]
+        rows_raw = [[cell for cell in row] for row in ws.iter_rows(values_only=True)]
+
+    # Find header row
+    header_row_idx = 0
+    hint = cfg.get('header_hint')
+    if hint:
+        for i, row in enumerate(rows_raw):
+            row_vals = [str(v).strip() if v is not None else '' for v in row]
+            if hint in row_vals:
+                header_row_idx = i
+                break
+
+    headers = [str(v).strip() if v is not None else '' for v in rows_raw[header_row_idx]]
+
+    col_map = cfg.get('col_map', {})
+    broker   = cfg['broker']
+    instrument = cfg['instrument']
+    data_type  = cfg['data_type']
+
+    result = []
+    for row in rows_raw[header_row_idx + 1:]:
+        # Skip completely blank rows
+        if all(v is None or str(v).strip() == '' for v in row):
+            continue
+        raw = {}
+        for j, val in enumerate(row):
+            if j < len(headers) and headers[j]:
+                raw[headers[j]] = str(val).strip() if val is not None else ''
+        if not raw:
+            continue
+
+        def g(col): return raw.get(col, '')
+        def gf(col):
+            try: return float(str(raw.get(col, '') or '').replace(',', ''))
+            except: return None
+
+        if col_map:
+            record = {
+                'broker': broker, 'instrument': instrument, 'data_type': data_type,
+                'name':       g(next((k for k,v in col_map.items() if v=='name'), '')),
+                'symbol':     g(next((k for k,v in col_map.items() if v=='symbol'), '')),
+                'isin':       g(next((k for k,v in col_map.items() if v=='isin'), '')),
+                'trade_type': g(next((k for k,v in col_map.items() if v=='trade_type'), '')),
+                'trade_date': g(next((k for k,v in col_map.items() if v=='trade_date'), '')),
+                'quantity':   gf(next((k for k,v in col_map.items() if v=='quantity'), '')),
+                'price':      gf(next((k for k,v in col_map.items() if v=='price'), '')),
+                'amount':     gf(next((k for k,v in col_map.items() if v=='amount'), '')),
+                'exchange':   g(next((k for k,v in col_map.items() if v=='exchange'), '')),
+                'order_id':   g(next((k for k,v in col_map.items() if v=='order_id'), '')),
+                'status':     g(next((k for k,v in col_map.items() if v=='status'), '')),
+                'raw_data':   _json.dumps(raw),
+            }
+        else:
+            # Generic: store everything in raw_data
+            record = {
+                'broker': broker, 'instrument': instrument, 'data_type': data_type,
+                'name': '', 'symbol': '', 'isin': '', 'trade_type': '',
+                'trade_date': '', 'quantity': None, 'price': None, 'amount': None,
+                'exchange': '', 'order_id': '', 'status': '',
+                'raw_data': _json.dumps(raw),
+            }
+        result.append(record)
+    return result
+
+
+@app.route('/api/broker_upload/<source_type>', methods=['POST'])
+def api_broker_upload(source_type):
+    """Upload a broker file, parse it, store rows in raw_upload_data."""
+    if source_type not in _BROKER_PARSERS:
+        return jsonify({'error': f'Unknown source type: {source_type}'}), 400
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    f = request.files['file']
+    if not f.filename:
+        return jsonify({'error': 'Empty filename'}), 400
+
+    try:
+        rows = _parse_broker_file(f, source_type)
+    except Exception as e:
+        return jsonify({'error': f'Parse error: {str(e)}'}), 400
+
+    conn = get_db()
+    # Delete previous uploads for this source_type
+    old_ids = [r[0] for r in conn.execute(
+        "SELECT id FROM raw_upload_meta WHERE source_type=?", (source_type,)).fetchall()]
+    if old_ids:
+        placeholders = ','.join('?' * len(old_ids))
+        conn.execute(f"DELETE FROM raw_upload_data WHERE upload_id IN ({placeholders})", old_ids)
+        conn.execute(f"DELETE FROM raw_upload_meta WHERE id IN ({placeholders})", old_ids)
+
+    # Insert meta
+    conn.execute(
+        "INSERT INTO raw_upload_meta (source_type, file_name, row_count) VALUES (?,?,?)",
+        (source_type, f.filename, len(rows)))
+    upload_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+    # Insert rows
+    for row in rows:
+        conn.execute("""
+            INSERT INTO raw_upload_data
+                (upload_id, source_type, broker, instrument, data_type,
+                 name, symbol, isin, trade_type, trade_date,
+                 quantity, price, amount, exchange, order_id, status, raw_data)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        """, (upload_id, source_type, row['broker'], row['instrument'], row['data_type'],
+              row['name'], row['symbol'], row['isin'], row['trade_type'], row['trade_date'],
+              row['quantity'], row['price'], row['amount'], row['exchange'],
+              row['order_id'], row['status'], row['raw_data']))
+    conn.commit(); conn.close()
+    return jsonify({'success': True, 'rows': len(rows), 'upload_id': upload_id})
+
+
+@app.route('/api/broker_uploads')
+def api_broker_uploads_meta():
+    """Return metadata for all uploads, grouped by source_type."""
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT source_type, file_name, row_count, uploaded_at FROM raw_upload_meta ORDER BY uploaded_at DESC"
+    ).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/api/broker_uploads/<source_type>')
+def api_broker_upload_rows(source_type):
+    """Return up to 50 rows for preview for a given source_type."""
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT d.name, d.symbol, d.isin, d.trade_type, d.trade_date,
+               d.quantity, d.price, d.amount, d.exchange, d.order_id, d.status, d.raw_data
+        FROM raw_upload_data d
+        JOIN raw_upload_meta m ON m.id = d.upload_id
+        WHERE d.source_type=?
+        ORDER BY d.id DESC LIMIT 50
+    """, (source_type,)).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/api/broker_uploads/<source_type>', methods=['DELETE'])
+def api_broker_upload_delete(source_type):
+    """Clear all uploaded data for a source_type."""
+    conn = get_db()
+    old_ids = [r[0] for r in conn.execute(
+        "SELECT id FROM raw_upload_meta WHERE source_type=?", (source_type,)).fetchall()]
+    if old_ids:
+        placeholders = ','.join('?' * len(old_ids))
+        conn.execute(f"DELETE FROM raw_upload_data WHERE upload_id IN ({placeholders})", old_ids)
+        conn.execute(f"DELETE FROM raw_upload_meta WHERE id IN ({placeholders})", old_ids)
+    conn.commit(); conn.close()
+    return jsonify({'success': True})
 
 
 if __name__ == '__main__':
