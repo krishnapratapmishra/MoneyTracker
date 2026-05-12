@@ -294,6 +294,9 @@ def init_schema():
         "ALTER TABLE InvestMapping ADD COLUMN WeightGrams   REAL DEFAULT 1",
         "ALTER TABLE InvestMapping ADD COLUMN Purity        TEXT DEFAULT '24K'",
         "ALTER TABLE InvestMapping ADD COLUMN InterestRate  REAL DEFAULT 0",
+        # assets: denormalised name + symbol for quick reference
+        "ALTER TABLE assets ADD COLUMN assetname TEXT DEFAULT ''",
+        "ALTER TABLE assets ADD COLUMN symbol     TEXT DEFAULT ''",
     ]:
         try:
             conn.execute(migration)
@@ -2722,6 +2725,426 @@ def api_broker_upload_delete(source_type):
         conn.execute(f"DELETE FROM raw_upload_meta WHERE id IN ({placeholders})", old_ids)
     conn.commit(); conn.close()
     return jsonify({'success': True})
+
+
+def _normalize_action(trade_type):
+    """Normalise broker trade_type strings to 'buy' or 'sell'."""
+    t = (trade_type or '').strip().upper()
+    if t in ('BUY', 'PURCHASE', 'BUY NEW', 'BUYNEW', 'SWITCH_IN', 'SIP'):
+        return 'buy'
+    if t in ('SELL', 'REDEEM', 'REDEMPTION', 'SWITCH_OUT', 'REPURCHASE'):
+        return 'sell'
+    return t.lower() or None
+
+
+def _instrument_to_asset_type(instrument):
+    """Map broker instrument string to invest_transactions asset_type label."""
+    m = {
+        'stocks':       'Stock',
+        'mutual_fund':  'Mutual Fund',
+        'etf':          'ETF',
+        'bonds':        'Bond',
+    }
+    return m.get((instrument or '').lower(), instrument or 'Stock')
+
+
+# Instrument → default InvestMapping.AssetID for new assets created via broker import.
+# Stocks → Asset07 (Growth/Equity/Stocks)
+# Mutual Fund → Asset08 (Growth/Equity/Mutual Fund)
+# ETF → Asset09 (Growth/Equity/ETF)
+_INSTRUMENT_INVEST_ASSET_ID = {
+    'stocks':      'Asset07',
+    'mutual_fund': 'Asset08',
+    'etf':         'Asset09',
+}
+
+
+def _get_or_create_asset_mapping(conn, name, symbol, instrument):
+    """
+    Look up AssetMapping by symbol (preferred) then name.
+    If no row found, insert one using the default AssetId for this instrument type.
+    Returns MappingID.
+    """
+    lookup_sym  = (symbol or '').strip().upper()
+    lookup_name = (name   or '').strip().upper()
+
+    # 1. Try by symbol
+    row = None
+    if lookup_sym:
+        row = conn.execute(
+            "SELECT MappingID FROM AssetMapping WHERE UPPER(TRIM(AssetSymbol))=? LIMIT 1",
+            (lookup_sym,)
+        ).fetchone()
+
+    # 2. Try by name
+    if not row and lookup_name:
+        row = conn.execute(
+            "SELECT MappingID FROM AssetMapping WHERE UPPER(TRIM(AssetName))=? LIMIT 1",
+            (lookup_name,)
+        ).fetchone()
+
+    if row:
+        return row['MappingID']
+
+    # 3. Not found → create new AssetMapping entry
+    invest_asset_id = _INSTRUMENT_INVEST_ASSET_ID.get(
+        (instrument or '').lower(), 'Asset07'
+    )
+    conn.execute(
+        "INSERT INTO AssetMapping (AssetName, AssetSymbol, AssetId) VALUES (?,?,?)",
+        ((name or symbol or '').strip(), (symbol or '').strip(), invest_asset_id)
+    )
+    return conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+
+def _get_or_create_asset_row(conn, mapping_id, name, symbol):
+    """
+    Find the assets row for mapping_id; create it if absent (qty=0, avgprice=0).
+    Returns a dict with AssetEntryID, qty, avgprice, investedvalue.
+    """
+    row = conn.execute(
+        "SELECT AssetEntryID, qty, avgprice, investedvalue FROM assets WHERE MappingID=? LIMIT 1",
+        (mapping_id,)
+    ).fetchone()
+
+    if row:
+        # Ensure denormalised columns are filled
+        conn.execute(
+            "UPDATE assets SET assetname=COALESCE(NULLIF(assetname,''),?), symbol=COALESCE(NULLIF(symbol,''),?) WHERE AssetEntryID=?",
+            ((name or '').strip(), (symbol or '').strip(), row['AssetEntryID'])
+        )
+        return dict(row)
+
+    # Create new asset row
+    conn.execute("""
+        INSERT INTO assets
+            (MappingID, qty, avgprice, ltp, investedvalue, currentvalue,
+             pnl, pnlpct, assetname, symbol, updatedat)
+        VALUES (?,0,0,0,0,0,0,0,?,?,datetime('now'))
+    """, (mapping_id, (name or '').strip(), (symbol or '').strip()))
+    new_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    return {'AssetEntryID': new_id, 'qty': 0.0, 'avgprice': 0.0, 'investedvalue': 0.0}
+
+
+def _recompute_asset_from_transactions(conn, stock_name, symbol_val, instrument):
+    """
+    Recompute qty / avgprice / investedvalue for one asset by aggregating ALL rows
+    in invest_transactions that match stock_name (case-insensitive).
+
+    Logic:
+      net_qty        = SUM(BUY qty) − SUM(SELL qty)          [clamped to ≥ 0]
+      avg_price      = SUM(BUY invested_value) / SUM(BUY qty) [weighted average cost]
+      invested_value = avg_price × net_qty                    [remaining cost basis]
+
+    Ensures or creates the matching AssetMapping + assets rows, then writes
+    the recomputed values.  Returns a tuple (asset_entry_id, is_new_asset).
+    """
+    agg = conn.execute("""
+        SELECT
+            SUM(CASE WHEN UPPER(action) = 'BUY'  THEN quantity       ELSE 0 END) AS buy_qty,
+            SUM(CASE WHEN UPPER(action) = 'SELL' THEN quantity       ELSE 0 END) AS sell_qty,
+            SUM(CASE WHEN UPPER(action) = 'BUY'  THEN invested_value ELSE 0 END) AS buy_amount
+        FROM invest_transactions
+        WHERE UPPER(TRIM(stock_name)) = UPPER(TRIM(?))
+    """, (stock_name,)).fetchone()
+
+    buy_qty    = float(agg['buy_qty']    or 0)
+    sell_qty   = float(agg['sell_qty']   or 0)
+    buy_amount = float(agg['buy_amount'] or 0)
+
+    net_qty   = max(0.0, buy_qty - sell_qty)
+    avg_price = buy_amount / buy_qty if buy_qty > 0 else 0.0
+    inv_value = round(avg_price * net_qty, 6)
+
+    mapping_id = _get_or_create_asset_mapping(conn, stock_name, symbol_val, instrument)
+    asset_row  = _get_or_create_asset_row(conn, mapping_id, stock_name, symbol_val)
+    is_new     = asset_row['qty'] == 0 and asset_row['avgprice'] == 0
+
+    conn.execute("""
+        UPDATE assets
+        SET qty=?, avgprice=?, investedvalue=?, currentvalue=?, updatedat=datetime('now')
+        WHERE AssetEntryID=?
+    """, (net_qty, avg_price, inv_value, inv_value, asset_row['AssetEntryID']))
+
+    return asset_row['AssetEntryID'], is_new
+
+
+@app.route('/api/broker_uploads/<source_type>/commit', methods=['POST'])
+def api_broker_upload_commit(source_type):
+    """
+    Commit staged broker rows →
+      1. Insert every valid row into invest_transactions
+      2. After all inserts, recompute net qty / avg_price / investedvalue for each
+         unique stock from the FULL invest_transactions history (BUY − SELL)
+      3. Find or create AssetMapping + assets rows as needed
+      4. Clear staging tables on success
+    """
+    conn = get_db()
+    try:
+        # ── Fetch staged rows ────────────────────────────────────────────────
+        rows = conn.execute("""
+            SELECT d.name, d.symbol, d.isin, d.trade_type, d.trade_date,
+                   d.quantity, d.price, d.amount, d.exchange, d.order_id,
+                   d.status, d.instrument
+            FROM raw_upload_data d
+            JOIN raw_upload_meta m ON m.id = d.upload_id
+            WHERE d.source_type = ?
+            ORDER BY d.trade_date, d.id
+        """, (source_type,)).fetchall()
+
+        if not rows:
+            return jsonify({'error': 'No staged data found. Upload a file first.'}), 400
+
+        inserted   = 0
+        skipped    = 0
+
+        # Track unique stocks seen in this batch (name → {symbol, instrument})
+        affected = {}
+
+        for row in rows:
+            action = _normalize_action(row['trade_type'])
+            if action not in ('buy', 'sell'):
+                skipped += 1
+                continue
+
+            qty    = float(row['quantity'] or 0)
+            price  = float(row['price']    or 0)
+            amount = float(row['amount']   or 0)
+            if qty <= 0:
+                skipped += 1
+                continue
+
+            if price == 0 and qty > 0 and amount > 0:
+                price = amount / qty
+
+            raw_date   = (row['trade_date'] or '').strip()
+            entry_date = raw_date[:10] if len(raw_date) >= 10 else raw_date
+            month_str  = entry_date[:7] if len(entry_date) >= 7 else ''
+
+            name       = (row['name']   or row['symbol'] or '').strip()
+            symbol_val = (row['symbol'] or '').strip()
+            instrument = (row['instrument'] or 'stocks').lower()
+            asset_type = _instrument_to_asset_type(instrument)
+
+            # ── 1. Insert into invest_transactions ───────────────────────────
+            conn.execute("""
+                INSERT INTO invest_transactions
+                    (entry_date, stock_name, asset_type, quantity, action,
+                     price, invested_value, month)
+                VALUES (?,?,?,?,?,?,?,?)
+            """, (entry_date, name, asset_type, qty, action, price, amount, month_str))
+            inserted += 1
+
+            # Track for recompute pass
+            key = name.upper()
+            if key not in affected:
+                affected[key] = {'name': name, 'symbol': symbol_val, 'instrument': instrument}
+
+        # ── 2. Recompute qty/avg/invested for each unique stock from full history ─
+        assets_created = 0
+        assets_updated = 0
+        for key, info in affected.items():
+            _, is_new = _recompute_asset_from_transactions(
+                conn, info['name'], info['symbol'], info['instrument']
+            )
+            if is_new:
+                assets_created += 1
+            else:
+                assets_updated += 1
+
+        # ── 3. Refresh derived tables ─────────────────────────────────────────
+        _refresh_monthly_calc(conn)
+        _update_portfolio_from_assets(conn)   # sync portfolio aggregates
+
+        # ── 4. Clear staging data ─────────────────────────────────────────────
+        old_ids = [r[0] for r in conn.execute(
+            "SELECT id FROM raw_upload_meta WHERE source_type=?", (source_type,)).fetchall()]
+        if old_ids:
+            ph = ','.join('?' * len(old_ids))
+            conn.execute(f"DELETE FROM raw_upload_data WHERE upload_id IN ({ph})", old_ids)
+            conn.execute(f"DELETE FROM raw_upload_meta WHERE id IN ({ph})", old_ids)
+
+        conn.commit()
+        return jsonify({
+            'success':        True,
+            'inserted':       inserted,
+            'assets_updated': assets_updated,
+            'assets_created': assets_created,
+            'skipped':        skipped,
+        })
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+
+@app.route('/api/reset/<scope>', methods=['POST'])
+def api_reset_data(scope):
+    """
+    Permanently delete records for the requested scope.
+    Returns {deleted: {table: row_count}} for every table touched.
+
+    Scopes and what they delete:
+      transactions       → transactions
+      invest_transactions→ invest_transactions, monthly_investment_calc
+      assets             → assets, portfolio, raw_upload_data, raw_upload_meta
+      loans              → loans, loan_master
+      broker_staging     → raw_upload_data, raw_upload_meta
+      nse_master         → nse_master
+      all                → all of the above (preserves InvestMapping, AssetMapping,
+                           alerts, wealth, wealth goals/dates, magnet_status,
+                           um_vision_cards)
+      asset_mapping      → AssetMapping, assets, portfolio
+      factory            → EVERY table (full blank slate)
+    """
+    # Define table lists per scope
+    # Each entry: (table_name, optional_where_clause)
+    _SCOPE_TABLES = {
+        'transactions':       ['transactions'],
+        'invest_transactions':['invest_transactions', 'monthly_investment_calc'],
+        'assets':             ['assets', 'portfolio', 'raw_upload_data', 'raw_upload_meta'],
+        'loans':              ['loans', 'loan_master'],
+        'broker_staging':     ['raw_upload_data', 'raw_upload_meta'],
+        'nse_master':         ['nse_master'],
+        'all': [
+            'transactions', 'invest_transactions', 'monthly_investment_calc',
+            'assets', 'portfolio',
+            'loans', 'loan_master',
+            'raw_upload_data', 'raw_upload_meta',
+            'nse_master',
+        ],
+        'asset_mapping': ['assets', 'portfolio', 'AssetMapping'],
+        'factory': [
+            'transactions', 'invest_transactions', 'monthly_investment_calc',
+            'assets', 'portfolio',
+            'loans', 'loan_master',
+            'raw_upload_data', 'raw_upload_meta',
+            'nse_master',
+            'alerts',
+            'AssetMapping',
+            'InvestMapping',
+            'magnet_status',
+            'um_vision_cards',
+            'wealth',
+        ],
+    }
+
+    tables = _SCOPE_TABLES.get(scope)
+    if not tables:
+        return jsonify({'error': f'Unknown reset scope: {scope}'}), 400
+
+    conn = get_db()
+    deleted = {}
+    try:
+        # Disable FK constraints temporarily so order doesn't matter
+        conn.execute("PRAGMA foreign_keys = OFF")
+
+        for tbl in tables:
+            try:
+                count_before = conn.execute(f'SELECT COUNT(*) FROM [{tbl}]').fetchone()[0]
+                conn.execute(f'DELETE FROM [{tbl}]')
+                deleted[tbl] = count_before
+            except Exception as tbl_err:
+                # Table may not exist in older DBs — skip gracefully
+                deleted[tbl] = f'error: {tbl_err}'
+
+        # Re-enable FK constraints
+        conn.execute("PRAGMA foreign_keys = ON")
+
+        # After factory reset, re-seed InvestMapping so app is functional
+        if scope == 'factory':
+            _INVEST_MAPPING_SEED = [
+                ('Commodities', 'Gold',           'Bonds'),
+                ('Commodities', 'Gold',           'Physical Gold'),
+                ('Commodities', 'Gold',           'Digital Gold'),
+                ('Commodities', 'Gold',           'Mutual Fund'),
+                ('Commodities', 'Gold',           'ETF'),
+                ('Commodities', 'Silver',         'ETF'),
+                ('Growth',      'Equity',         'Stocks'),
+                ('Growth',      'Equity',         'Mutual Fund'),
+                ('Growth',      'Equity',         'ETF'),
+                ('Liquidity',   'Emergency Fund', 'Savings Account'),
+                ('Liquidity',   'Emergency Fund', 'Liquid Mutual Fund'),
+                ('Liquidity',   'Emergency Fund', 'Short-term FD'),
+                ('Real State',  'Real Estate',    'Plot'),
+                ('Real State',  'Real Estate',    'Flat'),
+                ('Retirement',  'Hybrid',         'Pension Scheme'),
+                ('Stability',   'Fixed Income',   'PPF'),
+                ('Stability',   'Fixed Income',   'EPF'),
+                ('Stability',   'Fixed Income',   'Government Bond/Yojana'),
+            ]
+            conn.executemany(
+                "INSERT OR IGNORE INTO InvestMapping (AssetClass, AssetCategory, AssetType) VALUES (?,?,?)",
+                _INVEST_MAPPING_SEED
+            )
+            # Re-assign AssetIDs
+            conn.execute("""
+                UPDATE InvestMapping
+                SET AssetID = 'Asset' || printf('%02d', id)
+                WHERE AssetID IS NULL OR AssetID = ''
+            """)
+
+        conn.commit()
+        return jsonify({'success': True, 'scope': scope, 'deleted': deleted})
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.execute("PRAGMA foreign_keys = ON")
+        conn.close()
+
+
+@app.route('/api/assets/recompute_from_transactions', methods=['POST'])
+def api_recompute_assets_from_transactions():
+    """
+    For every unique stock_name in invest_transactions, recompute the net qty,
+    avg_price and investedvalue in the assets table (BUY increases, SELL decreases).
+    Safe to call at any time — fully idempotent.
+    """
+    conn = get_db()
+    try:
+        stocks = conn.execute("""
+            SELECT DISTINCT stock_name, asset_type
+            FROM invest_transactions
+            WHERE stock_name IS NOT NULL AND stock_name != ''
+        """).fetchall()
+
+        updated = 0
+        created = 0
+        for s in stocks:
+            stock_name = s['stock_name']
+            asset_type = (s['asset_type'] or 'Stock')
+            # Map asset_type label back to instrument key for AssetMapping lookup
+            instrument = 'mutual_fund' if 'mutual' in asset_type.lower() \
+                         else 'etf'    if 'etf'    in asset_type.lower() \
+                         else 'stocks'
+            # Try to find existing symbol from AssetMapping
+            am = conn.execute("""
+                SELECT am.AssetSymbol FROM AssetMapping am
+                WHERE UPPER(TRIM(am.AssetName)) = UPPER(TRIM(?)) LIMIT 1
+            """, (stock_name,)).fetchone()
+            symbol_val = am['AssetSymbol'] if am else ''
+
+            _, is_new = _recompute_asset_from_transactions(
+                conn, stock_name, symbol_val, instrument
+            )
+            if is_new:
+                created += 1
+            else:
+                updated += 1
+
+        _refresh_monthly_calc(conn)
+        _update_portfolio_from_assets(conn)   # sync portfolio aggregates
+        conn.commit()
+        return jsonify({'success': True, 'updated': updated, 'created': created})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
 
 
 if __name__ == '__main__':

@@ -427,8 +427,27 @@ tr:hover td{background:var(--surface2)}
 .wt-drilldown{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:20px;animation:fadeIn .2s ease}
 .wt-drill-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .wt-drill-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700}
-.wt-asset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
-.wt-asset-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;position:relative}
+.wt-asset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;align-items:start}
+.wt-asset-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;position:relative}
+/* Scrollable asset list inside category card */
+.wt-cat-list{border-top:1px solid var(--border);padding-top:8px;margin-top:2px}
+.wt-cat-list-scroll{overflow-y:auto;max-height:none;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.wct-fb{font-size:9px;padding:3px 9px;border-radius:20px;border:1px solid var(--border);
+  cursor:pointer;font-weight:600;background:transparent;color:var(--muted2);
+  font-family:inherit;line-height:1.4;white-space:nowrap;transition:background .15s,color .15s,border-color .15s}
+.wt-cat-list-scroll.scrollable{max-height:252px} /* ~5 rows × ~50px */
+.wt-cat-list-scroll::-webkit-scrollbar{width:4px}
+.wt-cat-list-scroll::-webkit-scrollbar-track{background:transparent}
+.wt-cat-list-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.wt-cat-row{display:flex;justify-content:space-between;align-items:center;
+  padding:7px 6px;border-bottom:1px solid var(--border);gap:8px;border-radius:6px;transition:background .15s}
+.wt-cat-row:last-child{border-bottom:none}
+.wt-cat-row:hover{background:var(--surface2)}
+.wt-cat-row-name{font-size:12px;font-weight:600;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wt-cat-row-sub{font-size:9px;color:var(--muted2);margin-top:2px}
+.wt-cat-row-pct{font-size:13px;font-weight:800}
+.wt-cat-row-actions{display:flex;gap:3px;margin-top:3px;justify-content:flex-end}
 .wt-ac-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
 .wt-ac-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;line-height:1.3;flex:1;padding-right:6px}
 .wt-ac-pnl{text-align:right;flex-shrink:0}
@@ -1350,8 +1369,42 @@ tr:hover td{background:var(--surface2)}
   background:var(--surface2);color:var(--expense-p);font-size:11px;cursor:pointer;transition:all .18s}
 .bi-del-btn:hover{background:var(--expense-d)}
 .bi-del-btn[disabled]{opacity:.4;pointer-events:none}
-.mode-opt-icon{font-size:22px;margin-bottom:5px}
-.mode-opt-note{font-size:10px;color:var(--muted);margin-top:3px}
+.bi-card.active-preview{border-color:var(--invest-p);box-shadow:0 0 0 2px var(--invest-d)}
+.bi-preview-panel{display:none;margin-top:16px;background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.bi-preview-panel-head{display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface3)}
+.bi-preview-tbl-wrap{overflow:auto;max-height:340px}
+.bi-preview-actions{display:flex;align-items:center;gap:10px;padding:12px 16px;
+  border-top:1px solid var(--border);background:var(--surface3);flex-wrap:wrap}
+.bi-save-btn{padding:7px 18px;border-radius:20px;border:none;cursor:pointer;
+  background:var(--invest-p);color:#fff;font-size:12px;font-weight:600;font-family:inherit;transition:opacity .15s}
+.bi-save-btn:hover{opacity:.85}
+.bi-save-btn:disabled{opacity:.45;pointer-events:none}
+
+/* ── Reset Data ── */
+.reset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:8px}
+.reset-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);
+  padding:20px;display:flex;flex-direction:column;gap:10px;transition:box-shadow .18s,border-color .18s}
+.reset-card:hover{box-shadow:var(--shadow)}
+.reset-card.danger{border-color:#fca5a5}
+.reset-card.danger:hover{border-color:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,.10)}
+.reset-card-icon{font-size:28px;line-height:1}
+.reset-card-title{font-size:14px;font-weight:700;color:var(--text)}
+.reset-card-desc{font-size:11px;color:var(--muted2);line-height:1.6}
+.reset-card-tables{margin-top:2px}
+.reset-card-tables span{display:inline-block;font-size:10px;font-weight:600;
+  background:var(--surface3);border:1px solid var(--border);border-radius:5px;
+  padding:2px 7px;margin:2px 2px 0 0;color:var(--muted2);font-family:monospace}
+.reset-card.danger .reset-card-tables span{background:rgba(239,68,68,.07);border-color:#fca5a5;color:#ef4444}
+.reset-btn{margin-top:4px;padding:8px 0;border-radius:8px;border:none;cursor:pointer;
+  font-size:12px;font-weight:700;font-family:inherit;width:100%;transition:opacity .15s}
+.reset-btn.soft{background:var(--surface3);border:1px solid var(--border);color:var(--muted2)}
+.reset-btn.soft:hover{background:rgba(239,68,68,.08);border-color:#ef4444;color:#ef4444}
+.reset-btn.hard{background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff}
+.reset-btn.hard:hover{opacity:.85}
+.reset-btn:disabled{opacity:.4;pointer-events:none}
+.reset-divider{border:none;border-top:1.5px dashed var(--border);margin:12px 0}
 
 /* ── Help Docs ── */
 .help-doc-tab{display:flex;align-items:center;gap:10px;padding:11px 16px;border-radius:10px;
@@ -3305,66 +3358,201 @@ html:not([data-theme="dark"]) tr:hover td { background:rgba(99,102,241,.04) !imp
     <div class="mod-band-badge">Import</div>
   </div>
   <div class="header">
-    <div><div class="page-title">Import Excel 📥</div>
-    <div class="page-sub">Upload your MoneyTracker.xlsx to refresh all data tables</div></div>
-  </div>
-  <div style="max-width:620px">
-    <div class="section-label" style="margin-bottom:10px">Import Mode</div>
-    <div class="upload-mode-toggle">
-      <div class="mode-opt active" id="mode-replace" onclick="setImportMode('replace')">
-        <div class="mode-opt-icon">🔄</div>
-        <div style="font-weight:600">Replace All</div>
-        <div class="mode-opt-note">Clears existing data, then imports everything fresh</div>
-      </div>
-      <div class="mode-opt" id="mode-append" onclick="setImportMode('append')">
-        <div class="mode-opt-icon">➕</div>
-        <div style="font-weight:600">Append</div>
-        <div class="mode-opt-note">Adds to existing data — may duplicate if re-uploading same file</div>
-      </div>
-    </div>
-    <div class="upload-zone" id="uploadZone"
-         ondragover="event.preventDefault();this.classList.add('dragover')"
-         ondragleave="this.classList.remove('dragover')"
-         ondrop="handleDrop(event)">
-      <div class="upload-zone-icon">📊</div>
-      <div class="upload-zone-text">Drag &amp; drop your Excel file here</div>
-      <div class="upload-zone-sub">or click anywhere in this box to browse — supports .xlsx / .xls</div>
-      <input type="file" id="fileInput" accept=".xlsx,.xls"
-             style="position:absolute;inset:0;opacity:0;cursor:pointer"
-             onchange="handleFileSelect(event)">
-    </div>
-    <div style="margin-top:12px;display:flex;align-items:center;gap:10px">
-      <button class="btn btn-primary" id="uploadBtn" onclick="submitUpload()" disabled>📤 Upload &amp; Import</button>
-      <span id="uploadFileName" style="font-size:12px;color:var(--muted2)"></span>
-    </div>
-    <div id="uploadResult" style="display:none" class="upload-result">
-      <div class="upload-result-title">✅ Import Complete</div>
-      <div id="uploadResultRows"></div>
+    <div><div class="page-title">Broker Import 📂</div>
+    <div class="page-sub">Upload transaction files from Groww &amp; Zerodha — preview, then save to your investment records</div></div>
+    <div class="header-actions">
+      <button class="btn btn-ghost btn-sm" id="recomputeBtn" onclick="recomputeFromTransactions()"
+        title="Recalculate all asset quantities from invest_transactions (BUY + SELL history)">
+        🔁 Recalculate Quantities
+      </button>
     </div>
   </div>
 
-  <!-- ── Broker Data Import ── -->
-  <div style="margin-top:32px">
-    <div class="section-label" style="margin-bottom:4px">📂 Broker Data Import</div>
-    <div style="font-size:12px;color:var(--muted2);margin-bottom:14px">
-      Upload raw files from Groww &amp; Zerodha. Data is stored in a raw staging table for future processing into investments &amp; assets.
+  <div style="font-size:12px;color:var(--muted2);margin-bottom:14px">
+    Upload raw order/trade files. Preview the parsed data, then click <strong>Save to Transactions</strong> to insert into your investment log and update asset quantities (BUY increases · SELL decreases).
+  </div>
+  <div class="broker-import-grid" id="biGrid">
+    <!-- Cards injected by JS -->
+  </div>
+
+  <!-- Inline preview panel (shown below grid after upload) -->
+  <div class="bi-preview-panel" id="biPreviewPanel">
+    <div class="bi-preview-panel-head">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)" id="biPreviewPanelTitle">Preview</div>
+        <div style="font-size:11px;color:var(--muted2)" id="biPreviewPanelSub"></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="biClosePreview()">✕ Close</button>
     </div>
-    <div class="broker-import-grid" id="biGrid">
-      <!-- Cards injected by JS -->
+    <div class="bi-preview-tbl-wrap">
+      <table class="bi-preview-table" id="biPreviewPanelTable" style="min-width:700px"></table>
+    </div>
+    <div class="bi-preview-actions">
+      <button class="bi-save-btn" id="biSaveBtn" onclick="biSave()">💾 Save to Transactions</button>
+      <button class="btn btn-ghost btn-sm" onclick="biClearFromPreview()" style="color:var(--expense)">🗑 Clear Data</button>
+      <span id="biSaveStatus" style="font-size:11px;color:var(--muted2)"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ RESET DATA ════════════ -->
+<div id="page-reset" class="page">
+  <div class="mod-band">
+    <div class="mod-band-icon">🗑️</div>
+    <div class="mod-band-info">
+      <div class="mod-band-name">Reset Data</div>
+      <div class="mod-band-desc">Selectively wipe table data · All deletes cascade to reference tables</div>
+    </div>
+    <div class="mod-band-badge" style="background:#fca5a5;color:#7f1d1d">Danger Zone</div>
+  </div>
+  <div class="header">
+    <div>
+      <div class="page-title">Reset Data 🗑️</div>
+      <div class="page-sub">Permanently delete records — this cannot be undone</div>
     </div>
   </div>
 
-  <!-- Preview modal -->
-  <div class="modal-overlay" id="biPreviewModal" onclick="if(event.target===this)document.getElementById('biPreviewModal').style.display='none'" style="display:none">
-    <div class="modal" style="max-width:820px;max-height:80vh;overflow:hidden;display:flex;flex-direction:column">
-      <div class="modal-header">
-        <div class="modal-title" id="biPreviewTitle">Preview</div>
-        <button class="modal-close" onclick="document.getElementById('biPreviewModal').style.display='none'">✕</button>
+  <div style="background:rgba(239,68,68,.08);border:1.5px solid #fca5a5;border-radius:10px;
+       padding:12px 16px;font-size:12px;color:#b91c1c;margin-bottom:20px;display:flex;gap:10px;align-items:flex-start">
+    <span style="font-size:18px;flex-shrink:0">⚠️</span>
+    <div><strong>All resets are permanent and immediate.</strong> There is no undo.
+    Mapped reference data (InvestMapping, AssetMapping) is preserved unless you choose Reset All.
+    Back up your <code>money_tracker.db</code> file before proceeding.</div>
+  </div>
+
+  <!-- ── Individual reset cards ── -->
+  <div class="section-label" style="margin-bottom:10px">Selective Reset</div>
+  <div class="reset-grid">
+
+    <!-- Transactions -->
+    <div class="reset-card">
+      <div class="reset-card-icon">💸</div>
+      <div class="reset-card-title">Transactions</div>
+      <div class="reset-card-desc">Deletes all income, expense, and investment transaction records.</div>
+      <div class="reset-card-tables">
+        <span>transactions</span>
       </div>
-      <div style="overflow:auto;flex:1">
-        <table class="bi-preview-table" id="biPreviewTable" style="min-width:600px"></table>
-      </div>
+      <button class="reset-btn soft" onclick="performReset('transactions')">🗑 Reset Transactions</button>
     </div>
+
+    <!-- Investment Transactions -->
+    <div class="reset-card">
+      <div class="reset-card-icon">📈</div>
+      <div class="reset-card-title">Investment Transactions</div>
+      <div class="reset-card-desc">Deletes all buy/sell records and clears the derived monthly investment summary.</div>
+      <div class="reset-card-tables">
+        <span>invest_transactions</span>
+        <span>monthly_investment_calc</span>
+      </div>
+      <button class="reset-btn soft" onclick="performReset('invest_transactions')">🗑 Reset Invest Transactions</button>
+    </div>
+
+    <!-- Assets -->
+    <div class="reset-card">
+      <div class="reset-card-icon">🏦</div>
+      <div class="reset-card-title">Assets &amp; Portfolio</div>
+      <div class="reset-card-desc">Deletes all asset holdings, portfolio aggregates, and staging broker upload data. AssetMapping entries are preserved.</div>
+      <div class="reset-card-tables">
+        <span>assets</span>
+        <span>portfolio</span>
+        <span>raw_upload_data</span>
+        <span>raw_upload_meta</span>
+      </div>
+      <button class="reset-btn soft" onclick="performReset('assets')">🗑 Reset Assets</button>
+    </div>
+
+    <!-- Loans -->
+    <div class="reset-card">
+      <div class="reset-card-icon">🏧</div>
+      <div class="reset-card-title">Loans</div>
+      <div class="reset-card-desc">Deletes all loan monthly records and loan master entries.</div>
+      <div class="reset-card-tables">
+        <span>loans</span>
+        <span>loan_master</span>
+      </div>
+      <button class="reset-btn soft" onclick="performReset('loans')">🗑 Reset Loans</button>
+    </div>
+
+    <!-- Broker Staging -->
+    <div class="reset-card">
+      <div class="reset-card-icon">📂</div>
+      <div class="reset-card-title">Broker Staging</div>
+      <div class="reset-card-desc">Clears all pending broker file uploads that have not been committed to transactions yet.</div>
+      <div class="reset-card-tables">
+        <span>raw_upload_data</span>
+        <span>raw_upload_meta</span>
+      </div>
+      <button class="reset-btn soft" onclick="performReset('broker_staging')">🗑 Reset Staging</button>
+    </div>
+
+    <!-- NSE Master -->
+    <div class="reset-card">
+      <div class="reset-card-icon">📡</div>
+      <div class="reset-card-title">NSE Market Data</div>
+      <div class="reset-card-desc">Clears cached NSE live prices, 52-week highs/lows and market data. Safe to reset — data is re-fetched on next sync.</div>
+      <div class="reset-card-tables">
+        <span>nse_master</span>
+      </div>
+      <button class="reset-btn soft" onclick="performReset('nse_master')">🗑 Reset Market Data</button>
+    </div>
+
+  </div>
+
+  <!-- ── Full reset ── -->
+  <hr class="reset-divider">
+  <div class="section-label" style="margin-bottom:10px;color:#ef4444">Full Reset</div>
+  <div class="reset-grid">
+    <div class="reset-card danger" style="grid-column:1/-1;max-width:600px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="reset-card-icon">💥</div>
+        <div>
+          <div class="reset-card-title" style="color:#dc2626">Reset ALL Data</div>
+          <div class="reset-card-desc">Wipes every data table. Preserves mapping reference tables (InvestMapping, AssetMapping) and configuration (alerts, wealth goals, vision cards).</div>
+        </div>
+      </div>
+      <div class="reset-card-tables">
+        <span>transactions</span>
+        <span>invest_transactions</span>
+        <span>monthly_investment_calc</span>
+        <span>assets</span>
+        <span>portfolio</span>
+        <span>loans</span>
+        <span>loan_master</span>
+        <span>raw_upload_data</span>
+        <span>raw_upload_meta</span>
+        <span>nse_master</span>
+      </div>
+      <button class="reset-btn hard" onclick="performReset('all')">💥 Reset ALL Data — Cannot Be Undone</button>
+    </div>
+  </div>
+
+  <!-- ── Mapping reset (extreme) ── -->
+  <hr class="reset-divider">
+  <div class="section-label" style="margin-bottom:10px;color:#ef4444">Mapping &amp; Config Reset</div>
+  <div class="reset-grid">
+
+    <div class="reset-card danger">
+      <div class="reset-card-icon">🗺️</div>
+      <div class="reset-card-title" style="color:#dc2626">Asset Mapping</div>
+      <div class="reset-card-desc">Removes all AssetMapping rows (individual stock/fund name-to-type links). Also clears assets and portfolio as they depend on mapping.</div>
+      <div class="reset-card-tables">
+        <span>AssetMapping</span>
+        <span>assets</span>
+        <span>portfolio</span>
+      </div>
+      <button class="reset-btn hard" onclick="performReset('asset_mapping')">💥 Reset Asset Mapping</button>
+    </div>
+
+    <div class="reset-card danger">
+      <div class="reset-card-icon">🏗️</div>
+      <div class="reset-card-title" style="color:#dc2626">Full Factory Reset</div>
+      <div class="reset-card-desc">Wipes <em>everything</em> including InvestMapping, AssetMapping, alerts, wealth goals, vision cards, and all data. App returns to a blank state.</div>
+      <div class="reset-card-tables">
+        <span>ALL tables</span>
+      </div>
+      <button class="reset-btn hard" onclick="performReset('factory')">💥 Factory Reset</button>
+    </div>
+
   </div>
 </div>
 
@@ -3936,7 +4124,7 @@ function initNavGroups() {
 const _HUB_UNIVERSE = new Set(['universe','health','relationship','career','vision']);
 const _HUB_WCE      = new Set(['wce','portfolio','nse','invtx','trading']);
 const _HUB_MONEY    = new Set(['dashboard','transactions','loans']);
-const _HUB_CONFIG   = new Set(['alerts','import','help']);
+const _HUB_CONFIG   = new Set(['alerts','import','reset','help']);
 
 function showPage(name, el) {
   closeMobNav();
@@ -4002,7 +4190,8 @@ const _MONEY_TABS = [
 // Config sub-tabs
 const _CONFIG_TABS = [
   { name:'alerts', label:'🔔 Alerts',       color:'#f59e0b' },
-  { name:'import', label:'📥 Import Excel', color:'#14b8a6' },
+  { name:'import', label:'📥 Import',       color:'#14b8a6' },
+  { name:'reset',  label:'🗑️ Reset Data',   color:'#ef4444' },
   { name:'help',   label:'📖 Help Docs',    color:'#6366f1' },
 ];
 
@@ -6002,15 +6191,6 @@ async function wtShowDrilldown(assetClass) {
     return;
   }
 
-  // For Growth class: only show assets that have NOT been synced with live prices
-  if (assetClass === 'Growth') {
-    data = data.filter(a => !a.last_synced);
-    if (!data.length) {
-      cards.innerHTML = `<div style="color:var(--muted2);font-size:12px;padding:16px">✅ All Growth assets are synced with live prices.</div>`;
-      return;
-    }
-  }
-
   // Group by asset_category — show one summary card per category
   const groups = {};
   data.forEach(a => {
@@ -6018,77 +6198,165 @@ async function wtShowDrilldown(assetClass) {
     if (!groups[cat]) groups[cat] = [];
     groups[cat].push(a);
   });
-  cards.innerHTML = Object.entries(groups).map(([cat, assets]) => _wtCategoryCard(cat, assets)).join('');
+  let accentIdx = 0;
+  cards.innerHTML = Object.entries(groups).map(([cat, assets]) =>
+    _wtCategoryCard(cat, assets, _CAT_ACCENTS[accentIdx++ % _CAT_ACCENTS.length])
+  ).join('');
+}
+
+// Accent colors for category cards (cycles through palette)
+const _CAT_ACCENTS = ['#6366f1','#14b8a6','#f59e0b','#f43f5e','#10b981','#8b5cf6','#06b6d4','#ec4899'];
+// Stores full asset list per card for filter re-renders
+const _wtCatAssets = {};
+
+// ── Single asset row HTML ─────────────────────────────────────────────────────
+function _wtCatRowHtml(a) {
+  const ap    = a.pnl_pct || 0;
+  const aPos  = ap >= 0;
+  const aClr  = aPos ? 'var(--income)' : 'var(--expense)';
+  const synced = a.last_synced ? a.last_synced.substring(0,10) : null;
+  return `
+    <div class="wt-cat-row">
+      <div style="min-width:0;flex:1">
+        <div class="wt-cat-row-name" title="${a.asset}">${a.asset}</div>
+        <div class="wt-cat-row-sub">
+          ${fmt(a.invested_value)} → ${fmt(a.current_value)}
+          &nbsp;·&nbsp;${synced
+            ? `<span>${synced}</span>`
+            : `<span style="color:#f59e0b;font-weight:700">Not synced</span>`}
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div class="wt-cat-row-pct" style="color:${aClr}">${aPos?'+':''}${ap.toFixed(1)}%</div>
+        <div class="wt-cat-row-actions">
+          <button class="btn btn-ghost btn-xs" onclick="openWtAssetModal(_wtAssetCache[${a.id}])" title="Edit">✏️</button>
+          <button class="btn btn-ghost btn-xs" onclick="wtDeleteAsset(${a.id})" title="Delete">🗑</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── Filter toggle handler for a category card ─────────────────────────────────
+function _wtCatFilter(cardId, filterType) {
+  const all = _wtCatAssets[cardId] || [];
+  const card = document.getElementById(cardId);
+  if (!card) return;
+
+  // Update button active states — only touch color properties, not layout
+  card.querySelectorAll('.wct-fb').forEach(b => {
+    const active = b.dataset.f === filterType;
+    b.style.background   = active ? b.dataset.clr : 'transparent';
+    b.style.color        = active ? '#fff' : 'var(--muted2)';
+    b.style.borderColor  = active ? b.dataset.clr : 'var(--border)';
+  });
+
+  // Apply filter
+  const filtered = filterType === 'synced'   ? all.filter(a =>  a.last_synced)
+                 : filterType === 'unsynced'  ? all.filter(a => !a.last_synced)
+                 : all;
+
+  const listEl = document.getElementById(cardId + '-list');
+  const moreEl = document.getElementById(cardId + '-more');
+  if (!listEl) return;
+
+  if (!filtered.length) {
+    listEl.className = 'wt-cat-list-scroll';
+    listEl.innerHTML = `<div style="color:var(--muted2);font-size:11px;padding:10px 0;text-align:center">No assets match this filter.</div>`;
+    if (moreEl) moreEl.textContent = '';
+    return;
+  }
+
+  listEl.className = 'wt-cat-list-scroll' + (filtered.length > 5 ? ' scrollable' : '');
+  listEl.innerHTML = filtered.map(_wtCatRowHtml).join('');
+  if (moreEl) moreEl.textContent = filtered.length > 5
+    ? `↕ ${filtered.length - 5} more — scroll to view` : '';
 }
 
 // ── Category summary card: groups all assets of same asset_category ──────────
-function _wtCategoryCard(catName, assets) {
+function _wtCategoryCard(catName, assets, accentColor) {
   assets.forEach(a => { _wtAssetCache[a.id] = a; });
 
-  const totalInv = assets.reduce((s, a) => s + (a.invested_value  || 0), 0);
-  const totalCur = assets.reduce((s, a) => s + (a.current_value   || 0), 0);
-  const totalRet = totalCur - totalInv;
-  const retPct   = totalInv > 0 ? (totalRet / totalInv * 100) : 0;
-  const isPos    = totalRet >= 0;
-  const retClr   = isPos ? 'var(--income)' : 'var(--expense)';
+  // Unique card ID for filter targeting
+  const cardId = 'wtcat-' + catName.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+  _wtCatAssets[cardId] = assets;
 
-  const assetRows = assets.map(a => {
-    const ap   = a.pnl_pct || 0;
-    const aPos = ap >= 0;
-    const aClr = aPos ? 'var(--income)' : 'var(--expense)';
-    const synced = a.last_synced ? a.last_synced.substring(0,10) : null;
-    return `
-      <div style="display:flex;justify-content:space-between;align-items:center;
-                  padding:5px 0;border-bottom:1px solid var(--border);gap:8px">
-        <div style="min-width:0;flex:1">
-          <div style="font-size:11px;font-weight:600;color:var(--text);
-                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
-               title="${a.asset}">${a.asset}</div>
-          <div style="font-size:9px;color:var(--muted2);margin-top:1px">
-            ${fmt(a.invested_value)} → ${fmt(a.current_value)}
-            ${synced ? `· <span style="color:var(--muted2)">${synced}</span>` : `· <span style="color:#f59e0b;font-weight:700">Not synced</span>`}
-          </div>
-        </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:12px;font-weight:800;color:${aClr}">${aPos?'+':''}${ap.toFixed(1)}%</div>
-          <div style="display:flex;gap:3px;justify-content:flex-end;margin-top:3px">
-            <button class="btn btn-ghost btn-xs" onclick="openWtAssetModal(_wtAssetCache[${a.id}])" title="Edit">✏️</button>
-            <button class="btn btn-ghost btn-xs" onclick="wtDeleteAsset(${a.id})" title="Delete">🗑</button>
-          </div>
-        </div>
-      </div>`;
-  }).join('');
+  const totalInv  = assets.reduce((s, a) => s + (a.invested_value || 0), 0);
+  const totalCur  = assets.reduce((s, a) => s + (a.current_value  || 0), 0);
+  const totalRet  = totalCur - totalInv;
+  const retPct    = totalInv > 0 ? (totalRet / totalInv * 100) : 0;
+  const isPos     = totalRet >= 0;
+  const retClr    = isPos ? 'var(--income)' : 'var(--expense)';
+  const scrollCls = assets.length > 5 ? 'scrollable' : '';
+  const moreText  = assets.length > 5 ? `↕ ${assets.length - 5} more — scroll to view` : '';
+
+  const syncedCount   = assets.filter(a =>  a.last_synced).length;
+  const unsyncedCount = assets.filter(a => !a.last_synced).length;
+
+  // Filter buttons: All / Synced / Not Synced  (base styles from .wct-fb CSS class)
+  const filterBar = `
+    <div style="display:flex;gap:5px;align-items:center">
+      <button class="wct-fb" data-f="all" data-clr="${accentColor}"
+        onclick="_wtCatFilter('${cardId}','all')"
+        style="background:${accentColor};color:#fff;border-color:${accentColor}">
+        All ${assets.length}
+      </button>
+      <button class="wct-fb" data-f="synced" data-clr="#10b981"
+        onclick="_wtCatFilter('${cardId}','synced')">
+        ✓ Synced ${syncedCount}
+      </button>
+      <button class="wct-fb" data-f="unsynced" data-clr="#f59e0b"
+        onclick="_wtCatFilter('${cardId}','unsynced')">
+        ⚠ Manual ${unsyncedCount}
+      </button>
+    </div>`;
 
   return `
-    <div class="wt-asset-card" style="min-width:260px">
-      <!-- Category header -->
-      <div class="wt-ac-head" style="margin-bottom:10px">
+    <div class="wt-asset-card" id="${cardId}">
+      <!-- Accent top bar -->
+      <div style="height:3px;background:${accentColor};border-radius:10px;margin:-16px -16px 14px"></div>
+
+      <!-- Header: category name + return badge -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
         <div>
-          <div style="font-size:14px;font-weight:800;color:var(--text)">${catName}</div>
-          <div style="font-size:10px;color:var(--muted2);margin-top:1px">${assets.length} asset${assets.length!==1?'s':''}</div>
+          <div style="font-size:14px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:6px">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${accentColor};flex-shrink:0"></span>
+            ${catName}
+          </div>
+          <div style="font-size:10px;color:var(--muted2);margin-top:2px;padding-left:14px">
+            ${assets.length} asset${assets.length!==1?'s':''}
+          </div>
         </div>
-        <div class="wt-ac-pnl">
-          <div class="wt-ac-pnl-pct ${isPos?'pos':'neg'}">${isPos?'+':''}${retPct.toFixed(1)}%</div>
+        <div style="text-align:right">
+          <div style="font-size:16px;font-weight:800;color:${retClr}">${isPos?'+':''}${retPct.toFixed(1)}%</div>
           <div style="font-size:9px;color:var(--muted2)">${isPos?'▲ Gain':'▼ Loss'}</div>
         </div>
       </div>
-      <!-- Category totals -->
-      <div class="wt-ac-vals" style="margin-bottom:10px">
-        <div class="wt-ac-val">
-          <div class="wt-ac-val-lbl">Invested</div>
-          <div class="wt-ac-val-num">${fmt(totalInv)}</div>
+
+      <!-- Summary totals -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+        <div style="background:var(--surface2);border-radius:8px;padding:7px 10px">
+          <div style="font-size:8px;font-weight:700;letter-spacing:.5px;color:var(--muted2);margin-bottom:2px;text-transform:uppercase">Invested</div>
+          <div style="font-size:12px;font-weight:800;color:var(--text)">${fmt(totalInv)}</div>
         </div>
-        <div class="wt-ac-val">
-          <div class="wt-ac-val-lbl">Current</div>
-          <div class="wt-ac-val-num ${isPos?'pos':'neg'}">${fmt(totalCur)}</div>
+        <div style="background:var(--surface2);border-radius:8px;padding:7px 10px">
+          <div style="font-size:8px;font-weight:700;letter-spacing:.5px;color:var(--muted2);margin-bottom:2px;text-transform:uppercase">Current</div>
+          <div style="font-size:12px;font-weight:800;color:${retClr}">${fmt(totalCur)}</div>
         </div>
-        <div class="wt-ac-val">
-          <div class="wt-ac-val-lbl">Return</div>
-          <div class="wt-ac-val-num ${isPos?'pos':'neg'}">${isPos?'+':''}${fmt(Math.abs(totalRet))}</div>
+        <div style="background:var(--surface2);border-radius:8px;padding:7px 10px">
+          <div style="font-size:8px;font-weight:700;letter-spacing:.5px;color:var(--muted2);margin-bottom:2px;text-transform:uppercase">Return</div>
+          <div style="font-size:12px;font-weight:800;color:${retClr}">${isPos?'+':''}${fmt(Math.abs(totalRet))}</div>
         </div>
       </div>
-      <!-- Individual assets list -->
-      <div style="border-top:1px solid var(--border);padding-top:8px">${assetRows}</div>
+
+      <!-- Filter toggle + asset list -->
+      <div class="wt-cat-list">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:9px;font-weight:700;letter-spacing:.6px;color:var(--muted2);text-transform:uppercase">Assets</div>
+          ${filterBar}
+        </div>
+        <div class="wt-cat-list-scroll ${scrollCls}" id="${cardId}-list">${assets.map(_wtCatRowHtml).join('')}</div>
+        <div id="${cardId}-more" style="font-size:9px;color:var(--muted2);text-align:center;padding:4px 0;border-top:1px solid var(--border)">${moreText}</div>
+      </div>
     </div>`;
 }
 
@@ -6126,6 +6394,12 @@ function _wtAssetCard(a) {
   </div>`;
 }
 
+// Helper: get active drilldown asset class from the panel title
+function _wtDrillClass() {
+  const t = document.getElementById('wtDrillTitle');
+  return t ? t.textContent.replace(' Assets','').trim() : null;
+}
+
 async function wtSaveLtp(aid) {
   const inp = document.getElementById(`ltpin-${aid}`);
   const ltp = parseFloat(inp.value);
@@ -6137,12 +6411,10 @@ async function wtSaveLtp(aid) {
       body: JSON.stringify({ltp})
     });
     toast('LTP updated ✓', 'success');
-    // Refresh the drilldown card
-    const data = await fetch(`/api/wt/assets?asset_type=`).then(r=>r.json());
-    // Re-fetch the specific asset and re-render card
-    const assetData = await fetch('/api/assets').then(r=>r.json());
-    const a = assetData.find(x=>x.id===aid);
-    if (a) document.getElementById(`wtac-${aid}`).outerHTML = _wtAssetCard(a);
+    // Re-render whichever drill-down is open
+    const cls = _wtDrillClass();
+    if (cls) wtShowDrilldown(cls);
+    if (_wceCatOpen) wce_drill(_wceCatOpen);
     loadPortfolio();
   } catch(e) { toast('Error: '+e.message,'error'); }
   finally { inp.disabled = false; }
@@ -6152,8 +6424,10 @@ async function wtDeleteAsset(aid) {
   if (!confirm('Delete this asset?')) return;
   await fetch(`/api/wt/assets/${aid}`, {method:'DELETE'});
   toast('Asset deleted','success');
-  const card = document.getElementById(`wtac-${aid}`);
-  if (card) card.remove();
+  // Re-render whichever drill-down is open
+  const cls = _wtDrillClass();
+  if (cls) wtShowDrilldown(cls);
+  if (_wceCatOpen) wce_drill(_wceCatOpen);
   loadPortfolio();
 }
 
@@ -8546,7 +8820,7 @@ function _wceRenderCats() {
   }).join('');
 }
 
-function wce_drill(catId) {
+async function wce_drill(catId) {
   const cat   = _wceCats.find(c => c.id === catId);
   const drill = document.getElementById('wceDrill');
   if (!cat) return;
@@ -8561,44 +8835,7 @@ function wce_drill(catId) {
   _wceCatOpen = catId;
   _wceRenderCats();
 
-  if (!cat._rows.length) {
-    drill.style.display = '';
-    drill.innerHTML = `<div style="padding:36px;text-align:center">
-      <div style="font-size:36px;margin-bottom:10px">${cat.icon}</div>
-      <div style="font-size:14px;font-weight:700;color:var(--text)">No ${cat.name} assets found</div>
-      <div style="font-size:12px;color:var(--muted2);margin-top:4px">Add assets via ＋ Add Asset to see them here</div>
-    </div>`;
-    return;
-  }
-
-  const rows = cat._rows.map(r => {
-    const iv     = r.invested_value || 0;
-    const cv     = r.current_value  || 0;
-    const ret    = r.return_value   || (cv - iv);
-    const retPct = r.return_pct     || (iv > 0 ? (ret / iv * 100) : 0);
-    const pos    = ret >= 0;
-    // Show asset_category › asset_type as the identifier
-    const label  = [r.asset_category, r.asset_type].filter(Boolean).join(' › ') || r.asset_type || r.asset_id || '—';
-    return `<div class="wce-drill-row">
-      <div>
-        <div style="font-size:13px;font-weight:700;color:var(--text)">${r.asset_type || r.asset_id}</div>
-        <div style="font-size:10px;color:var(--muted2)">${r.asset_class} › ${r.asset_category || ''}</div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-size:9px;color:var(--muted2);margin-bottom:2px">INVESTED</div>
-        <div style="font-size:13px;font-weight:700;color:var(--text)">${fmt(iv)}</div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-size:9px;color:var(--muted2);margin-bottom:2px">CURRENT</div>
-        <div class="${pos?'wce-pos':'wce-neg'}" style="font-size:13px">${fmt(cv)}</div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-size:9px;color:var(--muted2);margin-bottom:2px">RETURN</div>
-        <div class="${pos?'wce-pos':'wce-neg'}" style="font-size:13px">${pos?'+':''}${retPct.toFixed(1)}%</div>
-      </div>
-    </div>`;
-  }).join('');
-
+  // Show loading state
   drill.style.display = '';
   drill.innerHTML = `
     <div style="padding:14px 20px;border-bottom:1px solid var(--border);
@@ -8607,18 +8844,51 @@ function wce_drill(catId) {
         <span style="font-size:22px">${cat.icon}</span>
         <div>
           <div style="font-size:14px;font-weight:800;color:var(--text)">${cat.name}
-            <span style="color:${cat.color};font-size:12px">${cat.sub}</span></div>
-          <div style="font-size:11px;color:var(--muted2)">${cat._rows.length} assets · Current: ${fmt(cat._cur)}</div>
+            <span style="color:${cat.color};font-size:12px;margin-left:6px">${cat.sub}</span></div>
+          <div style="font-size:11px;color:var(--muted2)">Current: ${fmt(cat._cur)}</div>
         </div>
       </div>
       <button class="btn btn-ghost btn-sm"
         onclick="_wceCatOpen=null;document.getElementById('wceDrill').style.display='none';_wceRenderCats()">✕ Close</button>
     </div>
-    <div class="wce-drill-hdr">
-      <div>Asset</div><div style="text-align:right">Invested</div>
-      <div style="text-align:right">Current</div><div style="text-align:right">Return</div>
-    </div>
-    ${rows}`;
+    <div id="wceDrillCards" style="padding:16px">
+      <div style="color:var(--muted2);font-size:12px;padding:10px">Loading…</div>
+    </div>`;
+
+  // Fetch individual assets for this class
+  let data = [];
+  try {
+    data = await fetch(`/api/wt/assets?asset_class=${encodeURIComponent(cat.name)}`).then(r => r.json());
+  } catch(e) {
+    document.getElementById('wceDrillCards').innerHTML =
+      `<div style="color:var(--expense);font-size:12px;padding:10px">Failed to load assets.</div>`;
+    return;
+  }
+
+  const cardsEl = document.getElementById('wceDrillCards');
+  if (!data.length) {
+    cardsEl.innerHTML = `<div style="text-align:center;padding:36px">
+      <div style="font-size:36px;margin-bottom:10px">${cat.icon}</div>
+      <div style="font-size:14px;font-weight:700;color:var(--text)">No ${cat.name} assets found</div>
+      <div style="font-size:12px;color:var(--muted2);margin-top:4px">Add assets via ＋ Add Asset to see them here</div>
+    </div>`;
+    return;
+  }
+
+  // Group by asset_category
+  const groups = {};
+  data.forEach(a => {
+    const key = a.asset_category || 'General';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(a);
+  });
+
+  let accentIdx = 0;
+  cardsEl.innerHTML = `<div class="wt-asset-grid">${
+    Object.entries(groups).map(([catName, assets]) =>
+      _wtCategoryCard(catName, assets, _CAT_ACCENTS[accentIdx++ % _CAT_ACCENTS.length])
+    ).join('')
+  }</div>`;
 }
 
 // ─── THEME ────────────────────────────────────────────────────────────────────
@@ -8927,6 +9197,7 @@ const BI_SOURCES = [
 
 // State: source_type → {rows, file_name, row_count, uploaded_at}
 const _biStatus = {};
+let _biPreviewSource = null;   // which source is currently shown in preview panel
 
 async function loadBrokerImport() {
   try {
@@ -8940,13 +9211,14 @@ function _renderBiGrid() {
   const grid = document.getElementById('biGrid');
   if (!grid) return;
   grid.innerHTML = BI_SOURCES.map(src => {
-    const st  = _biStatus[src.key];
+    const st      = _biStatus[src.key];
     const hasData = !!st;
+    const isActive = _biPreviewSource === src.key;
     const statusHtml = hasData
       ? `<div class="bi-card-status ok">✓ ${st.row_count} rows · ${(st.uploaded_at||'').slice(0,16)} · ${st.file_name||''}</div>`
       : `<div class="bi-card-status">No data uploaded yet</div>`;
     return `
-    <div class="bi-card" id="bi-card-${src.key}">
+    <div class="bi-card${isActive?' active-preview':''}" id="bi-card-${src.key}">
       <div class="bi-card-head">
         <div class="bi-card-icon" style="background:${src.color}20;color:${src.color}">${src.icon}</div>
         <div>
@@ -8962,7 +9234,7 @@ function _renderBiGrid() {
           <input type="file" accept=".xlsx,.xls,.csv" onchange="biUpload('${src.key}',this)">
         </label>
         <button class="bi-preview-btn" id="bi-prev-${src.key}"
-          onclick="biPreview('${src.key}','${src.label}')"
+          onclick="biOpenPreview('${src.key}')"
           ${hasData?'':'disabled'}>👁 Preview</button>
         <button class="bi-del-btn" id="bi-del-${src.key}"
           onclick="biDelete('${src.key}')"
@@ -8992,7 +9264,9 @@ async function biUpload(sourceKey, input) {
       file_name: file.name, uploaded_at: new Date().toISOString()
     };
     _renderBiGrid();
-    toast(`✓ ${data.rows} rows imported from ${file.name}`, 'success');
+    toast(`✓ ${data.rows} rows parsed from ${file.name} — review below`, 'success');
+    // Auto-open inline preview
+    await biOpenPreview(sourceKey);
   } catch(e) {
     if (statusEl) { statusEl.className = 'bi-card-status err'; statusEl.textContent = '✕ Network error'; }
     toast('Upload failed: ' + e.message, 'error');
@@ -9000,27 +9274,92 @@ async function biUpload(sourceKey, input) {
   input.value = '';
 }
 
-async function biPreview(sourceKey, label) {
-  const modal = document.getElementById('biPreviewModal');
-  const title = document.getElementById('biPreviewTitle');
-  const tbl   = document.getElementById('biPreviewTable');
-  title.textContent = `Preview — ${label}`;
-  tbl.innerHTML = '<tr><td colspan="8" style="padding:20px;color:var(--muted2)">Loading…</td></tr>';
-  modal.style.display = 'flex';
+async function biOpenPreview(sourceKey) {
+  const src    = BI_SOURCES.find(s => s.key === sourceKey);
+  const panel  = document.getElementById('biPreviewPanel');
+  const title  = document.getElementById('biPreviewPanelTitle');
+  const sub    = document.getElementById('biPreviewPanelSub');
+  const tbl    = document.getElementById('biPreviewPanelTable');
+  const saveBtn= document.getElementById('biSaveBtn');
+  const statusEl = document.getElementById('biSaveStatus');
+
+  _biPreviewSource = sourceKey;
+  _renderBiGrid();  // highlight active card
+
+  title.textContent = `Preview — ${src?.label || sourceKey}`;
+  sub.textContent   = '';
+  statusEl.textContent = '';
+  saveBtn.disabled  = false;
+  tbl.innerHTML     = '<tr><td colspan="8" style="padding:20px;color:var(--muted2)">Loading…</td></tr>';
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+
   try {
     const rows = await fetch(`/api/broker_uploads/${sourceKey}`).then(r=>r.json());
     if (!rows.length) {
       tbl.innerHTML = '<tr><td style="padding:20px;color:var(--muted2)">No data found.</td></tr>';
+      sub.textContent = '0 rows';
       return;
     }
-    // Show key columns + raw columns from first row's raw_data
-    const cols = ['name','symbol','isin','trade_type','trade_date','quantity','price','amount','exchange','order_id','status'];
-    const visibleCols = cols.filter(c => rows.some(r => r[c] !== null && r[c] !== '' && r[c] !== undefined));
-    tbl.innerHTML = `<thead><tr>${visibleCols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
-      <tbody>${rows.slice(0,20).map(r=>`<tr>${visibleCols.map(c=>`<td title="${r[c]||''}">${r[c]??''}</td>`).join('')}</tr>`).join('')}</tbody>`;
+    const allCols = ['name','symbol','isin','trade_type','trade_date','quantity','price','amount','exchange','order_id','status'];
+    const visibleCols = allCols.filter(c => rows.some(r => r[c] !== null && r[c] !== '' && r[c] !== undefined));
+    const colLabels = { name:'Stock / Fund', symbol:'Symbol', isin:'ISIN', trade_type:'Type',
+      trade_date:'Date', quantity:'Qty', price:'Price', amount:'Amount',
+      exchange:'Exchange', order_id:'Order ID', status:'Status' };
+    tbl.innerHTML = `<thead><tr>${visibleCols.map(c=>`<th>${colLabels[c]||c}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(r=>`<tr>${visibleCols.map(c=>`<td title="${r[c]??''}">${r[c]??''}</td>`).join('')}</tr>`).join('')}</tbody>`;
+    sub.textContent = `${rows.length} rows · review carefully before saving`;
   } catch(e) {
-    tbl.innerHTML = `<tr><td style="color:var(--expense);padding:20px">Error: ${e.message}</td></tr>`;
+    tbl.innerHTML = `<tr><td style="color:var(--expense);padding:20px">Error loading preview: ${e.message}</td></tr>`;
   }
+}
+
+function biClosePreview() {
+  const panel = document.getElementById('biPreviewPanel');
+  panel.style.display = 'none';
+  _biPreviewSource = null;
+  _renderBiGrid();
+}
+
+async function biSave() {
+  if (!_biPreviewSource) return;
+  const saveBtn  = document.getElementById('biSaveBtn');
+  const statusEl = document.getElementById('biSaveStatus');
+  saveBtn.disabled = true;
+  statusEl.textContent = '⏳ Saving…';
+  try {
+    const res  = await fetch(`/api/broker_uploads/${_biPreviewSource}/commit`, { method:'POST' });
+    const data = await res.json();
+    if (data.error) {
+      statusEl.textContent = '✕ ' + data.error;
+      statusEl.style.color = 'var(--expense)';
+      saveBtn.disabled = false;
+      toast(data.error, 'error'); return;
+    }
+    const parts = [`✓ ${data.inserted} transactions saved`];
+    if (data.assets_created) parts.push(`${data.assets_created} new assets created`);
+    if (data.assets_updated) parts.push(`${data.assets_updated} assets updated`);
+    if (data.skipped)        parts.push(`${data.skipped} rows skipped`);
+    statusEl.textContent = parts.join(' · ');
+    statusEl.style.color = 'var(--savings)';
+    toast(`✓ Saved ${data.inserted} transactions`, 'success');
+    // Refresh staging status (clear row count since staging is cleared after commit)
+    delete _biStatus[_biPreviewSource];
+    _renderBiGrid();
+    // Close preview after a moment
+    setTimeout(() => { biClosePreview(); loadPortfolio(); }, 1800);
+  } catch(e) {
+    statusEl.textContent = '✕ Save failed: ' + e.message;
+    statusEl.style.color = 'var(--expense)';
+    saveBtn.disabled = false;
+    toast('Save failed: ' + e.message, 'error');
+  }
+}
+
+async function biClearFromPreview() {
+  if (!_biPreviewSource) return;
+  await biDelete(_biPreviewSource);
+  biClosePreview();
 }
 
 async function biDelete(sourceKey) {
@@ -9028,9 +9367,87 @@ async function biDelete(sourceKey) {
   try {
     await fetch(`/api/broker_uploads/${sourceKey}`, { method:'DELETE' });
     delete _biStatus[sourceKey];
-    _renderBiGrid();
+    if (_biPreviewSource === sourceKey) biClosePreview();
+    else _renderBiGrid();
     toast('Data cleared', 'success');
   } catch(e) { toast('Delete failed', 'error'); }
+}
+
+async function recomputeFromTransactions() {
+  const btn = document.getElementById('recomputeBtn');
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ Recalculating…';
+  try {
+    const data = await fetch('/api/assets/recompute_from_transactions', { method:'POST' }).then(r => r.json());
+    if (data.error) { toast(data.error, 'error'); return; }
+    toast(`✓ ${data.updated} assets updated · ${data.created} new assets created from transactions`, 'success');
+    loadPortfolio();
+  } catch(e) {
+    toast('Recompute failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RESET DATA
+// ─────────────────────────────────────────────────────────────────────────────
+const _RESET_LABELS = {
+  transactions:      'all transactions (income / expense / investment)',
+  invest_transactions: 'all investment transactions and monthly summaries',
+  assets:            'all assets, portfolio aggregates and broker staging data',
+  loans:             'all loan records and loan master entries',
+  broker_staging:    'all pending broker upload staging data',
+  nse_master:        'all cached NSE market / price data',
+  all:               'ALL data (transactions · investments · assets · loans · market data)',
+  asset_mapping:     'AssetMapping and all dependent assets / portfolio rows',
+  factory:           'EVERYTHING including mappings, alerts, goals and vision cards',
+};
+
+async function performReset(scope) {
+  const label = _RESET_LABELS[scope] || scope;
+  const isFactory = scope === 'factory' || scope === 'all' || scope === 'asset_mapping';
+  const confirmMsg = isFactory
+    ? `⚠️ DANGER: This will permanently delete ${label}.\n\nType CONFIRM to proceed:`
+    : `This will permanently delete ${label}.\n\nAre you absolutely sure?`;
+
+  if (isFactory) {
+    const typed = prompt(confirmMsg);
+    if ((typed || '').trim().toUpperCase() !== 'CONFIRM') {
+      toast('Reset cancelled', 'info'); return;
+    }
+  } else {
+    if (!confirm(confirmMsg)) return;
+    if (!confirm('⚠️ Second confirmation — this cannot be undone. Proceed?')) return;
+  }
+
+  // Disable all reset buttons while working
+  document.querySelectorAll('.reset-btn').forEach(b => b.disabled = true);
+  toast('⏳ Resetting…', 'info');
+
+  try {
+    const res  = await fetch(`/api/reset/${scope}`, { method: 'POST' });
+    const data = await res.json();
+    if (data.error) { toast('Reset failed: ' + data.error, 'error'); return; }
+
+    const parts = Object.entries(data.deleted || {})
+      .map(([tbl, n]) => `${tbl}: ${n} rows`)
+      .join(' · ');
+    toast(`✓ Reset complete · ${parts}`, 'success');
+
+    // Reload relevant sections
+    if (['transactions','all','factory'].includes(scope))        loadDashboard();
+    if (['invest_transactions','assets','all','factory','asset_mapping'].includes(scope)) loadPortfolio();
+    if (['loans','all','factory'].includes(scope))               loadLoans();
+    if (['all','factory'].includes(scope))                       loadBrokerImport();
+
+  } catch(e) {
+    toast('Reset error: ' + e.message, 'error');
+  } finally {
+    document.querySelectorAll('.reset-btn').forEach(b => b.disabled = false);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -9810,14 +10227,15 @@ async function loadNSE() {
   _mwNseAll.forEach(r => { if (r.symbol) window._nseBySymbol[r.symbol.toUpperCase()] = r; });
 
   // ── Bifurcation ───────────────────────────────────────────────────────────
-  // Gold tab = ALL assets where asset_type='Gold' (includes Gold ETF & Gold MF).
-  // ETF/MF tabs exclude gold assets so they don't double-count.
-  const atl      = a => (a.asset_type || '').toLowerCase();
-  const al       = a => (a.asset      || '').toLowerCase();
+  // Filter by asset_type (from InvestMapping.AssetType), NOT the asset name.
+  // Gold tab = assets whose asset_type is literally 'Gold' (SGB, Physical, Digital).
+  // Gold MF / Gold ETF appear in their respective MF / ETF tabs (not Gold tab).
+  const atl      = a => (a.asset_type  || '').toLowerCase();
+  const acl      = a => (a.asset_class || '').toLowerCase();
   const isGold   = a => atl(a) === 'gold';
-  const isEtf    = a => al(a).includes('etf')    && !isGold(a);
-  const isMF     = a => al(a).includes('mutual') && !isGold(a) && !isEtf(a);
-  const isShares = a => al(a).includes('shares');
+  const isEtf    = a => atl(a).includes('etf')    && !isGold(a);
+  const isMF     = a => atl(a).includes('mutual') && !isGold(a) && !isEtf(a);
+  const isShares = a => atl(a) === 'stocks' || atl(a) === 'stock' || atl(a) === 'shares';
 
   _mwEtfAssets      = _mwAllAssets.filter(isEtf);
   _mwMfAssets       = _mwAllAssets.filter(isMF);

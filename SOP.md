@@ -600,6 +600,21 @@ ReferenceError: Cannot access '_HUB_UNIVERSE' before initialization
 - Vision Board form uses no context (defaults to `'vb'`)
 - If mixing up contexts, the wrong container ID is queried and silently returns null
 
+### GTT Signal Table Shows "Unexpected token '<'"
+- Flask is returning an HTML 500 error page instead of JSON from `/api/trading_strategy`
+- Root cause: old SQL column names (`avg_price`, `invested_value`, `asset_type`) used against the new schema
+- Fix: use 3-table JOIN (`assets → AssetMapping → InvestMapping`) then LEFT JOIN `nse_master` on `am.AssetSymbol`
+- Correct column names: `a.avgprice`, `a.investedvalue`, `a.currentvalue`, `a.targetpct`, `a.lastsynced`, `am.AssetSymbol`, `im.AssetType`, `im.AssetClass`
+
+### Portfolio Drill-Down Not Responding After Edit/Delete
+- Drill-down now renders `_wtCategoryCard` (grouped by `asset_category`), not individual `wtac-N` elements
+- `wtSaveLtp` and `wtDeleteAsset` re-render the full drill-down via `wtShowDrilldown(_wtDrillClass())`
+- All asset classes show all assets (no sync-status filter); grouped by `asset_category`
+
+### Universe at a Glance Cards Not Responding to Click
+- `umShowDetail()` was setting `panel.style.display = ''` which defers to the CSS `display:none` rule
+- Correct fix: `panel.style.display = 'block'`
+
 ---
 
 *End of SOP Document*
