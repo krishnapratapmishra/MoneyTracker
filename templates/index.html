@@ -8714,6 +8714,7 @@ function switchTradingTab(tab) {
     refreshBtn.textContent = '🔄 Refresh';
     syncBtn.textContent    = '⚡ Sync NSE';
     if (wealthSyncBtn) wealthSyncBtn.style.display = 'none';
+    loadTradingStrategy();
   } else {
     refreshBtn.textContent = '🔄 Refresh';
     syncBtn.textContent    = '⚡ Sync Prices';
