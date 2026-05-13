@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Universe Magnet — Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#f0f4ff;--surface:#ffffff;--border:#e2e8f0;
+  --text:#0f172a;--muted:#64748b;
+  --indigo:#6366f1;--indigo-dim:rgba(99,102,241,.12);
+  --red:#f43f5e;
+}
+[data-theme="dark"]{
+  --bg:#0b0f1a;--surface:#131929;--border:#1e2a3a;
+  --text:#e2e8f0;--muted:#64748b;
+  --indigo:#818cf8;--indigo-dim:rgba(129,140,248,.12);
+  --red:#fb7185;
+}
+
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:1rem;
+  position:relative;
+  overflow:hidden;
+}
+
+/* subtle background glow */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 60% 50% at 30% 20%, rgba(99,102,241,.08) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 75% 75%, rgba(20,184,166,.06) 0%, transparent 70%);
+  pointer-events:none;
+}
+
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:2.5rem 2rem;
+  width:100%;max-width:400px;
+  position:relative;
+  box-shadow:0 24px 64px rgba(0,0,0,.18);
+}
+
+.logo{
+  text-align:center;
+  margin-bottom:2rem;
+}
+.logo-icon{
+  font-size:2.8rem;
+  line-height:1;
+  display:block;
+  margin-bottom:.6rem;
+}
+.logo-title{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:1.35rem;font-weight:800;
+  letter-spacing:-.02em;
+  color:var(--text);
+}
+.logo-sub{
+  font-size:.78rem;color:var(--muted);margin-top:.25rem;
+  font-weight:400;letter-spacing:.02em;text-transform:uppercase;
+}
+
+.form-group{
+  margin-bottom:1.1rem;
+}
+label{
+  display:block;
+  font-size:.78rem;font-weight:600;
+  color:var(--muted);
+  letter-spacing:.04em;text-transform:uppercase;
+  margin-bottom:.4rem;
+}
+input[type="text"],input[type="password"]{
+  width:100%;
+  padding:.7rem 1rem;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  font-size:.95rem;
+  outline:none;
+  transition:border-color .2s, box-shadow .2s;
+}
+input[type="text"]:focus,input[type="password"]:focus{
+  border-color:var(--indigo);
+  box-shadow:0 0 0 3px var(--indigo-dim);
+}
+
+.error-msg{
+  background:rgba(244,63,94,.1);
+  border:1px solid rgba(244,63,94,.3);
+  color:var(--red);
+  border-radius:8px;
+  padding:.6rem .9rem;
+  font-size:.85rem;
+  margin-bottom:1.1rem;
+  display:flex;align-items:center;gap:.5rem;
+}
+
+.btn-login{
+  width:100%;
+  padding:.8rem;
+  background:var(--indigo);
+  color:#fff;
+  border:none;
+  border-radius:10px;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:.95rem;font-weight:700;
+  cursor:pointer;
+  transition:opacity .2s, transform .1s;
+  margin-top:.4rem;
+}
+.btn-login:hover{opacity:.9;}
+.btn-login:active{transform:scale(.98);}
+
+.footer-note{
+  text-align:center;
+  font-size:.75rem;
+  color:var(--muted);
+  margin-top:1.6rem;
+}
+
+/* password toggle */
+.input-wrap{position:relative;}
+.toggle-pw{
+  position:absolute;right:.85rem;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;
+  color:var(--muted);padding:0;line-height:1;font-size:1rem;
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <span class="logo-icon">💎</span>
+    <div class="logo-title">Universe Magnet</div>
+    <div class="logo-sub">Personal Finance Tracker</div>
+  </div>
+
+  {% if error %}
+  <div class="error-msg">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    {{ error }}
+  </div>
+  {% endif %}
+
+  <form method="post">
+    <div class="form-group">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" autocomplete="username" required autofocus placeholder="Enter username">
+    </div>
+    <div class="form-group">
+      <label for="password">Password</label>
+      <div class="input-wrap">
+        <input type="password" id="password" name="password" autocomplete="current-password" required placeholder="Enter password">
+        <button type="button" class="toggle-pw" onclick="togglePw()" title="Show/hide password">👁</button>
+      </div>
+    </div>
+    <button type="submit" class="btn-login">Sign In</button>
+  </form>
+
+  <div class="footer-note">Your data stays local &mdash; no cloud sync</div>
+</div>
+
+<script>
+function togglePw(){
+  const p = document.getElementById('password');
+  p.type = p.type === 'password' ? 'text' : 'password';
+}
+// respect system dark/light preference
+if(!window.matchMedia('(prefers-color-scheme: dark)').matches){
+  document.documentElement.setAttribute('data-theme','light');
+}
+</script>
+</body>
+</html>

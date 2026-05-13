@@ -303,6 +303,14 @@ input[type=month]{background:var(--surface2);border:1px solid var(--border);colo
 .charts-row-equal{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
 .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;
   transition:box-shadow .2s}
+.trend-filter-wrap{position:relative}
+.trend-filter-btn{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:10px;padding:3px 10px;cursor:pointer;white-space:nowrap}
+.trend-filter-btn.active{border-color:var(--accent);color:var(--accent)}
+.trend-filter-drop{display:none;position:absolute;top:calc(100% + 4px);right:0;min-width:130px;max-height:220px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:200;padding:6px 0}
+.trend-filter-drop.open{display:block}
+.trend-filter-opt{display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:11px;color:var(--text)}
+.trend-filter-opt:hover{background:var(--surface2)}
+.trend-filter-opt input[type=checkbox]{accent-color:var(--accent);cursor:pointer}
 .chart-card:hover{box-shadow:0 6px 24px rgba(0,0,0,.07)}
 [data-theme="dark"] .chart-card:hover{box-shadow:0 6px 24px rgba(0,0,0,.35)}
 .chart-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;margin-bottom:16px;
@@ -558,6 +566,10 @@ tr:hover td{background:var(--surface2)}
   --mod-p:#6366f1;--mod-d:rgba(99,102,241,.14);--mod-bg:rgba(99,102,241,.06);
   --mod-s:#10b981;--mod-grd:linear-gradient(135deg,rgba(99,102,241,.16),rgba(16,185,129,.07));
 }
+.invtx-tbl-toggle{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;cursor:pointer;user-select:none}
+.invtx-tbl-toggle:hover{background:var(--surface2)}
+.invtx-tbl-toggle span:first-child{font-size:13px;font-weight:700;color:var(--text)}
+.invtx-card-active{box-shadow:0 0 0 2.5px var(--accent) !important}
 /* — Loans → Violet + Rose — */
 #page-loans{
   --mod-p:#8b5cf6;--mod-d:rgba(139,92,246,.14);--mod-bg:rgba(139,92,246,.06);
@@ -1213,8 +1225,8 @@ tr:hover td{background:var(--surface2)}
 .dash-ded-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:18px}
 .dash-ded-head{display:flex;align-items:center;gap:8px;padding:12px 16px;cursor:pointer;user-select:none}
 .dash-ded-head:hover{background:var(--surface2)}
-.dash-ded-body{max-height:0;overflow:hidden;transition:max-height .35s ease;padding:0 16px}
-.dash-ded-body.open{max-height:400px;padding:0 16px 14px}
+.dash-ded-body{max-height:0;overflow:hidden;transition:max-height .5s ease;padding:0 16px}
+.dash-ded-body.open{max-height:800px;padding:0 16px 14px}
 
 /* Nav group indent for money sub-items */
 .nav-sub-item{padding-left:28px !important;font-size:12px !important}
@@ -1381,6 +1393,15 @@ tr:hover td{background:var(--surface2)}
   background:var(--invest-p);color:#fff;font-size:12px;font-weight:600;font-family:inherit;transition:opacity .15s}
 .bi-save-btn:hover{opacity:.85}
 .bi-save-btn:disabled{opacity:.45;pointer-events:none}
+
+/* ── Manual Investment Upload ── */
+.bi-section-hdr{font-size:13px;font-weight:700;color:var(--text);letter-spacing:-.2px;margin-bottom:4px}
+.mi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:14px}
+.mi-row{display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap}
+.mi-lbl{display:block;font-size:11px;color:var(--muted2);font-weight:600;margin-bottom:5px}
+.mi-sel{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);
+  font-size:12px;padding:7px 10px;width:100%;cursor:pointer;font-family:inherit}
+.mi-asset-meta{font-size:11px;color:var(--accent);margin-top:4px;min-height:16px}
 
 /* ── Reset Data ── */
 .reset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:8px}
@@ -2036,6 +2057,14 @@ html:not([data-theme="dark"]) tr:hover td { background:rgba(99,102,241,.04) !imp
       <span class="theme-icon" id="themeIcon">🌙</span>
       <span id="themeLabel">Dark Mode</span>
     </button>
+    <button class="theme-toggle" onclick="openChangePwd()" style="margin-top:4px;border-color:rgba(99,102,241,.3);color:var(--muted2)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span>Change Password</span>
+    </button>
+    <a href="/logout" class="theme-toggle" style="text-decoration:none;display:flex;align-items:center;gap:8px;color:inherit;margin-top:4px;border-color:rgba(244,63,94,.3);color:#f43f5e" onclick="return confirm('Sign out?')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <span>Sign Out</span>
+    </a>
     <div class="sidebar-footer">💎 Universe Magnet<br>Your life, magnetised</div>
   </div>
 </aside>
@@ -2248,6 +2277,32 @@ html:not([data-theme="dark"]) tr:hover td { background:rgba(99,102,241,.04) !imp
   <div id="career-trend-section" style="display:none">
     <div class="section-label" style="color:var(--career-c)">📈 Trends</div>
     <div class="mag-trend-wrap" id="career-trend-wrap"></div>
+  </div>
+</div>
+
+<!-- ────── Change Password Modal ────── -->
+<div class="modal-overlay" id="changePwdModal">
+  <div class="modal" style="width:min(400px,95vw)">
+    <div class="modal-title">🔒 Change Password</div>
+    <div style="display:flex;flex-direction:column;gap:14px;margin-top:4px">
+      <div>
+        <label class="form-label">Current Password</label>
+        <input class="form-input" type="password" id="cpCurrent" placeholder="Enter current password" autocomplete="current-password">
+      </div>
+      <div>
+        <label class="form-label">New Password</label>
+        <input class="form-input" type="password" id="cpNew" placeholder="Min 6 characters" autocomplete="new-password">
+      </div>
+      <div>
+        <label class="form-label">Confirm New Password</label>
+        <input class="form-input" type="password" id="cpConfirm" placeholder="Repeat new password" autocomplete="new-password">
+      </div>
+      <div id="cpError" style="font-size:11px;color:var(--expense);min-height:16px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeChangePwd()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitChangePwd()">Save Password</button>
+    </div>
   </div>
 </div>
 
@@ -2623,8 +2678,21 @@ html:not([data-theme="dark"]) tr:hover td { background:rgba(99,102,241,.04) !imp
 
   <!-- Charts -->
   <div class="charts-row">
-    <div class="chart-card">
-      <div class="chart-title">Monthly Trend <span class="chart-sub">Nov 2025 – Mar 2026</span></div>
+    <div class="chart-card" style="flex:2;min-width:0">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+        <div class="chart-title" style="margin:0">Monthly Trend <span class="chart-sub" id="trendChartSub"></span></div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <div class="trend-filter-wrap" id="trendYearWrap">
+            <button class="trend-filter-btn" onclick="toggleTrendDropdown('year')" id="trendYearBtn">Year ▾</button>
+            <div class="trend-filter-drop" id="trendYearDrop"></div>
+          </div>
+          <div class="trend-filter-wrap" id="trendMonthWrap">
+            <button class="trend-filter-btn" onclick="toggleTrendDropdown('month')" id="trendMonthBtn">Month ▾</button>
+            <div class="trend-filter-drop" id="trendMonthDrop"></div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="resetTrendFilters()" style="font-size:10px;padding:3px 8px">Reset</button>
+        </div>
+      </div>
       <canvas id="trendChart" height="105"></canvas>
     </div>
     <div class="chart-card">
@@ -2744,7 +2812,13 @@ html:not([data-theme="dark"]) tr:hover td { background:rgba(99,102,241,.04) !imp
   <div id="wtDrilldown" class="wt-drilldown" style="display:none">
     <div class="wt-drill-hdr">
       <div class="wt-drill-title" id="wtDrillTitle">Assets</div>
-      <div style="display:flex;gap:6px">
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn btn-ghost btn-sm" id="wtZeroToggleBtn"
+          onclick="wtToggleZeroInvest()"
+          title="Toggle assets with zero investment"
+          style="font-size:11px;padding:4px 10px">
+          🚫 Hide Zero
+        </button>
         <button class="btn btn-primary btn-sm" id="wtDrillAddBtn" onclick="openWtAssetModal()">＋ Add Asset</button>
         <button class="btn btn-ghost btn-sm" onclick="document.getElementById('wtDrilldown').style.display='none'">✕ Close</button>
       </div>
@@ -2753,6 +2827,12 @@ html:not([data-theme="dark"]) tr:hover td { background:rgba(99,102,241,.04) !imp
   </div>
 
   <!-- Per-type Portfolio Cards -->
+  <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:8px">
+    <button class="btn btn-ghost btn-sm" id="ptZeroToggleBtn"
+      onclick="ptToggleZero()"
+      style="font-size:11px;padding:4px 10px"
+      title="Toggle assets with zero investment">🚫 Hide Zero</button>
+  </div>
   <div id="portfolioByType"></div>
 </div>
 
@@ -3066,19 +3146,64 @@ html:not([data-theme="dark"]) tr:hover td { background:rgba(99,102,241,.04) !imp
 
     <!-- Monthly inflow chart -->
     <div class="chart-card" style="margin-bottom:18px">
-      <div class="chart-title">Monthly Investment Inflow by Asset Type</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+        <div class="chart-title" style="margin:0">Monthly Investment Inflow by Asset Type</div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <select id="invtxChartYear" onchange="_invtxApplyChartFilter()"
+            style="padding:4px 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:11px;cursor:pointer;outline:none">
+            <option value="">All Years</option>
+          </select>
+          <select id="invtxChartMonth" onchange="_invtxApplyChartFilter()"
+            style="padding:4px 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:11px;cursor:pointer;outline:none">
+            <option value="">All Months</option>
+            <option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option>
+            <option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option>
+            <option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option>
+            <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:3px 8px" onclick="_invtxResetChartFilter()">↺ Reset</button>
+        </div>
+      </div>
       <canvas id="invtxChart" height="90"></canvas>
     </div>
 
-    <!-- Transactions table -->
-    <div class="table-card">
-      <div class="table-header">
-        <div class="table-title" id="invtxTableTitle">All Investment Transactions</div>
-        <div class="filter-row" style="margin:0" id="invtxTypeFilters">
-          <button class="filter-btn active" onclick="setInvTxType('',this)">All</button>
-        </div>
+    <!-- Transactions table (collapsed by default, expands on card click) -->
+    <div class="table-card" id="invtxTxSection" style="overflow:hidden">
+      <div class="invtx-tbl-toggle" onclick="invtxToggleTxSection()" id="invtxTxToggle">
+        <span id="invtxTableTitle">Investment Transactions</span>
+        <span id="invtxTxChevron" style="font-size:14px;transition:transform .3s">▾</span>
       </div>
-      <div class="table-wrap" id="invtxTable"></div>
+      <div id="invtxTxBody" style="display:none">
+        <div class="table-header" style="flex-wrap:wrap;gap:8px;border-top:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <select id="invtxTblYear" onchange="_invtxTableFilter()"
+              style="padding:4px 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:11px;cursor:pointer;outline:none">
+              <option value="">All Years</option>
+            </select>
+            <select id="invtxTblMonth" onchange="_invtxTableFilter()"
+              style="padding:4px 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:11px;cursor:pointer;outline:none">
+              <option value="">All Months</option>
+              <option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option>
+              <option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option>
+              <option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option>
+              <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+            </select>
+            <select id="invtxPageSize" onchange="_invtxTableFilter()"
+              style="padding:4px 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:11px;cursor:pointer;outline:none">
+              <option value="10" selected>10 rows</option>
+              <option value="25">25 rows</option>
+              <option value="50">50 rows</option>
+              <option value="100">100 rows</option>
+              <option value="0">All rows</option>
+            </select>
+          </div>
+          <div class="filter-row" style="margin:0" id="invtxTypeFilters">
+            <button class="filter-btn active" onclick="setInvTxType('',this)">All</button>
+          </div>
+        </div>
+        <div class="table-wrap" id="invtxTable"></div>
+        <div id="invtxPagination" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted2)"></div>
+      </div>
     </div>
   </div>
 
@@ -3373,6 +3498,47 @@ html:not([data-theme="dark"]) tr:hover td { background:rgba(99,102,241,.04) !imp
   </div>
   <div class="broker-import-grid" id="biGrid">
     <!-- Cards injected by JS -->
+  </div>
+
+  <!-- ── Manual Investment Upload ─────────────────────────────────────────── -->
+  <div class="bi-section-hdr" style="margin-top:28px">📊 Manual Investment Upload</div>
+  <div style="font-size:11px;color:var(--muted2);margin-bottom:14px">
+    Upload a CSV/Excel with columns <strong>investmentmonth, quantity, price</strong> — select the asset, preview, then save.
+  </div>
+  <div class="mi-card" id="miCard">
+    <div class="mi-row">
+      <div style="flex:1;min-width:200px">
+        <label class="mi-lbl">Asset ID</label>
+        <select class="mi-sel" id="miAssetSel" onchange="miOnAssetChange()">
+          <option value="">— Select Asset —</option>
+        </select>
+        <div class="mi-asset-meta" id="miAssetMeta"></div>
+      </div>
+      <div style="flex:1;min-width:200px">
+        <label class="mi-lbl">Upload File <span style="color:var(--muted2)">(CSV or Excel)</span></label>
+        <label class="bi-upload-btn" style="display:inline-flex;align-items:center;gap:6px">
+          📤 Choose File
+          <input type="file" accept=".xlsx,.xls,.csv" id="miFileInput" onchange="miOnFileChange(this)">
+        </label>
+        <span id="miFileName" style="font-size:11px;color:var(--muted2);margin-left:8px"></span>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:8px">
+        <button class="btn btn-primary btn-sm" id="miPreviewBtn" onclick="miPreview()" disabled>👁 Preview</button>
+        <button class="btn btn-ghost btn-sm" id="miResetBtn" onclick="miReset()" style="color:var(--expense)">✕ Reset</button>
+      </div>
+    </div>
+
+    <!-- Preview table -->
+    <div id="miPreviewWrap" style="display:none;margin-top:14px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text)" id="miPreviewTitle"></div>
+      <div class="bi-preview-tbl-wrap" style="max-height:300px">
+        <table class="bi-preview-table" id="miPreviewTable" style="min-width:400px"></table>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:12px">
+        <button class="bi-save-btn" id="miSaveBtn" onclick="miCommit()">💾 Save to Records</button>
+        <span id="miSaveStatus" style="font-size:11px;color:var(--muted2)"></span>
+      </div>
+    </div>
   </div>
 
   <!-- Inline preview panel (shown below grid after upload) -->
@@ -4936,7 +5102,7 @@ function calcHealthScore(summary) {
   let total = 0, weight = 0;
 
   // 1. Savings Rate (ideal: >20%) — weight 30
-  const sr = summary.savings_rate;
+  const sr = Number(summary.savings_rate) || 0;
   const srScore = sr >= 20 ? 100 : sr >= 10 ? 60 : sr >= 0 ? 30 : 0;
   metrics.push({ name: 'Savings Rate', score: srScore, val: sr.toFixed(1)+'%', note: sr>=20?'Great':'Needs work', w: 30 });
   total += srScore * 30; weight += 30;
@@ -5570,8 +5736,10 @@ function openPayLoanModal() {
 }
 
 async function loadSidebarHealth() {
-  const s = await fetch(`/api/summary?month=${dashMonthValue}`).then(r=>r.json());
-  renderHealthScore(s);
+  try {
+    const s = await fetch(`/api/summary?month=${dashMonthValue}`).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+    renderHealthScore(s);
+  } catch(e) { /* server not ready yet or not logged in */ }
 }
 
 // ─── DASHBOARD ───────────────────────────────────────────────────────────────
@@ -5579,29 +5747,42 @@ async function loadDashboard() {
   _ensureDedData(); // warm up deduction dropdown caches in background
   updateMonthNav(); // ensure label reflects dashMonthValue (which is now dynamic)
   const month = dashMonthValue;
-  const [summary, cats, trend] = await Promise.all([
-    fetch(`/api/summary?month=${month}`).then(r=>r.json()),
-    fetch(`/api/category_breakdown?month=${month}`).then(r=>r.json()),
-    fetch('/api/monthly_trend').then(r=>r.json()),
-  ]);
+  let summary, cats, trend;
+  try {
+    [summary, cats, trend] = await Promise.all([
+      fetch(`/api/summary?month=${month}`).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
+      fetch(`/api/category_breakdown?month=${month}`).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
+      fetch('/api/monthly_trend').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
+    ]);
+  } catch(e) {
+    const isAuth = String(e.message) === '401';
+    ['val-income','val-expense','val-loan','val-invest','val-savings'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = isAuth ? 'Login' : '—';
+    });
+    if (isAuth) toast('Session expired — please log in again', 'error');
+    else toast('Could not load dashboard data — is the server running?', 'error');
+    return;
+  }
   _trendData = trend; // cache for average calculations in detail page
 
-  document.getElementById('val-income').textContent  = fmt(summary.income);
-  document.getElementById('val-expense').textContent = fmt(summary.expense);
-  document.getElementById('val-invest').textContent  = fmt(summary.investment);
+  document.getElementById('val-income').textContent  = fmt(summary.income  || 0);
+  document.getElementById('val-expense').textContent = fmt(summary.expense || 0);
+  document.getElementById('val-invest').textContent  = fmt(summary.investment || 0);
 
   // Loan EMI card
-  document.getElementById('val-loan').textContent    = fmt(summary.loan_emi);
+  document.getElementById('val-loan').textContent    = fmt(summary.loan_emi || 0);
   document.getElementById('delta-loan').innerHTML    = deltaHtml(summary.delta_loan, true);
 
   const savEl = document.getElementById('val-savings');
-  savEl.textContent = (summary.savings < 0 ? '-' : '') + fmt(Math.abs(summary.savings));
-  savEl.style.color = summary.savings < 0 ? 'var(--expense)' : 'var(--savings)';
+  const sav = summary.savings || 0;
+  savEl.textContent = (sav < 0 ? '-' : '') + fmt(Math.abs(sav));
+  savEl.style.color = sav < 0 ? 'var(--expense)' : 'var(--savings)';
   document.getElementById('delta-income').innerHTML  = deltaHtml(summary.delta_income);
   document.getElementById('delta-expense').innerHTML = deltaHtml(summary.delta_expense, true);
   document.getElementById('delta-invest').innerHTML  = deltaHtml(summary.delta_investment);
   document.getElementById('delta-savings').innerHTML = deltaHtml(summary.delta_savings);
-  document.getElementById('savings-rate-txt').textContent = `Savings Rate: ${summary.savings_rate}%`;
+  document.getElementById('savings-rate-txt').textContent = `Savings Rate: ${summary.savings_rate || 0}%`;
 
   renderHealthScore(summary);
   renderTrendChart(trend);
@@ -5648,57 +5829,83 @@ async function _loadDashWidgets() {
     }
   } catch(e) { console.warn('_loadDashWidgets income:', e); }
 
-  // Salary deductions come from localStorage — always re-render with correct 'dash' context
-  const dashDedBody = document.getElementById('dashDedBody');
-  if (dashDedBody) {
-    const ded = JSON.parse(localStorage.getItem('mt_salary_deductions') || '{"epf":0,"nps":0,"others":[]}');
-    const othersHtml = (ded.others || []).map((o,i)=>`
-      <div class="vb-ded-extra-row" id="dash-ded-extra-${i}">
-        <input class="vb-ded-extra-name" type="text" placeholder="Deduction name" value="${o.name}" id="dash-ded-ename-${i}">
-        <input class="vb-ded-extra-amt"  type="number" min="0" placeholder="0" value="${o.amount}" id="dash-ded-eamt-${i}">
-        <button class="btn btn-ghost btn-sm" onclick="vbRemoveDedExtra(${i},'dash')" title="Remove">✕</button>
-      </div>`).join('');
-    dashDedBody.innerHTML = `
-      <div class="vb-ded-grid">
-        <div class="vb-ded-item">
-          <div class="vb-ded-lbl">EPF (Employee PF)</div>
-          <div class="vb-ded-input-wrap"><span class="vb-ded-prefix">₹</span>
-            <input class="vb-ded-input" type="number" min="0" id="dashDedEpf" placeholder="0" value="${ded.epf||0}">
-          </div>
-          <div style="font-size:10px;color:var(--muted2);margin-top:5px">→ Fixed Return / EPF</div>
-        </div>
-        <div class="vb-ded-item">
-          <div class="vb-ded-lbl">NPS (National Pension)</div>
-          <div class="vb-ded-input-wrap"><span class="vb-ded-prefix">₹</span>
-            <input class="vb-ded-input" type="number" min="0" id="dashDedNps" placeholder="0" value="${ded.nps||0}">
-          </div>
-          <div style="font-size:10px;color:var(--muted2);margin-top:5px">→ Retirement / NPS</div>
-        </div>
-      </div>
-      <div id="dashDedExtras">${othersHtml}</div>
-      <button class="btn btn-ghost btn-sm" onclick="vbAddDedExtra('dash')" style="margin-bottom:10px">＋ Add deduction</button>
-      <button class="btn btn-primary" onclick="saveSalaryDed('dash')" style="margin-left:8px">Save Deductions</button>`;
-    const totalDed = (ded.epf||0)+(ded.nps||0)+(ded.others||[]).reduce((s,o)=>s+(o.amount||0),0);
-    const dashDedSum = document.getElementById('dashDedSummary');
-    if (dashDedSum) dashDedSum.textContent = totalDed > 0
-      ? `EPF + NPS + others = ${fmt(totalDed)}/salary`
-      : 'Auto-added as investments when salary is recorded';
-  }
+  // Salary deductions — render using new card-based format
+  _renderDedSection();
 }
 
+let _trendRaw = [];
+let _trendSelYears = new Set(), _trendSelMonths = new Set();
+
 function renderTrendChart(data) {
+  _trendRaw = data;
+  _trendSelYears  = new Set();
+  _trendSelMonths = new Set();
+  _buildTrendDropdowns();
+  _drawTrendChart();
+}
+
+function _buildTrendDropdowns() {
+  const years  = [...new Set(_trendRaw.map(d => d.month.slice(0,4)))].sort();
+  const months = [...new Set(_trendRaw.map(d => +d.month.slice(5,7)))].sort((a,b)=>a-b);
+
+  const yDrop = document.getElementById('trendYearDrop');
+  const mDrop = document.getElementById('trendMonthDrop');
+  if (!yDrop || !mDrop) return;
+
+  yDrop.innerHTML = years.map(y => `
+    <label class="trend-filter-opt">
+      <input type="checkbox" value="${y}" onchange="onTrendFilter('year',this)"> ${y}
+    </label>`).join('');
+
+  mDrop.innerHTML = months.map(m => `
+    <label class="trend-filter-opt">
+      <input type="checkbox" value="${m}" onchange="onTrendFilter('month',this)"> ${MONTH_NAMES[m-1]}
+    </label>`).join('');
+}
+
+function toggleTrendDropdown(which) {
+  const drop = document.getElementById(`trend${which==='year'?'Year':'Month'}Drop`);
+  const other = document.getElementById(which==='year'?'trendMonthDrop':'trendYearDrop');
+  other.classList.remove('open');
+  drop.classList.toggle('open');
+}
+
+function onTrendFilter(type, cb) {
+  const set = type === 'year' ? _trendSelYears : _trendSelMonths;
+  cb.checked ? set.add(cb.value) : set.delete(cb.value);
+  const btn = document.getElementById(type==='year'?'trendYearBtn':'trendMonthBtn');
+  if (btn) btn.classList.toggle('active', set.size > 0);
+  _drawTrendChart();
+}
+
+function resetTrendFilters() {
+  _trendSelYears.clear(); _trendSelMonths.clear();
+  document.querySelectorAll('#trendYearDrop input,#trendMonthDrop input').forEach(cb => cb.checked = false);
+  document.getElementById('trendYearBtn')?.classList.remove('active');
+  document.getElementById('trendMonthBtn')?.classList.remove('active');
+  _drawTrendChart();
+}
+
+function _drawTrendChart() {
+  let data = _trendRaw;
+  if (_trendSelYears.size)  data = data.filter(d => _trendSelYears.has(d.month.slice(0,4)));
+  if (_trendSelMonths.size) data = data.filter(d => _trendSelMonths.has(String(+d.month.slice(5,7))));
+
   const ctx = document.getElementById('trendChart').getContext('2d');
   if (trendChart) trendChart.destroy();
   const g = cv('--chart-grid'), t = cv('--chart-tick'), bg = cv('--chart-bg');
+  const fmtMon = mo => { const [y,m] = mo.split('-'); return MONTH_NAMES[+m-1].slice(0,3)+' '+y; };
+  const sub = document.getElementById('trendChartSub');
+  if (sub) sub.textContent = data.length ? fmtMon(data[0].month) + ' – ' + fmtMon(data[data.length-1].month) : '';
   trendChart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: data.map(d => d.month),
+      labels: data.map(d => fmtMon(d.month)),
       datasets: [
-        { label:'Income',     data:data.map(d=>d.income),     backgroundColor:'rgba(16,185,129,.75)',  borderRadius:5, borderSkipped:false },
-        { label:'Expense',    data:data.map(d=>d.expense),    backgroundColor:'rgba(244,63,94,.75)',  borderRadius:5, borderSkipped:false },
-        { label:'Loan EMI',   data:data.map(d=>d.loan_emi||0),backgroundColor:'rgba(139,92,246,.75)', borderRadius:5, borderSkipped:false },
-        { label:'Investment', data:data.map(d=>d.investment), backgroundColor:'rgba(99,102,241,.75)',borderRadius:5, borderSkipped:false },
+        { label:'Income',     data:data.map(d=>d.income),      backgroundColor:'rgba(16,185,129,.75)',  borderRadius:5, borderSkipped:false },
+        { label:'Expense',    data:data.map(d=>d.expense),     backgroundColor:'rgba(244,63,94,.75)',   borderRadius:5, borderSkipped:false },
+        { label:'Loan EMI',   data:data.map(d=>d.loan_emi||0), backgroundColor:'rgba(139,92,246,.75)',  borderRadius:5, borderSkipped:false },
+        { label:'Investment', data:data.map(d=>d.investment),  backgroundColor:'rgba(99,102,241,.75)',  borderRadius:5, borderSkipped:false },
         { label:'Net Savings', data:data.map(d=>d.savings), type:'line',
           borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,.08)',
           tension:.35, fill:true, pointRadius:5, pointBackgroundColor:'#f59e0b',
@@ -6002,68 +6209,130 @@ async function loadPortfolio() {
     ...Object.keys(byClass).filter(c => !knownClassOrder.includes(c))
   ];
 
-  document.getElementById('portfolioByType').innerHTML = classOrder.filter(cls => byClass[cls]?.length).map(cls => {
-    const items     = byClass[cls];
-    const clsTotal  = items.reduce((s,a) => s + (a.current_value  || 0), 0);
-    const clsInv    = items.reduce((s,a) => s + (a.invested_value || 0), 0);
-    const clsPct    = totalCurrentAll > 0 ? (clsTotal / totalCurrentAll * 100) : 0;
-    const clsClr    = META_COLORS[cls] || '#6366f1';
-    const clsPnl    = clsTotal - clsInv;
-    const clsPnlPct = clsInv > 0 ? (clsPnl / clsInv * 100) : 0;
-    const isClsPos  = clsPnl >= 0;
-
-    const cards = items.map(a => {
-      const pnl    = a.pnl || 0;
-      const pnlPct = a.pnl_pct || 0;
-      const isPos  = pnl >= 0;
-      const badge  = `${a.asset_category || ''}${a.asset_type ? ' › ' + a.asset_type : ''}`;
-      return `<div class="portfolio-card" data-class="${cls}">
-        <div class="pc-header">
-          <div style="flex:1;min-width:0">
-            <div class="pc-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.asset}</div>
-            <span class="pc-badge">${badge}</span>
-            ${a.symbol ? `<span class="pc-badge" style="margin-left:4px;opacity:.8">${a.symbol}</span>` : ''}
-          </div>
-          <div class="pc-return">
-            <div class="pc-pct ${isPos?'pos':'neg'}">${isPos?'+':''}${pnlPct.toFixed(1)}%</div>
-            <div class="pc-arrow">${isPos?'▲':'▼'}</div>
-          </div>
-        </div>
-        <div class="pc-vals">
-          <div class="pc-val"><div class="pc-val-lbl">Invested</div><div class="pc-val-num">${fmt(a.invested_value)}</div></div>
-          <div class="pc-val"><div class="pc-val-lbl">Current</div><div class="pc-val-num ${isPos?'pos':'neg'}">${fmt(a.current_value)}</div></div>
-        </div>
-        <div class="pc-vals" style="margin-top:4px">
-          <div class="pc-val"><div class="pc-val-lbl">Qty</div><div class="pc-val-num">${(a.qty||0).toLocaleString('en-IN',{maximumFractionDigits:4})}</div></div>
-          <div class="pc-val"><div class="pc-val-lbl">LTP</div><div class="pc-val-num">${fmt(a.ltp||0)}</div></div>
-        </div>
-        <div class="pc-ret-row">
-          <span class="pc-ret-lbl">P&amp;L</span>
-          <span class="${isPos?'pos':'neg'}" style="font-weight:600">${isPos?'+':''}${fmtFull(pnl)}</span>
-        </div>
-      </div>`;
-    }).join('');
-
-    return `<div style="margin-bottom:22px">
-      <div class="section-label" style="flex-wrap:wrap;gap:6px 10px">
-        <span>${META_ICONS[cls]||'📦'} ${cls}</span>
-        <div style="flex:1;min-width:80px;display:flex;align-items:center;gap:8px">
-          <div style="flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden">
-            <div style="height:100%;width:${clsPct.toFixed(1)}%;background:${clsClr};border-radius:3px;transition:width .8s ease"></div>
-          </div>
-          <span style="font-size:11px;color:var(--muted2);min-width:34px">${clsPct.toFixed(1)}%</span>
-        </div>
-        <span style="font-size:12px;color:var(--text);font-weight:700">${fmt(clsTotal)}</span>
-        <span style="font-size:11px;font-weight:600;${isClsPos?'color:#10b981':'color:#f43f5e'}">${isClsPos?'+':''}${clsPnlPct.toFixed(1)}%</span>
-      </div>
-      <div class="portfolio-grid">${cards}</div>
-    </div>`;
-  }).join('') || `<div style="color:var(--muted2);font-size:13px;padding:20px 0;text-align:center">No assets found. Click <strong>＋ Add Asset</strong> to get started.</div>`;
+  // Store for re-render on toggle
+  window._ptByClass       = byClass;
+  window._ptClassOrder    = classOrder;
+  window._ptTotalCurrent  = totalCurrentAll;
+  window._ptMetaIcons     = META_ICONS;
+  window._ptMetaColors    = META_COLORS;
+  _ptRenderCards();
 
   renderInvTxTable(invTx);
 
   // ── Investment Allocation vs Target card ─────────────────────────────────
   _populatePortAllocCard(summary.by_class || [], wtAssets);
+}
+
+// ── Portfolio cards: asset-type grouped, with zero-invest toggle ──────────────
+let _ptHideZero = true;
+
+function ptToggleZero() {
+  _ptHideZero = !_ptHideZero;
+  const btn = document.getElementById('ptZeroToggleBtn');
+  if (btn) {
+    btn.textContent = _ptHideZero ? '🚫 Hide Zero' : '✅ Show All';
+    btn.style.opacity = _ptHideZero ? '1' : '.7';
+  }
+  _ptRenderCards();
+}
+
+function _ptRenderCards() {
+  const byClass      = window._ptByClass      || {};
+  const classOrder   = window._ptClassOrder   || [];
+  const totalCurrent = window._ptTotalCurrent || 0;
+  const META_ICONS   = window._ptMetaIcons    || {};
+  const META_COLORS  = window._ptMetaColors   || {};
+
+  // Update button state on first render
+  const btn = document.getElementById('ptZeroToggleBtn');
+  if (btn) {
+    btn.textContent = _ptHideZero ? '🚫 Hide Zero' : '✅ Show All';
+    btn.style.opacity = _ptHideZero ? '1' : '.7';
+  }
+
+  document.getElementById('portfolioByType').innerHTML =
+    classOrder.filter(cls => byClass[cls]?.length).map(cls => {
+      // Group all assets in this class by asset_type
+      const typeMap = {};
+      byClass[cls].forEach(a => {
+        const typ = a.asset_type || 'General';
+        if (!typeMap[typ]) typeMap[typ] = [];
+        typeMap[typ].push(a);
+      });
+
+      // Apply zero-investment filter per type group
+      const typeEntries = Object.entries(typeMap)
+        .map(([typ, assets]) => {
+          const filtered = _ptHideZero ? assets.filter(a => (a.invested_value||0) > 0) : assets;
+          return [typ, filtered, assets.length];
+        })
+        .filter(([, filtered]) => filtered.length > 0);
+
+      if (!typeEntries.length) return '';
+
+      // Class-level totals (unfiltered for header bar)
+      const allItems  = byClass[cls];
+      const clsTotal  = allItems.reduce((s,a) => s + (a.current_value  || 0), 0);
+      const clsInv    = allItems.reduce((s,a) => s + (a.invested_value || 0), 0);
+      const clsPct    = totalCurrent > 0 ? (clsTotal / totalCurrent * 100) : 0;
+      const clsClr    = META_COLORS[cls] || '#6366f1';
+      const clsPnl    = clsTotal - clsInv;
+      const clsPnlPct = clsInv > 0 ? (clsPnl / clsInv * 100) : 0;
+      const isClsPos  = clsPnl >= 0;
+
+      const cards = typeEntries.map(([typ, assets, totalCount]) => {
+        // Aggregate across all assets of this type
+        const inv    = assets.reduce((s,a) => s + (a.invested_value || 0), 0);
+        const cur    = assets.reduce((s,a) => s + (a.current_value  || 0), 0);
+        const pnl    = cur - inv;
+        const pnlPct = inv > 0 ? (pnl / inv * 100) : 0;
+        const isPos  = pnl >= 0;
+        const avgLtp = assets.filter(a=>a.ltp>0).reduce((s,a,_,arr)=>s+(a.ltp/arr.length),0);
+        const hiddenCount = totalCount - assets.length;
+
+        return `<div class="portfolio-card" data-class="${cls}">
+          <div class="pc-header">
+            <div style="flex:1;min-width:0">
+              <div class="pc-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${typ}</div>
+              <span class="pc-badge">${cls}</span>
+              <span class="pc-badge" style="margin-left:4px;opacity:.75">${assets.length} asset${assets.length!==1?'s':''}${hiddenCount?' <span style="color:#f59e0b">+'+hiddenCount+' hidden</span>':''}</span>
+            </div>
+            <div class="pc-return">
+              <div class="pc-pct ${isPos?'pos':'neg'}">${isPos?'+':''}${pnlPct.toFixed(1)}%</div>
+              <div class="pc-arrow">${isPos?'▲':'▼'}</div>
+            </div>
+          </div>
+          <div class="pc-vals">
+            <div class="pc-val"><div class="pc-val-lbl">Invested</div><div class="pc-val-num">${fmt(inv)}</div></div>
+            <div class="pc-val"><div class="pc-val-lbl">Current</div><div class="pc-val-num ${isPos?'pos':'neg'}">${fmt(cur)}</div></div>
+          </div>
+          <div class="pc-vals" style="margin-top:4px">
+            <div class="pc-val"><div class="pc-val-lbl">Assets</div><div class="pc-val-num">${assets.length}</div></div>
+            <div class="pc-val"><div class="pc-val-lbl">Avg LTP</div><div class="pc-val-num">${avgLtp>0?fmt(avgLtp):'—'}</div></div>
+          </div>
+          <div class="pc-ret-row">
+            <span class="pc-ret-lbl">P&amp;L</span>
+            <span class="${isPos?'pos':'neg'}" style="font-weight:600">${isPos?'+':''}${fmtFull(pnl)}</span>
+          </div>
+        </div>`;
+      }).join('');
+
+      return `<div style="margin-bottom:22px">
+        <div class="section-label" style="flex-wrap:wrap;gap:6px 10px">
+          <span>${META_ICONS[cls]||'📦'} ${cls}</span>
+          <div style="flex:1;min-width:80px;display:flex;align-items:center;gap:8px">
+            <div style="flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden">
+              <div style="height:100%;width:${clsPct.toFixed(1)}%;background:${clsClr};border-radius:3px;transition:width .8s ease"></div>
+            </div>
+            <span style="font-size:11px;color:var(--muted2);min-width:34px">${clsPct.toFixed(1)}%</span>
+          </div>
+          <span style="font-size:12px;color:var(--text);font-weight:700">${fmt(clsTotal)}</span>
+          <span style="font-size:11px;font-weight:600;${isClsPos?'color:#10b981':'color:#f43f5e'}">${isClsPos?'+':''}${clsPnlPct.toFixed(1)}%</span>
+        </div>
+        <div class="portfolio-grid">${cards}</div>
+      </div>`;
+    }).join('') ||
+    `<div style="color:var(--muted2);font-size:13px;padding:20px 0;text-align:center">No assets found. Click <strong>＋ Add Asset</strong> to get started.</div>`;
 }
 
 // ── Populate portAllocCard dynamically from DB summary (no hardcoded class names) ──
@@ -6177,30 +6446,72 @@ function _renderWtGoalCards(goals) {
 }
 
 // ── Donut Drilldown ───────────────────────────────────────────────────────────
+let _wtDrillData        = [];   // full fetched data for current drill-down class
+let _wtDrillClassName   = '';   // currently drilled asset_class
+let _wtHideZeroInvest   = true; // default: hide zero-investment assets
+let _wtXirrMap          = {};   // { asset_type: xirr_pct } for current drilldown
+
 async function wtShowDrilldown(assetClass) {
   const dd = document.getElementById('wtDrilldown');
+  _wtDrillClassName = assetClass;
   document.getElementById('wtDrillTitle').textContent = `${assetClass} Assets`;
   document.getElementById('wtDrillAddBtn').onclick = ()=>openWtAssetModal(null, assetClass);
   dd.style.display = 'block';
   dd.scrollIntoView({behavior:'smooth', block:'start'});
+  _wtUpdateZeroBtn();
   const cards = document.getElementById('wtDrillCards');
   cards.innerHTML = `<div style="color:var(--muted2);font-size:12px;padding:10px">Loading…</div>`;
-  let data = await fetch(`/api/wt/assets?asset_class=${encodeURIComponent(assetClass)}`).then(r=>r.json());
+  [_wtDrillData, _wtXirrMap] = await Promise.all([
+    fetch(`/api/wt/assets?asset_class=${encodeURIComponent(assetClass)}`).then(r=>r.json()),
+    fetch(`/api/wt/xirr?asset_class=${encodeURIComponent(assetClass)}`).then(r=>r.json()).catch(()=>({}))
+  ]);
+  _wtRenderDrillCards();
+}
+
+function _wtUpdateZeroBtn() {
+  const btn = document.getElementById('wtZeroToggleBtn');
+  if (!btn) return;
+  if (_wtHideZeroInvest) {
+    btn.textContent  = '🚫 Hide Zero';
+    btn.title        = 'Zero-investment assets hidden — click to show all';
+    btn.style.opacity = '1';
+  } else {
+    btn.textContent  = '✅ Show All';
+    btn.title        = 'All assets shown — click to hide zero-investment';
+    btn.style.opacity = '.7';
+  }
+}
+
+function wtToggleZeroInvest() {
+  _wtHideZeroInvest = !_wtHideZeroInvest;
+  _wtUpdateZeroBtn();
+  _wtRenderDrillCards();
+}
+
+function _wtRenderDrillCards() {
+  const cards = document.getElementById('wtDrillCards');
+  const data  = _wtHideZeroInvest
+    ? _wtDrillData.filter(a => (a.invested_value || 0) > 0)
+    : _wtDrillData;
+
   if (!data.length) {
-    cards.innerHTML = `<div style="color:var(--muted2);font-size:12px;padding:10px">No individual assets found for this class. <a href="#" onclick="openWtAssetModal(null,'${assetClass}');return false" style="color:var(--invest)">Add one ＋</a></div>`;
+    const msg = _wtHideZeroInvest && _wtDrillData.length
+      ? `All ${_wtDrillData.length} assets have zero investment. <a href="#" onclick="wtToggleZeroInvest();return false" style="color:var(--invest)">Show them ＋</a>`
+      : `No individual assets found for this class. <a href="#" onclick="openWtAssetModal(null,'${_wtDrillClassName}');return false" style="color:var(--invest)">Add one ＋</a>`;
+    cards.innerHTML = `<div style="color:var(--muted2);font-size:12px;padding:10px">${msg}</div>`;
     return;
   }
 
-  // Group by asset_category — show one summary card per category
+  // Group by asset_type — show one summary card per type
   const groups = {};
   data.forEach(a => {
-    const cat = a.asset_category || 'General';
-    if (!groups[cat]) groups[cat] = [];
-    groups[cat].push(a);
+    const typ = a.asset_type || 'General';
+    if (!groups[typ]) groups[typ] = [];
+    groups[typ].push(a);
   });
   let accentIdx = 0;
-  cards.innerHTML = Object.entries(groups).map(([cat, assets]) =>
-    _wtCategoryCard(cat, assets, _CAT_ACCENTS[accentIdx++ % _CAT_ACCENTS.length])
+  cards.innerHTML = Object.entries(groups).map(([typ, assets]) =>
+    _wtCategoryCard(typ, assets, _CAT_ACCENTS[accentIdx++ % _CAT_ACCENTS.length])
   ).join('');
 }
 
@@ -6292,6 +6603,27 @@ function _wtCategoryCard(catName, assets, accentColor) {
   const syncedCount   = assets.filter(a =>  a.last_synced).length;
   const unsyncedCount = assets.filter(a => !a.last_synced).length;
 
+  // XIRR lookup — try exact match, then fuzzy (e.g. "Mutual Fund" → "Mutual Fund")
+  const xirr = _wtXirrMap[catName] ??
+    Object.entries(_wtXirrMap).find(([k])=>
+      k.toLowerCase().includes(catName.toLowerCase()) ||
+      catName.toLowerCase().includes(k.toLowerCase())
+    )?.[1] ?? null;
+  const xirrBadge = xirr !== null ? (() => {
+    const xPos = xirr >= 0;
+    const xClr = xPos ? '#10b981' : '#f43f5e';
+    const xBg  = xPos ? 'rgba(16,185,129,.1)' : 'rgba(244,63,94,.1)';
+    return `<div style="display:inline-flex;align-items:center;gap:4px;background:${xBg};
+        border:1px solid ${xClr}33;border-radius:6px;padding:3px 8px;margin-top:4px">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="${xClr}" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round">
+        ${xPos ? '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>'
+               : '<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>'}
+      </svg>
+      <span style="font-size:10px;font-weight:800;color:${xClr};letter-spacing:.3px">XIRR ${xPos?'+':''}${xirr.toFixed(1)}%</span>
+    </div>`;
+  })() : '';
+
   // Filter buttons: All / Synced / Not Synced  (base styles from .wct-fb CSS class)
   const filterBar = `
     <div style="display:flex;gap:5px;align-items:center">
@@ -6315,7 +6647,7 @@ function _wtCategoryCard(catName, assets, accentColor) {
       <!-- Accent top bar -->
       <div style="height:3px;background:${accentColor};border-radius:10px;margin:-16px -16px 14px"></div>
 
-      <!-- Header: category name + return badge -->
+      <!-- Header: category name + return + XIRR badge -->
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
         <div>
           <div style="font-size:14px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:6px">
@@ -6325,10 +6657,12 @@ function _wtCategoryCard(catName, assets, accentColor) {
           <div style="font-size:10px;color:var(--muted2);margin-top:2px;padding-left:14px">
             ${assets.length} asset${assets.length!==1?'s':''}
           </div>
+          ${xirrBadge ? `<div style="padding-left:14px;margin-top:4px">${xirrBadge}</div>` : ''}
         </div>
         <div style="text-align:right">
           <div style="font-size:16px;font-weight:800;color:${retClr}">${isPos?'+':''}${retPct.toFixed(1)}%</div>
           <div style="font-size:9px;color:var(--muted2)">${isPos?'▲ Gain':'▼ Loss'}</div>
+          <div style="font-size:8px;color:var(--muted2);margin-top:2px">Abs. Return</div>
         </div>
       </div>
 
@@ -6766,6 +7100,7 @@ function switchInvtxTab(name, btn) {
 
 async function loadInvTx() {
   _invtxActiveType = '';
+  _invtxChartTypeFilter = '';
   _invtxAllData = null;
   document.getElementById('invtxAssetCards').innerHTML = '<div style="color:var(--muted2);font-size:13px;padding:10px 0">Loading…</div>';
   document.getElementById('invtxTable').innerHTML = '';
@@ -6787,10 +7122,11 @@ async function loadInvTx() {
     });
   }
 
-  _renderInvTxAssetCards(summary.by_type, selMonth);
+  _renderInvTxAssetCards(summary.by_type, selMonth, summary.total_months);
   _renderInvTxTypeFilters(summary.by_type);
   _renderInvTxChart(summary.monthly);
   _renderInvTxTable(txs, '');
+  _invtxCollapseTxSection();  // ensure table starts collapsed on fresh load
 }
 
 async function filterInvTxPage() {
@@ -6802,23 +7138,77 @@ async function filterInvTxPage() {
   ]);
   _invtxAllData = { summary, txs };
   _invtxActiveType = '';
+  _invtxChartTypeFilter = '';
   document.querySelectorAll('#invtxTypeFilters .filter-btn').forEach(b => b.classList.remove('active'));
   const allBtn = document.querySelector('#invtxTypeFilters .filter-btn');
   if (allBtn) allBtn.classList.add('active');
-  _renderInvTxAssetCards(summary.by_type, month);
+  _renderInvTxAssetCards(summary.by_type, month, summary.total_months);
   _renderInvTxChart(summary.monthly);
   _renderInvTxTable(txs, '');
+  _invtxCollapseTxSection();
 }
 
-function setInvTxType(type, btn) {
+function setInvTxType(type, btn, fromCard) {
   _invtxActiveType = type;
   document.querySelectorAll('#invtxTypeFilters .filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+  if (btn) btn.classList.add('active');
+  // Highlight active card, clear others
+  document.querySelectorAll('#invtxAssetCards .card').forEach(c => c.classList.remove('invtx-card-active'));
+  if (fromCard) fromCard.classList.add('invtx-card-active');
   const month = document.getElementById('invtxMonthSel').value;
   let url = '/api/invest_transactions?';
   if (type)  url += `type=${encodeURIComponent(type)}&`;
   if (month) url += `month=${month}`;
-  fetch(url).then(r => r.json()).then(data => _renderInvTxTable(data, type));
+  // Filter the chart immediately (no extra fetch needed — raw monthly data already loaded)
+  _invtxChartTypeFilter = type;
+  document.getElementById('invtxChartEmpty')?.remove();
+  _invtxDrawChart();
+
+  fetch(url).then(r => r.json()).then(data => {
+    const tblYr = document.getElementById('invtxTblYear');
+    const tblMo = document.getElementById('invtxTblMonth');
+    if (tblYr) tblYr.value = '';
+    if (tblMo) tblMo.value = '';
+    _renderInvTxTable(data, type);
+    _invtxExpandTxSection();
+    document.getElementById('invtxTxSection')?.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  });
+}
+
+function _invtxClearChartType() {
+  _invtxChartTypeFilter = '';
+  // clear card highlights
+  document.querySelectorAll('#invtxAssetCards .card').forEach(c => c.classList.remove('invtx-card-active'));
+  // reset type filter buttons
+  _invtxActiveType = '';
+  document.querySelectorAll('#invtxTypeFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  const allBtn = document.querySelector('#invtxTypeFilters .filter-btn');
+  if (allBtn) allBtn.classList.add('active');
+  document.getElementById('invtxChartEmpty')?.remove();
+  _invtxDrawChart();
+  // reload table with all types
+  const month = document.getElementById('invtxMonthSel').value;
+  fetch(`/api/invest_transactions${month ? '?month=' + month : ''}`)
+    .then(r => r.json()).then(data => _renderInvTxTable(data, ''));
+}
+
+function _invtxExpandTxSection() {
+  const body    = document.getElementById('invtxTxBody');
+  const chevron = document.getElementById('invtxTxChevron');
+  if (body)    body.style.display    = '';
+  if (chevron) chevron.style.transform = 'rotate(180deg)';
+}
+function _invtxCollapseTxSection() {
+  const body    = document.getElementById('invtxTxBody');
+  const chevron = document.getElementById('invtxTxChevron');
+  if (body)    body.style.display    = 'none';
+  if (chevron) chevron.style.transform = 'rotate(0deg)';
+}
+function invtxToggleTxSection() {
+  const body = document.getElementById('invtxTxBody');
+  if (!body) return;
+  if (body.style.display === 'none') _invtxExpandTxSection();
+  else _invtxCollapseTxSection();
 }
 
 const _itypeIcons = {
@@ -6828,26 +7218,37 @@ const _itypeIcons = {
 };
 const _itypeColors = ['#6366f1','#10b981','#06b6d4','#f59e0b','#8b5cf6','#f43f5e','#14b8a6','#ec4899','#f97316','#84cc16'];
 
-function _renderInvTxAssetCards(byType, month) {
+function _renderInvTxAssetCards(byType, month, totalMonths) {
   const el = document.getElementById('invtxAssetCards');
   if (!byType || !byType.length) {
     el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p>No investment transactions found.</p></div>';
     return;
   }
   const totalInflow = byType.reduce((s, t) => s + (t.inflow || t.total_invested || 0), 0);
+  const nMonths = totalMonths || 1;
   el.innerHTML = byType.map((t, i) => {
-    const inflow = t.inflow || t.total_invested || 0;
-    const pct = totalInflow > 0 ? Math.round(inflow / totalInflow * 100) : 0;
-    const col = _itypeColors[i % _itypeColors.length];
-    const icon = _itypeIcons[t.asset_type] || '💼';
-    return `<div class="card" style="cursor:pointer;border-top:4px solid ${col}" onclick="setInvTxType('${t.asset_type.replace(/'/g,"\\'")}', document.getElementById('invtxBtn_${CSS.escape(t.asset_type)}'))">
+    const inflow    = t.inflow || t.total_invested || 0;
+    const pct       = totalInflow > 0 ? Math.round(inflow / totalInflow * 100) : 0;
+    const col       = _itypeColors[i % _itypeColors.length];
+    const icon      = _itypeIcons[t.asset_type] || '💼';
+    const cardMonths = t.active_months || nMonths;
+    const avgMon    = cardMonths > 0 ? inflow / cardMonths : 0;
+    const typeEsc   = (t.asset_type || '').replace(/'/g,"\\'");
+    const btnId     = `invtxBtn_${CSS.escape(t.asset_type)}`;
+    return `<div class="card invtx-type-card" id="invtxCard_${CSS.escape(t.asset_type)}"
+        style="cursor:pointer;border-top:4px solid ${col};transition:box-shadow .2s"
+        onclick="setInvTxType('${typeEsc}', document.getElementById('${btnId}'), this)">
       <div class="card-icon-row">
         <div class="ci" style="background:${col}22;color:${col};border:1px solid ${col}44;font-size:18px">${icon}</div>
         <span style="font-size:11px;font-weight:700;color:${col};background:${col}18;padding:2px 8px;border-radius:20px">${pct}%</span>
       </div>
       <div class="card-label">${t.asset_type || 'Unknown'}</div>
       <div class="card-value" style="font-size:20px;color:${col}">${fmt(inflow)}</div>
-      <div class="card-sub">${t.tx_count || 0} transactions${month ? ' · ' + month : ''}</div>
+      <div style="font-size:11px;color:var(--muted2);margin-top:2px">
+        Avg <strong style="color:${col}">${fmt(avgMon)}</strong>/mo
+      </div>
+      <div class="card-sub" style="margin-top:4px">${t.tx_count || 0} txns · ${cardMonths} months${month ? ' · ' + month : ''}</div>
+      <div style="font-size:10px;color:var(--muted2);margin-top:6px;text-align:center;opacity:.6">Click to view transactions ↓</div>
     </div>`;
   }).join('');
 }
@@ -6859,51 +7260,166 @@ function _renderInvTxTypeFilters(byType) {
     types.map(t => `<button class="filter-btn" id="invtxBtn_${CSS.escape(t)}" onclick="setInvTxType('${t.replace(/'/g,"\\'")}',this)">${t}</button>`).join('');
 }
 
+let _invtxRawMonthly   = [];   // full monthly data for chart filtering
+let _invtxRawTable     = [];   // full transaction data for table filtering
+let _invtxTableType    = '';   // active asset-type filter
+let _invtxTablePage    = 0;    // current page (0-indexed)
+let _invtxChartTypeFilter = ''; // asset-type filter applied to chart from card click
+
 function _renderInvTxChart(monthly) {
+  _invtxRawMonthly = monthly || [];
+  // Populate year dropdown
+  const years = [...new Set((monthly||[]).map(r => (r.mo||'').slice(0,4)))].filter(Boolean).sort();
+  const yrSel = document.getElementById('invtxChartYear');
+  if (yrSel) {
+    const cur = yrSel.value;
+    yrSel.innerHTML = '<option value="">All Years</option>' +
+      years.map(y => `<option value="${y}"${y===cur?' selected':''}>${y}</option>`).join('');
+  }
+  _invtxDrawChart();
+}
+
+function _invtxDrawChart() {
   const ctx = document.getElementById('invtxChart');
   if (!ctx) return;
   if (_invtxChart) { _invtxChart.destroy(); _invtxChart = null; }
-  if (!monthly || !monthly.length) return;
+  const monthly = _invtxRawMonthly;
+  if (!monthly.length) return;
 
-  const months = [...new Set(monthly.map(r => r.mo))].sort();
-  const types  = [...new Set(monthly.map(r => r.asset_type))].filter(Boolean);
+  const filterYear  = (document.getElementById('invtxChartYear')  || {}).value  || '';
+  const filterMonth = (document.getElementById('invtxChartMonth') || {}).value || '';
+  const filterType  = _invtxChartTypeFilter;
+
+  const filtered = monthly.filter(r => {
+    const mo = r.mo || '';
+    if (filterYear  && !mo.startsWith(filterYear))  return false;
+    if (filterMonth && mo.slice(5,7) !== filterMonth) return false;
+    if (filterType  && r.asset_type !== filterType)  return false;
+    return true;
+  });
+
+  // Update chart card title to reflect active type filter
+  const chartTitleEl = document.querySelector('#invtxPanel-tx .chart-card .chart-title');
+  if (chartTitleEl) {
+    chartTitleEl.innerHTML = filterType
+      ? `Monthly Inflow — <span style="color:${_itypeColors[Object.keys(_itypeColors||{}).indexOf(filterType)] || '#6366f1'}">${filterType}</span> <button onclick="_invtxClearChartType()" style="font-size:10px;padding:2px 8px;margin-left:6px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--muted2);cursor:pointer">✕ All types</button>`
+      : 'Monthly Investment Inflow by Asset Type';
+  }
+
+  if (!filtered.length) {
+    ctx.parentNode.insertAdjacentHTML('beforeend',
+      '<div id="invtxChartEmpty" style="text-align:center;color:var(--muted2);font-size:12px;padding:20px 0">No data for selected period</div>');
+    return;
+  }
+  document.getElementById('invtxChartEmpty')?.remove();
+
+  // Build labels: "YYYY-MM" sorted; if filtering by year show "Mon YYYY"
+  const months   = [...new Set(filtered.map(r => r.mo))].sort();
+  const labelFmt = mo => {
+    const [y, m] = mo.split('-');
+    const mNames = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return filterYear ? mNames[+m] : `${mNames[+m]} ${y}`;
+  };
+
+  const types = [...new Set(filtered.map(r => r.asset_type))].filter(Boolean);
   const datasets = types.map((t, i) => ({
     label: t,
     data: months.map(mo => {
-      const row = monthly.find(r => r.mo === mo && r.asset_type === t);
+      const row = filtered.find(r => r.mo === mo && r.asset_type === t);
       return row ? (row.invested || 0) : 0;
     }),
     backgroundColor: _itypeColors[i % _itypeColors.length] + 'cc',
     borderColor:     _itypeColors[i % _itypeColors.length],
-    borderWidth: 1,
-    borderRadius: 4,
+    borderWidth: 1, borderRadius: 4,
   }));
 
+  const _g = getComputedStyle(document.body).getPropertyValue('--chart-grid');
+  const _t = getComputedStyle(document.body).getPropertyValue('--chart-tick');
+  const _tx = getComputedStyle(document.body).getPropertyValue('--text');
   _invtxChart = new Chart(ctx, {
     type: 'bar',
-    data: { labels: months, datasets },
+    data: { labels: months.map(labelFmt), datasets },
     options: {
       responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { labels: { color: getComputedStyle(document.body).getPropertyValue('--text'), font: {size:11} } } },
+      plugins: { legend: { labels: { color: _tx, font: {size:11} } } },
       scales: {
-        x: { stacked: true, grid: { color: getComputedStyle(document.body).getPropertyValue('--chart-grid') },
-             ticks: { color: getComputedStyle(document.body).getPropertyValue('--chart-tick'), font:{size:10} } },
-        y: { stacked: true, grid: { color: getComputedStyle(document.body).getPropertyValue('--chart-grid') },
-             ticks: { color: getComputedStyle(document.body).getPropertyValue('--chart-tick'), font:{size:10},
-                      callback: v => '₹' + (v >= 100000 ? (v/100000).toFixed(1)+'L' : v >= 1000 ? (v/1000).toFixed(0)+'K' : v) } },
+        x: { stacked: true, grid: { color: _g }, ticks: { color: _t, font:{size:10} } },
+        y: { stacked: true, grid: { color: _g },
+             ticks: { color: _t, font:{size:10},
+                      callback: v => '₹' + (v>=100000?(v/100000).toFixed(1)+'L':v>=1000?(v/1000).toFixed(0)+'K':v) } },
       },
     },
   });
 }
 
+function _invtxApplyChartFilter() {
+  document.getElementById('invtxChartEmpty')?.remove();
+  _invtxDrawChart();
+}
+
+function _invtxResetChartFilter() {
+  const yrSel = document.getElementById('invtxChartYear');
+  const moSel = document.getElementById('invtxChartMonth');
+  if (yrSel) yrSel.value = '';
+  if (moSel) moSel.value = '';
+  _invtxClearChartType();
+}
+
 function _renderInvTxTable(data, type) {
-  const wrap = document.getElementById('invtxTable');
-  const title = document.getElementById('invtxTableTitle');
-  title.textContent = type ? `${type} Transactions (${data.length})` : `All Investment Transactions (${data.length})`;
+  _invtxRawTable   = data || [];
+  _invtxTableType  = type || '';
+  _invtxTablePage  = 0;
+
+  // Populate year dropdowns for table filters
+  const years = [...new Set((data||[]).map(r => (r.entry_date||'').slice(0,4)))].filter(Boolean).sort().reverse();
+  const tblYr = document.getElementById('invtxTblYear');
+  if (tblYr) {
+    const cur = tblYr.value;
+    tblYr.innerHTML = '<option value="">All Years</option>' +
+      years.map(y => `<option value="${y}"${y===cur?' selected':''}>${y}</option>`).join('');
+  }
+
+  _invtxTableFilter();
+}
+
+function _invtxTableFilter() {
+  _invtxTablePage = 0;
+  _invtxDrawTable();
+}
+
+function _invtxDrawTable() {
+  const wrap   = document.getElementById('invtxTable');
+  const title  = document.getElementById('invtxTableTitle');
+  const pagEl  = document.getElementById('invtxPagination');
+  const type   = _invtxTableType;
+
+  const filterYear  = (document.getElementById('invtxTblYear')   || {}).value || '';
+  const filterMonth = (document.getElementById('invtxTblMonth')  || {}).value || '';
+  const pageSize    = parseInt((document.getElementById('invtxPageSize') || {}).value || '10');
+
+  // Apply filters
+  let data = _invtxRawTable;
+  if (filterYear)  data = data.filter(r => (r.entry_date||'').slice(0,4)  === filterYear);
+  if (filterMonth) data = data.filter(r => (r.entry_date||'').slice(5,7) === filterMonth);
+
+  title.textContent = type
+    ? `${type} — ${data.length} transaction${data.length!==1?'s':''}`
+    : `All Investment Transactions (${data.length})`;
+
   if (!data.length) {
-    wrap.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><p>No transactions${type ? ' for ' + type : ''}</p></div>`;
+    wrap.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><p>No transactions${type?' for '+type:''}</p></div>`;
+    if (pagEl) pagEl.innerHTML = '';
     return;
   }
+
+  // Paginate
+  const total  = data.length;
+  const ps     = pageSize > 0 ? pageSize : total;
+  const pages  = Math.max(1, Math.ceil(total / ps));
+  _invtxTablePage = Math.min(_invtxTablePage, pages - 1);
+  const start  = _invtxTablePage * ps;
+  const paged  = pageSize > 0 ? data.slice(start, start + ps) : data;
+
   wrap.innerHTML = `<table>
     <thead><tr>
       <th>Date</th><th>Fund / Stock</th><th>Type</th><th>Action</th>
@@ -6911,12 +7427,12 @@ function _renderInvTxTable(data, type) {
       <th style="text-align:right">P&amp;L</th><th>P%</th>
     </tr></thead>
     <tbody>
-    ${data.map(t => {
+    ${paged.map(t => {
       const pnl = t.profit || 0;
       const pct = t.profit_pct || 0;
       const pnlClass = pnl >= 0 ? 'pos' : 'neg';
       const action = (t.action || '').toUpperCase();
-      const actionColor = action === 'BUY' || action === 'BUY' ? 'var(--income)' : 'var(--expense)';
+      const actionColor = action === 'BUY' ? 'var(--income)' : 'var(--expense)';
       return `<tr>
         <td style="white-space:nowrap">${t.entry_date || ''}</td>
         <td style="font-weight:500">${t.stock_name || ''}</td>
@@ -6931,6 +7447,33 @@ function _renderInvTxTable(data, type) {
     }).join('')}
     </tbody>
   </table>`;
+
+  // Pagination bar
+  if (pagEl) {
+    if (pageSize === 0 || pages <= 1) {
+      pagEl.innerHTML = `<span>${total} rows</span>`;
+    } else {
+      const info = `${start+1}–${Math.min(start+ps,total)} of ${total}`;
+      pagEl.innerHTML = `
+        <span>${info}</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button onclick="invtxGoPage(0)" ${_invtxTablePage===0?'disabled':''}
+            style="padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:11px">«</button>
+          <button onclick="invtxGoPage(${_invtxTablePage-1})" ${_invtxTablePage===0?'disabled':''}
+            style="padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:11px">‹ Prev</button>
+          <span style="font-size:11px">Page ${_invtxTablePage+1} / ${pages}</span>
+          <button onclick="invtxGoPage(${_invtxTablePage+1})" ${_invtxTablePage>=pages-1?'disabled':''}
+            style="padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:11px">Next ›</button>
+          <button onclick="invtxGoPage(${pages-1})" ${_invtxTablePage>=pages-1?'disabled':''}
+            style="padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:11px">»</button>
+        </div>`;
+    }
+  }
+}
+
+function invtxGoPage(p) {
+  _invtxTablePage = p;
+  _invtxDrawTable();
 }
 
 async function openPortfolioDetail(assetName, assetType) {
@@ -7702,7 +8245,43 @@ function closeVcMenu() {
 // Dismiss menu on outside click
 document.addEventListener('click', e => {
   if (!e.target.closest('.vc-menu-wrap')) closeVcMenu();
+  if (!e.target.closest('.trend-filter-wrap')) {
+    document.getElementById('trendYearDrop')?.classList.remove('open');
+    document.getElementById('trendMonthDrop')?.classList.remove('open');
+  }
 });
+
+function openChangePwd() {
+  document.getElementById('cpCurrent').value = '';
+  document.getElementById('cpNew').value     = '';
+  document.getElementById('cpConfirm').value = '';
+  document.getElementById('cpError').textContent = '';
+  document.getElementById('changePwdModal').classList.add('open');
+  setTimeout(() => document.getElementById('cpCurrent').focus(), 80);
+}
+function closeChangePwd() {
+  document.getElementById('changePwdModal').classList.remove('open');
+}
+async function submitChangePwd() {
+  const current  = document.getElementById('cpCurrent').value;
+  const newPwd   = document.getElementById('cpNew').value.trim();
+  const confirm  = document.getElementById('cpConfirm').value.trim();
+  const errEl    = document.getElementById('cpError');
+  errEl.textContent = '';
+  if (!current)           { errEl.textContent = 'Enter your current password.'; return; }
+  if (newPwd.length < 6)  { errEl.textContent = 'New password must be at least 6 characters.'; return; }
+  if (newPwd !== confirm) { errEl.textContent = 'Passwords do not match.'; return; }
+  try {
+    const res  = await fetch('/api/change_password', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ current_password: current, new_password: newPwd })
+    });
+    const data = await res.json();
+    if (data.error) { errEl.textContent = data.error; return; }
+    closeChangePwd();
+    toast('Password changed successfully', 'success');
+  } catch(e) { errEl.textContent = 'Network error — try again.'; }
+}
 
 function toast(msg, type='success') {
   const t = document.getElementById('toast');
@@ -8029,7 +8608,6 @@ function _tsRenderPage() {
     ${th('lvl1',`L1 (${(100*(1-sip)).toFixed(0)}%)`,'text-align:center;min-width:90px;background:rgba(99,102,241,.1)')}
     ${th('lvl2',`L2 (${(100*(1-2*sip)).toFixed(0)}%)`,'text-align:center;min-width:90px;background:rgba(16,185,129,.1)')}
     ${th('lvl3',`L3 (${(100*(1-3*sip)).toFixed(0)}%)`,'text-align:center;min-width:90px;background:rgba(245,158,11,.1)')}
-    <th style="text-align:center;min-width:100px;position:sticky;right:0;background:var(--surface3);z-index:3">Trade</th>
   </tr></thead>`;
 
   const tbody = pageRows.map(r => {
@@ -8093,25 +8671,6 @@ function _tsRenderPage() {
       <td style="text-align:center;background:rgba(99,102,241,.05)">${lvlBadge(r.lvl1,'#6366f1','Buy L1 ×20%')}</td>
       <td style="text-align:center;background:rgba(16,185,129,.05)">${lvlBadge(r.lvl2,'#059669','Buy L2 ×41%')}</td>
       <td style="text-align:center;background:rgba(245,158,11,.05)">${lvlBadge(r.lvl3,'#b45309','Buy L3 ×100%')}</td>
-      <td style="text-align:center;position:sticky;right:0;background:var(--surface);z-index:1;padding:4px 8px">${(()=>{
-        const sym = (r.symbol||r.asset||'').replace(/'/g,"\\'");
-        return `<div style="display:flex;gap:6px;align-items:center;justify-content:center">
-          <button onclick="tsOpenKite('${sym}')" title="Open ${sym} in Kite (Zerodha)"
-            style="width:28px;height:28px;border-radius:50%;border:none;cursor:pointer;padding:0;
-                   background:#fff;display:flex;align-items:center;justify-content:center;
-                   box-shadow:0 1px 4px rgba(0,0,0,.25);overflow:hidden">
-            <img src="https://www.google.com/s2/favicons?domain=kite.zerodha.com&sz=32"
-                 style="width:20px;height:20px;border-radius:50%" onerror="this.parentNode.textContent='Z'">
-          </button>
-          <button onclick="tsOpenGroww('${sym}')" title="Open ${sym} in Groww"
-            style="width:28px;height:28px;border-radius:50%;border:none;cursor:pointer;padding:0;
-                   background:#fff;display:flex;align-items:center;justify-content:center;
-                   box-shadow:0 1px 4px rgba(0,0,0,.25);overflow:hidden">
-            <img src="https://www.google.com/s2/favicons?domain=groww.in&sz=32"
-                 style="width:20px;height:20px;border-radius:50%" onerror="this.parentNode.textContent='G'">
-          </button>
-        </div>`;
-      })()}</td>
     </tr>`;
   }).join('');
 
@@ -8820,7 +9379,7 @@ function _wceRenderCats() {
   }).join('');
 }
 
-async function wce_drill(catId) {
+function wce_drill(catId) {
   const cat   = _wceCats.find(c => c.id === catId);
   const drill = document.getElementById('wceDrill');
   if (!cat) return;
@@ -8835,7 +9394,42 @@ async function wce_drill(catId) {
   _wceCatOpen = catId;
   _wceRenderCats();
 
-  // Show loading state
+  if (!cat._rows.length) {
+    drill.style.display = '';
+    drill.innerHTML = `<div style="padding:36px;text-align:center">
+      <div style="font-size:36px;margin-bottom:10px">${cat.icon}</div>
+      <div style="font-size:14px;font-weight:700;color:var(--text)">No ${cat.name} assets found</div>
+      <div style="font-size:12px;color:var(--muted2);margin-top:4px">Add assets via ＋ Add Asset to see them here</div>
+    </div>`;
+    return;
+  }
+
+  const rows = cat._rows.map(r => {
+    const iv     = r.invested_value || 0;
+    const cv     = r.current_value  || 0;
+    const ret    = r.return_value   || (cv - iv);
+    const retPct = r.return_pct     || (iv > 0 ? (ret / iv * 100) : 0);
+    const pos    = ret >= 0;
+    return `<div class="wce-drill-row">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">${r.asset_type || r.asset_id}</div>
+        <div style="font-size:10px;color:var(--muted2)">${r.asset_class} › ${r.asset_category || ''}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:9px;color:var(--muted2);margin-bottom:2px">INVESTED</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">${fmt(iv)}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:9px;color:var(--muted2);margin-bottom:2px">CURRENT</div>
+        <div class="${pos?'wce-pos':'wce-neg'}" style="font-size:13px">${fmt(cv)}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:9px;color:var(--muted2);margin-bottom:2px">RETURN</div>
+        <div class="${pos?'wce-pos':'wce-neg'}" style="font-size:13px">${pos?'+':''}${retPct.toFixed(1)}%</div>
+      </div>
+    </div>`;
+  }).join('');
+
   drill.style.display = '';
   drill.innerHTML = `
     <div style="padding:14px 20px;border-bottom:1px solid var(--border);
@@ -8844,51 +9438,18 @@ async function wce_drill(catId) {
         <span style="font-size:22px">${cat.icon}</span>
         <div>
           <div style="font-size:14px;font-weight:800;color:var(--text)">${cat.name}
-            <span style="color:${cat.color};font-size:12px;margin-left:6px">${cat.sub}</span></div>
-          <div style="font-size:11px;color:var(--muted2)">Current: ${fmt(cat._cur)}</div>
+            <span style="color:${cat.color};font-size:12px">${cat.sub}</span></div>
+          <div style="font-size:11px;color:var(--muted2)">${cat._rows.length} assets · Current: ${fmt(cat._cur)}</div>
         </div>
       </div>
       <button class="btn btn-ghost btn-sm"
         onclick="_wceCatOpen=null;document.getElementById('wceDrill').style.display='none';_wceRenderCats()">✕ Close</button>
     </div>
-    <div id="wceDrillCards" style="padding:16px">
-      <div style="color:var(--muted2);font-size:12px;padding:10px">Loading…</div>
-    </div>`;
-
-  // Fetch individual assets for this class
-  let data = [];
-  try {
-    data = await fetch(`/api/wt/assets?asset_class=${encodeURIComponent(cat.name)}`).then(r => r.json());
-  } catch(e) {
-    document.getElementById('wceDrillCards').innerHTML =
-      `<div style="color:var(--expense);font-size:12px;padding:10px">Failed to load assets.</div>`;
-    return;
-  }
-
-  const cardsEl = document.getElementById('wceDrillCards');
-  if (!data.length) {
-    cardsEl.innerHTML = `<div style="text-align:center;padding:36px">
-      <div style="font-size:36px;margin-bottom:10px">${cat.icon}</div>
-      <div style="font-size:14px;font-weight:700;color:var(--text)">No ${cat.name} assets found</div>
-      <div style="font-size:12px;color:var(--muted2);margin-top:4px">Add assets via ＋ Add Asset to see them here</div>
-    </div>`;
-    return;
-  }
-
-  // Group by asset_category
-  const groups = {};
-  data.forEach(a => {
-    const key = a.asset_category || 'General';
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(a);
-  });
-
-  let accentIdx = 0;
-  cardsEl.innerHTML = `<div class="wt-asset-grid">${
-    Object.entries(groups).map(([catName, assets]) =>
-      _wtCategoryCard(catName, assets, _CAT_ACCENTS[accentIdx++ % _CAT_ACCENTS.length])
-    ).join('')
-  }</div>`;
+    <div class="wce-drill-hdr">
+      <div>Asset</div><div style="text-align:right">Invested</div>
+      <div style="text-align:right">Current</div><div style="text-align:right">Return</div>
+    </div>
+    ${rows}`;
 }
 
 // ─── THEME ────────────────────────────────────────────────────────────────────
@@ -9205,6 +9766,7 @@ async function loadBrokerImport() {
     meta.forEach(m => { _biStatus[m.source_type] = m; });
   } catch(e) {}
   _renderBiGrid();
+  miLoadAssets();
 }
 
 function _renderBiGrid() {
@@ -9371,6 +9933,157 @@ async function biDelete(sourceKey) {
     else _renderBiGrid();
     toast('Data cleared', 'success');
   } catch(e) { toast('Delete failed', 'error'); }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MANUAL INVESTMENT UPLOAD
+// ─────────────────────────────────────────────────────────────────────────────
+let _miRows = [];      // parsed preview rows
+let _miFile = null;    // File object
+
+async function miLoadAssets() {
+  try {
+    const list = await fetch('/api/manual_investment/asset_list').then(r => r.json());
+    const sel = document.getElementById('miAssetSel');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">— Select Asset —</option>' +
+      list.map(a => {
+        const label = a.AssetName ? `${a.AssetID} — ${a.AssetName}` : a.AssetID;
+        const meta  = `(${a.AssetCategory || ''}${a.AssetType ? ' · ' + a.AssetType : ''})`;
+        return `<option value="${a.AssetID}" data-name="${a.AssetName||''}" data-cat="${a.AssetCategory||''}" data-type="${a.AssetType||''}">${label} ${meta}</option>`;
+      }).join('');
+  } catch(e) { console.warn('miLoadAssets:', e); }
+}
+
+function miOnAssetChange() {
+  const sel = document.getElementById('miAssetSel');
+  const opt = sel.options[sel.selectedIndex];
+  const meta = document.getElementById('miAssetMeta');
+  if (opt && opt.value) {
+    const cat  = opt.dataset.cat  || '—';
+    const type = opt.dataset.type || '—';
+    const name = opt.dataset.name || opt.value;
+    meta.textContent = `${name} · Category: ${cat} · Type: ${type}`;
+  } else {
+    meta.textContent = '';
+  }
+  _miUpdateBtn();
+}
+
+function miOnFileChange(input) {
+  _miFile = input.files[0] || null;
+  document.getElementById('miFileName').textContent = _miFile ? _miFile.name : '';
+  _miUpdateBtn();
+}
+
+function _miUpdateBtn() {
+  const assetId = document.getElementById('miAssetSel')?.value;
+  const btn = document.getElementById('miPreviewBtn');
+  if (btn) btn.disabled = !(assetId && _miFile);
+}
+
+async function miPreview() {
+  const assetId = document.getElementById('miAssetSel')?.value;
+  if (!assetId || !_miFile) { toast('Select an asset and a file first', 'error'); return; }
+
+  const btn = document.getElementById('miPreviewBtn');
+  btn.disabled = true; btn.textContent = '⏳ Parsing…';
+
+  const fd = new FormData();
+  fd.append('file', _miFile);
+  try {
+    const res  = await fetch('/api/manual_investment/preview', { method:'POST', body: fd });
+    const data = await res.json();
+    if (data.error) { toast(data.error, 'error'); btn.disabled = false; btn.textContent = '👁 Preview'; return; }
+
+    _miRows = data.rows || [];
+    _miRenderPreview();
+    toast(`✓ ${_miRows.length} rows parsed — review and save`, 'success');
+  } catch(e) {
+    toast('Parse failed: ' + e.message, 'error');
+  }
+  btn.disabled = false; btn.textContent = '👁 Preview';
+}
+
+function _miRenderPreview() {
+  const wrap  = document.getElementById('miPreviewWrap');
+  const tbl   = document.getElementById('miPreviewTable');
+  const title = document.getElementById('miPreviewTitle');
+  const sel   = document.getElementById('miAssetSel');
+  const opt   = sel.options[sel.selectedIndex];
+  const name  = opt?.dataset.name || sel.value;
+
+  title.textContent = `${_miRows.length} rows for ${name} — review before saving`;
+
+  // Compute invested value for display
+  const rows = _miRows.map(r => ({
+    month: r.month || '—',
+    quantity: r.quantity || '—',
+    price: r.price || '—',
+    invested: (parseFloat(r.quantity) > 0 && parseFloat(r.price) > 0)
+      ? fmt(parseFloat(r.quantity) * parseFloat(r.price)) : '—'
+  }));
+
+  tbl.innerHTML = `<thead><tr>
+    <th>Month</th><th style="text-align:right">Quantity</th>
+    <th style="text-align:right">Price (₹)</th><th style="text-align:right">Invested</th>
+  </tr></thead><tbody>` +
+  rows.map(r => `<tr>
+    <td>${r.month}</td>
+    <td style="text-align:right">${r.quantity}</td>
+    <td style="text-align:right">${r.price}</td>
+    <td style="text-align:right;font-weight:600">${r.invested}</td>
+  </tr>`).join('') +
+  `<tr style="font-weight:700;border-top:2px solid var(--border)">
+    <td colspan="3" style="text-align:right;color:var(--muted2)">Total Invested</td>
+    <td style="text-align:right;color:var(--invest)">${fmt(_miRows.reduce((s,r)=>s+(parseFloat(r.quantity||0)*parseFloat(r.price||0)),0))}</td>
+  </tr></tbody>`;
+
+  document.getElementById('miSaveStatus').textContent = '';
+  document.getElementById('miSaveBtn').disabled = false;
+  wrap.style.display = 'block';
+  wrap.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+async function miCommit() {
+  const assetId = document.getElementById('miAssetSel')?.value;
+  if (!assetId || !_miRows.length) return;
+  const saveBtn  = document.getElementById('miSaveBtn');
+  const statusEl = document.getElementById('miSaveStatus');
+  saveBtn.disabled = true; statusEl.textContent = '⏳ Saving…'; statusEl.style.color = 'var(--muted2)';
+  try {
+    const res  = await fetch('/api/manual_investment/commit', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ asset_id: assetId, rows: _miRows })
+    });
+    const data = await res.json();
+    if (data.error) {
+      statusEl.textContent = '✕ ' + data.error; statusEl.style.color = 'var(--expense)';
+      saveBtn.disabled = false; toast(data.error, 'error'); return;
+    }
+    const parts = [`✓ ${data.inserted} rows saved for ${data.asset_name}`];
+    if (data.skipped)        parts.push(`${data.skipped} skipped`);
+    if (data.assets_updated) parts.push('portfolio updated');
+    statusEl.textContent = parts.join(' · '); statusEl.style.color = 'var(--savings)';
+    toast(`✓ ${data.inserted} investment records saved`, 'success');
+    setTimeout(() => { miReset(); loadPortfolio(); }, 1800);
+  } catch(e) {
+    statusEl.textContent = '✕ ' + e.message; statusEl.style.color = 'var(--expense)';
+    saveBtn.disabled = false; toast('Save failed: ' + e.message, 'error');
+  }
+}
+
+function miReset() {
+  _miRows = []; _miFile = null;
+  const fi = document.getElementById('miFileInput');
+  if (fi) fi.value = '';
+  document.getElementById('miFileName').textContent = '';
+  document.getElementById('miAssetSel').value = '';
+  document.getElementById('miAssetMeta').textContent = '';
+  document.getElementById('miPreviewWrap').style.display = 'none';
+  document.getElementById('miSaveStatus').textContent = '';
+  _miUpdateBtn();
 }
 
 async function recomputeFromTransactions() {
@@ -10720,8 +11433,17 @@ function renderMwMF(assets) {
 }
 
 async function mwFetchOneNav(fundName) {
-  await fetchSingleMfNav(fundName);
-  renderMwMF();
+  try {
+    const data = await fetch('/api/mf_nav?q=' + encodeURIComponent(fundName)).then(r => r.json());
+    if (data.error) throw new Error(data.error);
+    _mfNavCache[fundName] = { nav: data.nav, date: data.date, scheme_name: data.scheme_name, scheme_code: data.scheme_code };
+    renderMwMF();
+    // Persist to DB in background
+    fetch('/api/assets/sync_mf', { method: 'POST' }).catch(() => {});
+    toast(`NAV updated: ₹${data.nav.toFixed(4)} — ${fundName.slice(0, 40)}`, 'success');
+  } catch(e) {
+    toast(`NAV fetch failed for ${fundName.slice(0, 30)}: ${e.message}`, 'error');
+  }
 }
 
 async function mwFetchAllNav() {
@@ -10741,7 +11463,11 @@ async function mwFetchAllNav() {
     countEl.textContent = `${done}/${funds.length}`;
     barEl.style.width   = `${Math.round(done / funds.length * 100)}%`;
     labelEl.textContent = `Fetching… (${done}/${funds.length})`;
-    try { await fetchSingleMfNav(a.asset); } catch(e) { failed++; }
+    try {
+      const data = await fetch('/api/mf_nav?q=' + encodeURIComponent(a.asset)).then(r => r.json());
+      if (data.error) throw new Error(data.error);
+      _mfNavCache[a.asset] = { nav: data.nav, date: data.date, scheme_name: data.scheme_name, scheme_code: data.scheme_code };
+    } catch(e) { failed++; }
     done++;
     await new Promise(r => setTimeout(r, 300));
   }
@@ -10750,12 +11476,14 @@ async function mwFetchAllNav() {
   labelEl.textContent = failed === 0 ? '✓ All done!' : `Done — ${failed} failed`;
   if (btn) { btn.disabled = false; btn.textContent = '🔄 Fetch All NAVs'; }
   setTimeout(() => { progEl.style.display = 'none'; }, 4000);
+  renderMwMF();
+  // Persist fetched NAVs to DB and refresh portfolio if open
   try {
     await fetch('/api/assets/sync_mf', { method: 'POST' });
+    await loadNSE();
     if (document.getElementById('page-portfolio')?.classList.contains('active')) loadPortfolio();
   } catch(_) {}
-  renderMwMF();
-  toast(failed === 0 ? `All ${done} NAVs updated!` : `${done-failed}/${done} updated`, failed === 0 ? 'success' : 'error');
+  toast(failed === 0 ? `All ${done} NAVs updated!` : `${done - failed}/${done} updated`, failed === 0 ? 'success' : 'error');
 }
 
 // ── Gold section (physical gold only — ETF/MF already split to their own tabs) ──

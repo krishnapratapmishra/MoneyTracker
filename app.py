@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, session, redirect, url_for
+from functools import wraps
 import sqlite3, os, tempfile, urllib.request, urllib.parse, json as _json
 from datetime import datetime
 import pandas as pd
@@ -11,6 +12,49 @@ except ImportError:
     YF_AVAILABLE = False
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'um-local-secret-2026')
+
+# Single-user credentials — username fixed, password persisted in DB
+APP_USERNAME     = os.environ.get('APP_USERNAME', 'admin')
+_DEFAULT_PASSWORD = os.environ.get('APP_PASSWORD', 'money@2026')
+
+def _get_password():
+    """Read current password from DB; fall back to default if not set."""
+    try:
+        conn = get_db()
+        row  = conn.execute("SELECT value FROM app_settings WHERE key='app_password'").fetchone()
+        conn.close()
+        return row[0] if row else _DEFAULT_PASSWORD
+    except Exception:
+        return _DEFAULT_PASSWORD
+
+def _set_password(new_pwd):
+    """Persist new password to DB."""
+    conn = get_db()
+    conn.execute("INSERT OR REPLACE INTO app_settings (key, value) VALUES ('app_password', ?)", (new_pwd,))
+    conn.commit()
+    conn.close()
+
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get('logged_in'):
+            if request.path.startswith('/api/'):
+                return jsonify({'error': 'Unauthorized'}), 401
+            return redirect(url_for('login', next=request.path))
+        return f(*args, **kwargs)
+    return decorated
+
+@app.before_request
+def require_login():
+    public = {'/login', '/logout'}
+    if request.path in public:
+        return
+    if not session.get('logged_in'):
+        if request.path.startswith('/api/'):
+            return jsonify({'error': 'Unauthorized'}), 401
+        return redirect(url_for('login', next=request.path))
+
 DB_PATH = os.path.join(os.path.dirname(__file__), 'money_tracker.db')
 
 def get_db():
@@ -265,6 +309,12 @@ def init_schema():
                 targetpct     REAL DEFAULT 25
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS app_settings (
+                key   TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            )
+        """)
         conn.commit()
 
     # Drop old portfolio table if it has old schema (integer PK / asset column)
@@ -366,7 +416,40 @@ def init_schema():
 
     conn.close()
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    error = None
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+        if username == APP_USERNAME and password == _get_password():
+            session['logged_in'] = True
+            next_url = request.args.get('next') or '/'
+            return redirect(next_url)
+        error = 'Invalid username or password.'
+    return render_template('login.html', error=error)
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
+@app.route('/api/change_password', methods=['POST'])
+def api_change_password():
+    body        = request.get_json(force=True)
+    current_pwd = body.get('current_password', '')
+    new_pwd     = body.get('new_password', '').strip()
+    if not current_pwd or not new_pwd:
+        return jsonify({'error': 'Both current and new password are required'}), 400
+    if current_pwd != _get_password():
+        return jsonify({'error': 'Current password is incorrect'}), 403
+    if len(new_pwd) < 6:
+        return jsonify({'error': 'New password must be at least 6 characters'}), 400
+    _set_password(new_pwd)
+    return jsonify({'success': True})
+
 @app.route('/')
+@login_required
 def dashboard():
     return render_template('index.html')
 
@@ -433,10 +516,11 @@ def api_monthly_trend():
                                COALESCE(SUM(amount),0) as total
                         FROM transactions GROUP BY month,type,category ORDER BY month""").fetchall()
     conn.close()
-    months = sorted(set(r['month'] for r in rows))
+    months = sorted(set(r['month'] for r in rows if r['month']))
     data = {m: {'income':0,'expense':0,'loan_emi':0,'investment':0} for m in months}
     for r in rows:
         mo = r['month']
+        if not mo: continue
         if r['type'] == 'income':      data[mo]['income']     += r['total']
         elif r['type'] == 'investment': data[mo]['investment'] += r['total']
         elif r['type'] == 'expense':
@@ -476,6 +560,49 @@ def api_transactions():
     rows = c.execute(q, p).fetchall(); conn.close()
     return jsonify([dict(r) for r in rows])
 
+def _mf_best_match(query, matches):
+    """Score MFAPI search results and return the best match for the query.
+    Prefers Direct plans over Regular, Growth over IDCW/Dividend,
+    and maximises word-overlap with the query."""
+    q_words = set(query.lower().split())
+    q_lower = query.lower()
+    has_direct  = 'direct'  in q_lower
+    has_growth  = 'growth'  in q_lower
+    has_regular = 'regular' in q_lower
+
+    def score(m):
+        name = m['schemeName'].lower()
+        words = set(name.split())
+        overlap = len(q_words & words)
+        if has_direct  and 'regular' in name: overlap -= 3
+        if has_growth  and ('idcw' in name or 'dividend' in name): overlap -= 2
+        if has_regular and 'direct' in name: overlap -= 3
+        if has_direct  and 'direct' in name: overlap += 2
+        if has_growth  and 'growth' in name: overlap += 1
+        return overlap
+
+    return max(matches, key=score)
+
+
+def _mf_search(query):
+    """Search MFAPI.in with progressive fallback for long fund names.
+    Returns list of match dicts, or empty list."""
+    words = query.split()
+    # Try progressively shorter prefixes until we get results
+    for n in range(len(words), 2, -1):
+        q = ' '.join(words[:n])
+        url = 'https://api.mfapi.in/mf/search?q=' + urllib.parse.quote(q)
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        try:
+            with urllib.request.urlopen(req, timeout=8) as r:
+                results = _json.loads(r.read())
+            if results:
+                return results
+        except Exception:
+            pass
+    return []
+
+
 @app.route('/api/mf_nav')
 def get_mf_nav():
     """Search MFAPI.in for a mutual fund's latest NAV by name.
@@ -484,15 +611,12 @@ def get_mf_nav():
     if not query:
         return jsonify({'error': 'No query'}), 400
     try:
-        # 1. Search for matching schemes
-        search_url = 'https://api.mfapi.in/mf/search?q=' + urllib.parse.quote(query)
-        req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=8) as r:
-            results = _json.loads(r.read())
+        # 1. Search for matching schemes (with fallback for long names)
+        results = _mf_search(query)
         if not results:
             return jsonify({'error': f'No fund found for: {query}'}), 404
         # 2. Fetch NAV for the best match
-        best = results[0]
+        best = _mf_best_match(query, results)
         nav_url = f'https://api.mfapi.in/mf/{best["schemeCode"]}'
         req2 = urllib.request.Request(nav_url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req2, timeout=8) as r:
@@ -733,13 +857,24 @@ def api_invest_tx_summary():
     if month:
         where += " AND (month LIKE ? OR entry_date LIKE ?)"
         params += [f'{month}%', f'{month}%']
+    # Total distinct active months across all transactions (for avg/month on cards)
+    total_months_row = c.execute("""
+        SELECT COUNT(DISTINCT COALESCE(month, substr(entry_date,1,7))) AS n
+        FROM invest_transactions
+        WHERE action IN ('BUY','Buy','buy')
+          AND COALESCE(month, substr(entry_date,1,7)) IS NOT NULL
+          AND COALESCE(month, substr(entry_date,1,7)) != ''
+    """).fetchone()
+    total_active_months = int(total_months_row['n'] or 1)
+
     # Per asset type totals
     by_type = c.execute(f"""
         SELECT asset_type,
                COUNT(*) AS tx_count,
                SUM(invested_value) AS total_invested,
                SUM(CASE WHEN action IN ('BUY','Buy','buy') THEN invested_value ELSE 0 END) AS inflow,
-               SUM(CASE WHEN action IN ('SELL','Sell','sell') THEN invested_value ELSE 0 END) AS outflow
+               SUM(CASE WHEN action IN ('SELL','Sell','sell') THEN invested_value ELSE 0 END) AS outflow,
+               COUNT(DISTINCT COALESCE(month, substr(entry_date,1,7))) AS active_months
         FROM invest_transactions {where}
         GROUP BY asset_type ORDER BY total_invested DESC
     """, params).fetchall()
@@ -759,9 +894,10 @@ def api_invest_tx_summary():
     """).fetchall()
     conn.close()
     return jsonify({
-        'by_type':  [dict(r) for r in by_type],
-        'monthly':  [dict(r) for r in monthly],
-        'months':   [r['mo'] for r in months if r['mo']],
+        'by_type':         [dict(r) for r in by_type],
+        'monthly':         [dict(r) for r in monthly],
+        'months':          [r['mo'] for r in months if r['mo']],
+        'total_months':    total_active_months,
     })
 
 @app.route('/api/loans/summary')
@@ -1332,10 +1468,29 @@ def api_assets_sync_stocks():
         return jsonify({'success': True, 'synced': 0, 'message': 'No stock/ETF assets found'})
     results = []
     for r in rows:
-        sym = (r['symbol'] or r['asset']).strip().upper()
+        raw = (r['symbol'] or '').strip()
+        asset_name = (r['asset'] or '').strip()
+        # Resolve ticker: handle full names (spaces), AMFI codes (digits), empty
+        sym = raw.upper()
+        if not sym or ' ' in sym or sym.isdigit() or len(sym) > 12:
+            # Auto-search by asset name
+            try:
+                hits = yf.Search(asset_name or raw, max_results=5).quotes
+                resolved = next((h['symbol'] for h in hits if h.get('symbol','').endswith('.NS')), None) or \
+                           next((h['symbol'] for h in hits if h.get('symbol','').endswith('.BO')), None)
+                if resolved:
+                    sym = resolved
+                    conn.execute("UPDATE AssetMapping SET AssetSymbol=? WHERE AssetName=? AND AssetSymbol=?",
+                                 (sym.replace('.NS','').replace('.BO',''), asset_name, raw))
+            except Exception:
+                pass
+        if not sym:
+            results.append({'asset': asset_name, 'status': 'no_symbol'})
+            continue
+        if '.' not in sym:
+            sym += '.NS'
         try:
-            ticker = yf.Ticker(sym + '.NS')
-            info   = ticker.info
+            info   = yf.Ticker(sym).info
             ltp    = float(info.get('currentPrice') or info.get('regularMarketPrice') or 0)
             if ltp > 0:
                 qty      = float(r['qty'])
@@ -1348,11 +1503,11 @@ def api_assets_sync_stocks():
                         lastsynced=datetime('now'), updatedat=datetime('now')
                     WHERE AssetEntryID=?
                 """, (ltp, current, pnl, pnl_pct, r['id']))
-                results.append({'asset': r['asset'], 'ltp': ltp, 'status': 'ok'})
+                results.append({'asset': asset_name, 'symbol': sym, 'ltp': ltp, 'status': 'ok'})
             else:
-                results.append({'asset': r['asset'], 'status': 'no_price'})
+                results.append({'asset': asset_name, 'symbol': sym, 'status': 'no_price'})
         except Exception as e:
-            results.append({'asset': r['asset'], 'error': str(e), 'status': 'error'})
+            results.append({'asset': asset_name, 'symbol': sym, 'error': str(e), 'status': 'error'})
     conn.commit()
     _update_portfolio_from_assets(conn)
     conn.close()
@@ -1376,12 +1531,10 @@ def api_assets_sync_mf():
             scheme_code = (r['symbol'] or '').strip() or None
             nav = None
             if not scheme_code:
-                search_url = 'https://api.mfapi.in/mf/search?q=' + urllib.parse.quote(r['asset'])
-                req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0'})
-                with urllib.request.urlopen(req, timeout=8) as resp:
-                    matches = _json.loads(resp.read())
+                matches = _mf_search(r['asset'])
                 if matches:
-                    scheme_code = str(matches[0]['schemeCode'])
+                    best_match = _mf_best_match(r['asset'], matches)
+                    scheme_code = str(best_match['schemeCode'])
                     conn.execute(
                         "UPDATE AssetMapping SET AssetSymbol=? WHERE MappingID=?",
                         (scheme_code, r['MappingID'])
@@ -1931,6 +2084,110 @@ def api_wt_portfolio_assign():
     conn.commit(); conn.close()
     return jsonify({'success': True})
 
+def _compute_xirr(cashflows):
+    """Newton's method XIRR. cashflows = list of (days_from_t0, amount).
+    Returns annualised rate or None if it fails to converge."""
+    if not cashflows or sum(a for _, a in cashflows) <= 0:
+        return None
+    has_neg = any(a < 0 for _, a in cashflows)
+    has_pos = any(a > 0 for _, a in cashflows)
+    if not (has_neg and has_pos):
+        return None
+    def npv(r):
+        return sum(a / (1 + r) ** (d / 365.0) for d, a in cashflows)
+    def dnpv(r):
+        return sum(-d / 365.0 * a / (1 + r) ** (d / 365.0 + 1) for d, a in cashflows)
+    rate = 0.15
+    for _ in range(200):
+        f = npv(rate); df = dnpv(rate)
+        if abs(df) < 1e-14:
+            break
+        new_rate = rate - f / df
+        if new_rate <= -1:
+            new_rate = -0.9999
+        if abs(new_rate - rate) < 1e-8:
+            rate = new_rate
+            break
+        rate = new_rate
+    if abs(npv(rate)) > 1.0:   # didn't converge cleanly
+        return None
+    return round(rate * 100, 2)
+
+@app.route('/api/wt/xirr')
+def api_wt_xirr():
+    """Compute XIRR% per asset_type using invest_transactions cashflows + current portfolio value.
+    Optional ?asset_class= filter matches InvestMapping.AssetClass."""
+    from datetime import date as _date
+    asset_class = request.args.get('asset_class', '').strip()
+    conn = get_db()
+    today = _date.today()
+
+    # ── Current value per InvestMapping AssetType (from live assets) ──────────
+    cur_q = """
+        SELECT im.AssetType, SUM(a.currentvalue) AS cur_val
+        FROM assets a
+        JOIN AssetMapping am ON a.MappingID = am.MappingID
+        JOIN InvestMapping im ON am.AssetId = im.AssetID
+        WHERE a.currentvalue > 0
+    """
+    cur_params = []
+    if asset_class:
+        cur_q += " AND im.AssetClass=?"; cur_params.append(asset_class)
+    cur_q += " GROUP BY im.AssetType"
+    cur_by_type = {r['AssetType']: float(r['cur_val'])
+                   for r in conn.execute(cur_q, cur_params).fetchall()}
+
+    # ── Cashflows from invest_transactions ────────────────────────────────────
+    tx_rows = conn.execute("""
+        SELECT entry_date, action, invested_value, asset_type
+        FROM invest_transactions
+        WHERE entry_date IS NOT NULL AND invested_value > 0
+        ORDER BY entry_date
+    """).fetchall()
+    conn.close()
+
+    # Normalise invest_tx asset_type → InvestMapping AssetType key
+    def _norm(t):
+        t = (t or '').strip()
+        if t.lower() == 'stock':   return 'Stocks'
+        if t.lower() == 'stocks':  return 'Stocks'
+        return t   # 'Mutual Fund' matches as-is
+
+    # Group cashflows by normalised type
+    from collections import defaultdict
+    cf_by_type = defaultdict(list)
+    for row in tx_rows:
+        try:
+            d = _date.fromisoformat(str(row['entry_date'])[:10])
+        except Exception:
+            continue
+        typ   = _norm(row['asset_type'])
+        amt   = float(row['invested_value'])
+        action = (row['action'] or '').lower()
+        # BUY = outflow (negative), SELL = inflow (positive)
+        cf_by_type[typ].append((d, -amt if action in ('buy','purchase') else amt))
+
+    # Build XIRR for each type that has cashflow data
+    result = {}
+    for typ, flows in cf_by_type.items():
+        cur_val = cur_by_type.get(typ, 0)
+        if cur_val <= 0:
+            # Try fuzzy match (e.g. "Mutual Fund" vs "Liquid Mutual Fund")
+            for k, v in cur_by_type.items():
+                if typ.lower() in k.lower() or k.lower() in typ.lower():
+                    cur_val += v
+        if cur_val <= 0:
+            continue
+        t0 = min(d for d, _ in flows)
+        cfs = [(( d - t0).days, a) for d, a in flows]
+        # Terminal: receive current portfolio value today
+        cfs.append(((today - t0).days, cur_val))
+        xirr = _compute_xirr(cfs)
+        if xirr is not None:
+            result[typ] = xirr
+
+    return jsonify(result)
+
 @app.route('/api/wt/assets')
 def api_wt_assets_list():
     conn = get_db()
@@ -2211,6 +2468,35 @@ def api_wt_sync():
         return _fx_rate
 
     # ── 1. EQUITY — yfinance (stocks, ETF, SGB, listed bonds) ─────────────────
+    def _resolve_equity_ticker(raw_sym, asset_name):
+        """Return a clean NSE/BSE ticker (with exchange suffix) or None.
+        Handles: valid ticker, name-as-symbol (has spaces), AMFI code (all digits),
+        ISIN-like strings. Falls back to yf.Search by asset name."""
+        s = (raw_sym or '').strip().upper()
+        # Already has exchange suffix — trust it
+        if s and '.' in s:
+            return s
+        # Looks like a valid short ticker (no spaces, ≤12 chars, not pure digits)
+        if s and ' ' not in s and len(s) <= 12 and not s.isdigit():
+            return s + '.NS'
+        # Symbol is absent, has spaces (full name entered), or is an AMFI/ISIN code
+        # → auto-resolve via yfinance Search using asset name
+        search_term = asset_name or s
+        try:
+            hits = yf.Search(search_term, max_results=5).quotes
+            # Prefer NSE (.NS) over BSE (.BO)
+            for h in hits:
+                ticker_sym = h.get('symbol', '')
+                if ticker_sym.endswith('.NS'):
+                    return ticker_sym
+            for h in hits:
+                ticker_sym = h.get('symbol', '')
+                if ticker_sym.endswith('.BO'):
+                    return ticker_sym
+        except Exception:
+            pass
+        return None
+
     if 'EQUITY' in by_mode:
         if not YF_AVAILABLE:
             for r in by_mode['EQUITY']:
@@ -2218,14 +2504,17 @@ def api_wt_sync():
                                  'error': 'yfinance not installed', 'mode': 'EQUITY'})
         else:
             for r in by_mode['EQUITY']:
-                # Priority: per-asset symbol (AssetMapping) > InvestMapping default symbol
-                sym = (r['asset_symbol'] or r['im_symbol'] or '').strip().upper()
+                raw = (r['asset_symbol'] or r['im_symbol'] or '').strip()
+                sym = _resolve_equity_ticker(raw, r['asset_name'])
                 if not sym:
                     results.append({'asset': r['asset_name'], 'status': 'no_symbol', 'mode': 'EQUITY',
-                                    'hint': 'Set NSE ticker in asset symbol field'})
+                                    'hint': 'Set NSE ticker in asset symbol field (e.g. BANKBEES)'})
                     continue
-                if '.' not in sym:
-                    sym += '.NS'
+                # If we auto-resolved from a name/bad symbol, save the correct ticker back
+                if raw.upper() != sym.replace('.NS', '').replace('.BO', '') and r['MappingID']:
+                    clean_ticker = sym.replace('.NS', '').replace('.BO', '')
+                    conn.execute("UPDATE AssetMapping SET AssetSymbol=? WHERE MappingID=?",
+                                 (clean_ticker, r['MappingID']))
                 try:
                     info = yf.Ticker(sym).info
                     ltp  = float(info.get('currentPrice') or info.get('regularMarketPrice') or 0)
@@ -2252,14 +2541,10 @@ def api_wt_sync():
             sc = (r['asset_symbol'] or '').strip()
             try:
                 if not sc or not sc.isdigit():
-                    # Auto-search by fund name
-                    req = urllib.request.Request(
-                        'https://api.mfapi.in/mf/search?q=' + urllib.parse.quote(r['asset_name']),
-                        headers={'User-Agent': 'Mozilla/5.0'})
-                    with urllib.request.urlopen(req, timeout=8) as resp:
-                        matches = _json.loads(resp.read())
+                    # Auto-search by fund name (with fallback for long names)
+                    matches = _mf_search(r['asset_name'])
                     if matches:
-                        sc = str(matches[0]['schemeCode'])
+                        sc = str(_mf_best_match(r['asset_name'], matches)['schemeCode'])
                         # Save scheme code back to AssetMapping so next sync is instant
                         conn.execute("UPDATE AssetMapping SET AssetSymbol=? WHERE MappingID=?",
                                      (sc, r['MappingID']))
@@ -2439,9 +2724,10 @@ def api_trading_strategy():
         JOIN AssetMapping am ON a.MappingID = am.MappingID
         JOIN InvestMapping im ON am.AssetId = im.AssetID
         LEFT JOIN nse_master n ON UPPER(TRIM(am.AssetSymbol)) = UPPER(TRIM(n.symbol))
-        WHERE LOWER(im.AssetType) LIKE '%share%'
-           OR LOWER(im.AssetType) = 'equity'
-           OR LOWER(im.AssetClass) = 'growth'
+        WHERE LOWER(im.AssetType) IN ('stocks','stock','shares','equity','etf')
+           OR LOWER(im.AssetType) LIKE '%etf%'
+           OR LOWER(im.AssetType) LIKE '%share%'
+           OR LOWER(im.AssetType) LIKE '%stock%'
         ORDER BY am.AssetSymbol
     """).fetchall()
 
@@ -2554,6 +2840,38 @@ _BROKER_PARSERS = {
         'sheet': 0, 'header_hint': None, 'col_map': {}
     },
 }
+
+def _normalise_date(raw):
+    """Convert any common date string to YYYY-MM-DD.
+    Handles ISO (2021-08-26), DD Mon YYYY (26 Aug 2021),
+    DD/MM/YYYY, DD-MM-YYYY (with or without time), and openpyxl datetime objects."""
+    from datetime import datetime as _dt
+    if not raw:
+        return ''
+    if isinstance(raw, _dt):
+        return raw.strftime('%Y-%m-%d')
+    s = str(raw).strip()
+    # Strip trailing time component e.g. "07-11-2024 09:15 AM" → "07-11-2024"
+    # Split on space and keep only the date part for parsing
+    date_part = s.split()[0] if s else s
+    # Already ISO-like: YYYY-MM-DD
+    if len(date_part) >= 10 and date_part[4] == '-':
+        return date_part[:10]
+    # DD Mon YYYY  e.g. "26 Aug 2021" (these never have time in same token)
+    for fmt in ('%d %b %Y', '%d %B %Y', '%d-%b-%Y', '%d-%B-%Y'):
+        try:
+            return _dt.strptime(s, fmt).strftime('%Y-%m-%d')
+        except ValueError:
+            pass
+    # DD/MM/YYYY or DD-MM-YYYY (prefer DD/MM and DD-MM over US format)
+    for fmt in ('%d/%m/%Y', '%d-%m-%Y', '%m/%d/%Y'):
+        try:
+            return _dt.strptime(date_part, fmt).strftime('%Y-%m-%d')
+        except ValueError:
+            pass
+    # Fallback: return date_part as-is if it looks like a date, else first 10 chars
+    return date_part if date_part else (s[:10] if len(s) >= 10 else s)
+
 
 def _parse_broker_file(file_storage, source_type):
     """Parse uploaded Excel/CSV file into list of dicts based on source_type config."""
@@ -2725,6 +3043,206 @@ def api_broker_upload_delete(source_type):
         conn.execute(f"DELETE FROM raw_upload_meta WHERE id IN ({placeholders})", old_ids)
     conn.commit(); conn.close()
     return jsonify({'success': True})
+
+
+@app.route('/api/manual_investment/asset_list')
+def api_manual_investment_asset_list():
+    """Return InvestMapping rows for the asset selector dropdown."""
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT im.AssetID, im.AssetClass, im.AssetCategory, im.AssetType,
+               am.AssetName, am.AssetSymbol
+        FROM InvestMapping im
+        LEFT JOIN AssetMapping am ON am.AssetId = im.AssetID
+        ORDER BY im.AssetClass, im.AssetCategory, im.AssetType
+    """).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/api/manual_investment/preview', methods=['POST'])
+def api_manual_investment_preview():
+    """Parse uploaded CSV/Excel (columns: investmentmonth, quantity, price) and return rows."""
+    import openpyxl, io, csv as _csv
+    f = request.files.get('file')
+    if not f:
+        return jsonify({'error': 'No file uploaded'}), 400
+
+    filename = f.filename.lower()
+    rows = []
+    try:
+        if filename.endswith('.csv'):
+            content = f.read().decode('utf-8-sig', errors='replace')
+            reader = _csv.DictReader(io.StringIO(content))
+            for row in reader:
+                rows.append({k.strip().lower(): (v or '').strip() for k, v in row.items()})
+        else:
+            wb = openpyxl.load_workbook(io.BytesIO(f.read()), data_only=True)
+            ws = wb.active
+            headers = []
+            for i, row in enumerate(ws.iter_rows(values_only=True)):
+                if i == 0:
+                    headers = [str(c).strip().lower() if c else '' for c in row]
+                else:
+                    if all(c is None for c in row):
+                        continue
+                    rows.append({headers[j]: (str(row[j]).strip() if row[j] is not None else '') for j in range(len(headers))})
+    except Exception as e:
+        return jsonify({'error': f'Parse error: {e}'}), 400
+
+    # Normalise column names (accept variants)
+    _aliases = {
+        'investmentmonth': 'month', 'investment month': 'month', 'buy month': 'month',
+        'buymonth': 'month', 'date': 'month', 'month': 'month',
+        'qty': 'quantity', 'units': 'quantity', 'quantity': 'quantity',
+        'price': 'price', 'nav': 'price', 'rate': 'price',
+    }
+    normalised = []
+    for row in rows:
+        nr = {}
+        for k, v in row.items():
+            mapped = _aliases.get(k.lower().strip())
+            if mapped:
+                nr[mapped] = v
+        if nr.get('month') or nr.get('quantity') or nr.get('price'):
+            normalised.append(nr)
+
+    if not normalised:
+        return jsonify({'error': 'Could not find columns: investmentmonth, quantity, price'}), 400
+
+    return jsonify({'rows': normalised, 'count': len(normalised)})
+
+
+@app.route('/api/manual_investment/commit', methods=['POST'])
+def api_manual_investment_commit():
+    """
+    Commit manually uploaded investment rows for a given AssetID.
+    Body JSON: { asset_id, rows: [{month, quantity, price}, ...] }
+    """
+    body     = request.get_json(force=True)
+    asset_id = (body.get('asset_id') or '').strip()
+    rows     = body.get('rows', [])
+
+    if not asset_id:
+        return jsonify({'error': 'asset_id is required'}), 400
+    if not rows:
+        return jsonify({'error': 'No rows to commit'}), 400
+
+    conn = get_db()
+    try:
+        # Resolve AssetMapping → get asset name, symbol, instrument info
+        mapping = conn.execute("""
+            SELECT im.AssetID, im.AssetClass, im.AssetCategory, im.AssetType,
+                   am.AssetName, am.AssetSymbol
+            FROM InvestMapping im
+            LEFT JOIN AssetMapping am ON am.AssetId = im.AssetID
+            WHERE im.AssetID = ?
+        """, (asset_id,)).fetchone()
+
+        if not mapping:
+            return jsonify({'error': f'AssetID {asset_id} not found'}), 400
+
+        asset_name   = mapping['AssetName'] or asset_id
+        symbol_val   = mapping['AssetSymbol'] or ''
+        asset_type   = mapping['AssetType']   or ''
+        asset_cat    = mapping['AssetCategory'] or ''
+        tx_note      = f'Manual Upload — {asset_name}'
+
+        # Map AssetCategory → transaction category
+        _cat_map = {
+            'mutual fund': 'Mutual Fund', 'mf': 'Mutual Fund',
+            'gold': 'Gold', 'sgb': 'Gold', 'bond': 'Gold',
+            'equity': 'Stocks', 'stocks': 'Stocks',
+            'etf': 'ETF',
+            'fixed return': 'Fixed Return', 'epf': 'Fixed Return', 'ppf': 'Fixed Return',
+            'retirement': 'Retirement', 'nps': 'Retirement',
+            'real estate': 'Real Estate',
+        }
+        tx_cat = _cat_map.get(asset_cat.lower()) or _cat_map.get(asset_type.lower()) or asset_cat or 'Investment'
+        tx_sub = f'{asset_type} Purchase' if asset_type else 'Purchase'
+
+        inserted = 0
+        skipped  = 0
+
+        for r in rows:
+            raw_month = str(r.get('month') or '').strip()
+            try:
+                qty   = float(str(r.get('quantity') or 0).replace(',', ''))
+                price = float(str(r.get('price')    or 0).replace(',', ''))
+            except (ValueError, TypeError):
+                skipped += 1; continue
+
+            if qty <= 0 or price <= 0:
+                skipped += 1; continue
+
+            # Normalise month → YYYY-MM
+            import re as _re
+            mon_str = ''
+            # Try "Apr-21" / "Apr-2021" style
+            m = _re.match(r'^([A-Za-z]{3})[- ](\d{2,4})$', raw_month)
+            if m:
+                mo_name, yr = m.group(1).capitalize(), m.group(2)
+                yr = ('20' + yr) if len(yr) == 2 else yr
+                try:
+                    from datetime import datetime as _dt
+                    mon_str = _dt.strptime(f'01 {mo_name} {yr}', '%d %b %Y').strftime('%Y-%m')
+                except ValueError:
+                    pass
+            if not mon_str:
+                # Try YYYY-MM or YYYY-MM-DD
+                m2 = _re.match(r'^(\d{4})-(\d{2})', raw_month)
+                if m2:
+                    mon_str = f'{m2.group(1)}-{m2.group(2)}'
+            if not mon_str:
+                skipped += 1; continue
+
+            entry_date   = mon_str + '-01'
+            amount       = round(qty * price, 2)
+            instrument   = 'bond' if 'bond' in asset_type.lower() else \
+                           'mutual_fund' if 'mutual' in asset_cat.lower() else \
+                           'etf' if 'etf' in asset_type.lower() else 'stocks'
+
+            # invest_transactions
+            conn.execute("""
+                INSERT INTO invest_transactions
+                    (entry_date, stock_name, asset_type, quantity, action,
+                     price, invested_value, month)
+                VALUES (?,?,?,?,?,?,?,?)
+            """, (entry_date, asset_name, asset_type, qty, 'buy', price, amount, mon_str))
+            inserted += 1
+
+            # transactions table — upsert monthly aggregate
+            existing = conn.execute("""
+                SELECT id FROM transactions
+                WHERE type='investment' AND category=? AND date=? AND note=?
+            """, (tx_cat, entry_date, tx_note)).fetchone()
+            if existing:
+                conn.execute("UPDATE transactions SET amount=amount+?, sub_category=? WHERE id=?",
+                             (amount, tx_sub, existing[0]))
+            else:
+                conn.execute("""
+                    INSERT INTO transactions (type, category, sub_category, amount, date, note)
+                    VALUES ('investment',?,?,?,?,?)
+                """, (tx_cat, tx_sub, amount, entry_date, tx_note))
+
+        # Recompute asset portfolio from full invest_transactions history
+        assets_updated = 0
+        if inserted > 0:
+            _, is_new = _recompute_asset_from_transactions(conn, asset_name, symbol_val, instrument)
+            assets_updated = 1
+            _refresh_monthly_calc(conn)
+            _update_portfolio_from_assets(conn)
+
+        conn.commit()
+        return jsonify({
+            'success': True, 'inserted': inserted, 'skipped': skipped,
+            'assets_updated': assets_updated, 'asset_name': asset_name
+        })
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
 
 
 def _normalize_action(trade_type):
@@ -2918,7 +3436,7 @@ def api_broker_upload_commit(source_type):
                 price = amount / qty
 
             raw_date   = (row['trade_date'] or '').strip()
-            entry_date = raw_date[:10] if len(raw_date) >= 10 else raw_date
+            entry_date = _normalise_date(raw_date)
             month_str  = entry_date[:7] if len(entry_date) >= 7 else ''
 
             name       = (row['name']   or row['symbol'] or '').strip()
@@ -2955,6 +3473,77 @@ def api_broker_upload_commit(source_type):
         # ── 3. Refresh derived tables ─────────────────────────────────────────
         _refresh_monthly_calc(conn)
         _update_portfolio_from_assets(conn)   # sync portfolio aggregates
+
+        # ── 3b. Upsert monthly investment rows into transactions table ─────────
+        # Aggregate BUY amounts per (month, category) and upsert into transactions.
+        # For MF → category='Mutual Fund'; for stocks → resolve per-row from
+        # InvestMapping (ETF stays 'ETF', stocks become 'Stocks').
+        _cfg        = _BROKER_PARSERS.get(source_type, {})
+        _instrument = _cfg.get('instrument', '')
+
+        if _instrument in ('mutual_fund', 'etf', 'stocks'):
+            _tx_note = f'Imported from {source_type.replace("_", " ").title()}'
+
+            # Build a name→asset_type lookup from InvestMapping for stock rows
+            _name_to_atype = {}
+            if _instrument == 'stocks':
+                _im_rows = conn.execute("""
+                    SELECT am.AssetName, im.AssetType
+                    FROM AssetMapping am
+                    JOIN InvestMapping im ON am.AssetId = im.AssetID
+                """).fetchall()
+                for _im in _im_rows:
+                    _name_to_atype[(_im['AssetName'] or '').strip().upper()] = (_im['AssetType'] or '').strip()
+
+            # Category/sub helpers
+            def _resolve_cat(name, instrument):
+                if instrument == 'mutual_fund':
+                    return 'Mutual Fund', 'MF SIP'
+                if instrument == 'etf':
+                    return 'ETF', 'ETF Purchase'
+                # stocks: check actual asset type from mapping
+                atype = _name_to_atype.get((name or '').strip().upper(), '').lower()
+                if 'etf' in atype:
+                    return 'ETF', 'ETF Purchase'
+                return 'Stocks', 'Stock Purchase'
+
+            # Aggregate total BUY amount per (month, category)
+            _monthly = {}  # key: (month, category, sub) → total
+            for _row in rows:
+                _action = _normalize_action(_row['trade_type'] or '')
+                if _action != 'buy':
+                    continue
+                _amt = float(_row['amount'] or 0)
+                if _amt <= 0:
+                    _qty = float(_row['quantity'] or 0)
+                    _prc = float(_row['price'] or 0)
+                    _amt = _qty * _prc
+                if _amt <= 0:
+                    continue
+                _rd  = _normalise_date((_row['trade_date'] or '').strip())
+                _mon = _rd[:7] if len(_rd) >= 7 else ''
+                if not _mon:
+                    continue
+                _cat, _sub = _resolve_cat(_row['name'], _instrument)
+                _key = (_mon, _cat, _sub)
+                _monthly[_key] = _monthly.get(_key, 0) + _amt
+
+            for (_mon, _cat, _sub), _total in _monthly.items():
+                _tx_date = _mon + '-01'
+                _existing = conn.execute("""
+                    SELECT id FROM transactions
+                    WHERE type='investment' AND category=? AND date=? AND note=?
+                """, (_cat, _tx_date, _tx_note)).fetchone()
+                if _existing:
+                    conn.execute("""
+                        UPDATE transactions SET amount=?, sub_category=?
+                        WHERE id=?
+                    """, (round(_total, 2), _sub, _existing[0]))
+                else:
+                    conn.execute("""
+                        INSERT INTO transactions (type, category, sub_category, amount, date, note)
+                        VALUES ('investment', ?, ?, ?, ?, ?)
+                    """, (_cat, _sub, round(_total, 2), _tx_date, _tx_note))
 
         # ── 4. Clear staging data ─────────────────────────────────────────────
         old_ids = [r[0] for r in conn.execute(
