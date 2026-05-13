@@ -234,8 +234,10 @@ def init_schema():
         ('Liquidity',   'Emergency Fund', 'Short-term FD'),
         ('Real State',  'Real Estate',    'Plot'),
         ('Real State',  'Real Estate',    'Flat'),
+        ('Retirement',  'Fixed Income',   'Employer PF'),
         ('Retirement',  'Hybrid',         'Pension Scheme'),
         ('Stability',   'Fixed Income',   'PPF'),
+        ('Stability',   'Fixed Income',   'Employee PF'),
         ('Stability',   'Fixed Income',   'EPF'),
         ('Stability',   'Fixed Income',   'Government Bond/Yojana'),
     ]
@@ -382,8 +384,10 @@ def init_schema():
         ('Liquidity',  'Emergency Fund','Short-term FD',  'RATE_BASED',      '',     1,           '24K',   7.0),
         ('Real State', 'Real Estate', 'Plot',            'MANUAL',          '',     1,           '24K',   0),
         ('Real State', 'Real Estate', 'Flat',            'MANUAL',          '',     1,           '24K',   0),
+        ('Retirement', 'Fixed Income','Employer PF',     'RATE_BASED',      '',     1,           '24K',   8.25),
         ('Retirement', 'Hybrid',      'Pension Scheme',  'RATE_BASED',      '',     1,           '24K',   10.0),
         ('Stability',  'Fixed Income','PPF',             'RATE_BASED',      '',     1,           '24K',   7.1),
+        ('Stability',  'Fixed Income','Employee PF',     'RATE_BASED',      '',     1,           '24K',   8.25),
         ('Stability',  'Fixed Income','EPF',             'RATE_BASED',      '',     1,           '24K',   8.25),
         ('Stability',  'Fixed Income','Government Bond/Yojana', 'RATE_BASED','',   1,           '24K',   8.2),
     ]
@@ -401,8 +405,10 @@ def init_schema():
         """, (mode, sym, wt, purity, rate, cls, cat, typ))
     # Force-set rates for RATE_BASED rows even if already RATE_BASED (so corrections are applied)
     _RATE_UPDATES = [
+        ('Retirement', 'Fixed Income','Employer PF',      8.25),
         ('Retirement', 'Hybrid',      'Pension Scheme',  10.0),
         ('Stability',  'Fixed Income','PPF',              7.1),
+        ('Stability',  'Fixed Income','Employee PF',      8.25),
         ('Stability',  'Fixed Income','EPF',              8.25),
         ('Stability',  'Fixed Income','Government Bond/Yojana', 8.2),
     ]
@@ -412,6 +418,82 @@ def init_schema():
             WHERE AssetClass=? AND AssetCategory=? AND AssetType=?
               AND (InterestRate IS NULL OR InterestRate = 0)
         """, (rate, cls, cat, typ))
+    conn.commit()
+
+    # ── Demat / Stock Trading Tables ──────────────────────────────────────────
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS demat_wallet (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            txn_date   TEXT NOT NULL,
+            type       TEXT NOT NULL,
+            amount     REAL NOT NULL,
+            note       TEXT DEFAULT '',
+            ref_txn_id INTEGER DEFAULT NULL,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS stock_holdings (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol        TEXT NOT NULL,
+            isin          TEXT DEFAULT '',
+            trade_type    TEXT NOT NULL,
+            buy_date      TEXT NOT NULL,
+            qty_original  REAL NOT NULL,
+            qty_remaining REAL NOT NULL,
+            buy_price     REAL NOT NULL,
+            lot_source    TEXT DEFAULT 'TRADEBOOK',
+            created_at    TEXT DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS stock_transactions (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            trade_date       TEXT NOT NULL,
+            symbol           TEXT NOT NULL,
+            isin             TEXT DEFAULT '',
+            action           TEXT NOT NULL,
+            qty              REAL NOT NULL,
+            price            REAL DEFAULT 0,
+            trade_type       TEXT NOT NULL,
+            exchange         TEXT DEFAULT 'NSE',
+            stt              REAL DEFAULT 0,
+            other_charges    REAL DEFAULT 0,
+            total_charges    REAL DEFAULT 0,
+            net_amount       REAL DEFAULT 0,
+            zerodha_order_id TEXT DEFAULT '',
+            lot_ids_affected TEXT DEFAULT '[]',
+            lot_source       TEXT DEFAULT 'TRADEBOOK',
+            created_at       TEXT DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS stock_dividends (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol       TEXT NOT NULL,
+            date         TEXT NOT NULL,
+            per_share    REAL DEFAULT 0,
+            total_amount REAL NOT NULL,
+            created_at   TEXT DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS stock_pnl (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            sell_txn_id   INTEGER,
+            symbol        TEXT NOT NULL,
+            sell_date     TEXT NOT NULL,
+            trade_type    TEXT NOT NULL,
+            qty_sold      REAL NOT NULL,
+            avg_buy_price REAL NOT NULL,
+            sell_price    REAL NOT NULL,
+            gross_pnl     REAL NOT NULL,
+            charges       REAL DEFAULT 0,
+            net_pnl       REAL NOT NULL,
+            holding_days  INTEGER DEFAULT 0,
+            tax_category  TEXT DEFAULT 'STCG',
+            created_at    TEXT DEFAULT (datetime('now'))
+        );
+    """)
+    conn.commit()
+
+    # Ensure app_settings table exists (may not exist on first run if assets table was new)
+    conn.execute("""CREATE TABLE IF NOT EXISTS app_settings (
+        key TEXT PRIMARY KEY, value TEXT NOT NULL)""")
+    # Ensure onboarding_complete flag exists in app_settings
+    conn.execute("INSERT OR IGNORE INTO app_settings (key, value) VALUES ('demat_onboarded','0')")
     conn.commit()
 
     conn.close()
@@ -709,7 +791,22 @@ def add_transaction():
     d = request.json; conn = get_db()
     conn.execute("INSERT INTO transactions (type,category,sub_category,amount,date,note) VALUES (?,?,?,?,?,?)",
                  (d['type'], d['category'], d.get('sub_category',''), float(d['amount']), d['date'], d.get('note','')))
-    conn.commit(); nid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    conn.commit()
+    nid     = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    sub_cat = (d.get('sub_category') or '').strip()
+    # Sync to demat_wallet for demat transfers
+    if sub_cat == 'Demat Deposit':
+        conn.execute(
+            "INSERT INTO demat_wallet (txn_date, type, amount, note, ref_txn_id) VALUES (?,?,?,?,?)",
+            (d['date'], 'DEPOSIT', float(d['amount']), d.get('note','Zerodha Pay-in'), nid)
+        )
+        conn.commit()
+    elif sub_cat == 'Demat Withdrawal':
+        conn.execute(
+            "INSERT INTO demat_wallet (txn_date, type, amount, note, ref_txn_id) VALUES (?,?,?,?,?)",
+            (d['date'], 'WITHDRAW', float(d['amount']), d.get('note','Zerodha Pay-out'), nid)
+        )
+        conn.commit()
     conn.close()
     return jsonify({'success': True, 'id': nid})
 
@@ -1337,7 +1434,7 @@ def _refresh_monthly_calc(conn):
                 ), 1, 7
             ) AS norm_month,
             stock_name,
-            asset_type,
+            MAX(asset_type),
             SUM(CASE WHEN UPPER(action) = 'BUY'  THEN quantity ELSE 0 END),
             SUM(CASE WHEN UPPER(action) = 'SELL' THEN quantity ELSE 0 END),
             SUM(CASE WHEN UPPER(action) = 'BUY'  THEN quantity ELSE -quantity END),
@@ -1350,7 +1447,7 @@ def _refresh_monthly_calc(conn):
         FROM invest_transactions
         WHERE stock_name IS NOT NULL AND stock_name != ''
           AND (month IS NOT NULL OR entry_date IS NOT NULL)
-        GROUP BY norm_month, stock_name, asset_type
+        GROUP BY norm_month, stock_name
         HAVING norm_month IS NOT NULL AND norm_month != ''
     """)
     conn.commit()
@@ -3734,6 +3831,830 @@ def api_recompute_assets_from_transactions():
         return jsonify({'error': str(e)}), 500
     finally:
         conn.close()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DEMAT PORTFOLIO — FIFO ENGINE + CHARGE CALCULATOR
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _zerodha_charges(action, qty, price):
+    """Estimate Zerodha equity delivery charges (INR)."""
+    tv = qty * price
+    stt          = round(tv * 0.001, 2)          # 0.1% buy & sell
+    exchange_chg = round(tv * 0.0000345, 2)
+    gst          = round(exchange_chg * 0.18, 2)
+    sebi         = round(tv * 0.000001, 2)
+    stamp        = round(tv * 0.00015, 2) if action.upper() == 'BUY' else 0
+    total        = stt + exchange_chg + gst + sebi + stamp
+    return {'stt': stt, 'exchange': exchange_chg, 'gst': gst,
+            'sebi': sebi, 'stamp': stamp, 'total': round(total, 2)}
+
+
+def _fifo_sell(conn, symbol, trade_type, qty_to_sell, sell_price, sell_date, sell_txn_id):
+    """Consume FIFO lots for symbol+trade_type.
+    Returns (consumed_list, unfilled_qty).  consumed_list contains one dict per lot used."""
+    lots = conn.execute("""
+        SELECT id, buy_date, qty_remaining, buy_price
+        FROM stock_holdings
+        WHERE UPPER(symbol)=UPPER(?) AND trade_type=? AND qty_remaining > 0
+        ORDER BY buy_date ASC
+    """, (symbol, trade_type)).fetchall()
+
+    remaining = qty_to_sell
+    consumed  = []
+    for lot in lots:
+        if remaining <= 0:
+            break
+        use     = min(remaining, lot['qty_remaining'])
+        new_rem = round(lot['qty_remaining'] - use, 6)
+        conn.execute("UPDATE stock_holdings SET qty_remaining=? WHERE id=?", (new_rem, lot['id']))
+        try:
+            d1 = datetime.strptime(sell_date[:10], '%Y-%m-%d')
+            d2 = datetime.strptime(lot['buy_date'][:10], '%Y-%m-%d')
+            holding_days = max(0, (d1 - d2).days)
+        except Exception:
+            holding_days = 0
+        gross_pnl = round((sell_price - lot['buy_price']) * use, 2)
+        consumed.append({
+            'lot_id': lot['id'], 'qty': use,
+            'buy_price': lot['buy_price'], 'buy_date': lot['buy_date'],
+            'gross_pnl': gross_pnl, 'holding_days': holding_days,
+            'tax_category': 'LTCG' if holding_days >= 365 else 'STCG'
+        })
+        remaining = round(remaining - use, 6)
+    return consumed, remaining
+
+
+def _demat_wallet_balance(conn):
+    """Compute running demat cash balance from ledger."""
+    row = conn.execute("""
+        SELECT
+            COALESCE(SUM(CASE WHEN type IN ('DEPOSIT','SELL','DIVIDEND') THEN amount ELSE 0 END), 0) -
+            COALESCE(SUM(CASE WHEN type IN ('WITHDRAW','BUY','CHARGE') THEN amount ELSE 0 END), 0)
+        AS balance FROM demat_wallet
+    """).fetchone()
+    return round(float(row[0] or 0), 2)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DEMAT API ROUTES
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.route('/api/demat/onboarding_status')
+def api_demat_onboarding_status():
+    conn = get_db()
+    row  = conn.execute("SELECT value FROM app_settings WHERE key='demat_onboarded'").fetchone()
+    conn.close()
+    return jsonify({'onboarded': row and row['value'] == '1'})
+
+
+@app.route('/api/demat/onboard', methods=['POST'])
+def api_demat_onboard():
+    """One-time seeding: existing holdings + starting wallet balance."""
+    d    = request.get_json(force=True)
+    conn = get_db()
+    try:
+        # Wallet seed
+        wallet_balance = float(d.get('wallet_balance') or 0)
+        invested_capital = float(d.get('invested_capital') or 0)
+        onboard_date = (d.get('onboard_date') or datetime.now().strftime('%Y-%m-%d'))[:10]
+
+        # Store invested capital in settings (not as wallet entry) to avoid double-counting
+        if invested_capital > 0:
+            conn.execute(
+                "INSERT OR REPLACE INTO app_settings (key, value) VALUES ('demat_invested_capital', ?)",
+                (str(invested_capital),)
+            )
+        # Only actual cash in broker account goes into wallet ledger
+        if wallet_balance > 0:
+            conn.execute(
+                "INSERT INTO demat_wallet (txn_date, type, amount, note) VALUES (?,?,?,?)",
+                (onboard_date, 'DEPOSIT', wallet_balance, 'Onboarding: current demat cash balance')
+            )
+
+        # Holdings seed
+        holdings = d.get('holdings') or []
+        for h in holdings:
+            symbol     = (h.get('symbol') or '').strip().upper()
+            isin       = (h.get('isin')   or '').strip()
+            trade_type = (h.get('trade_type') or 'LONG').upper()
+            qty        = float(h.get('qty') or 0)
+            avg_price  = float(h.get('avg_price') or 0)
+            buy_date   = (h.get('buy_date') or onboard_date)[:10]
+            if not symbol or qty <= 0:
+                continue
+            conn.execute("""
+                INSERT INTO stock_holdings
+                    (symbol, isin, trade_type, buy_date, qty_original, qty_remaining, buy_price, lot_source)
+                VALUES (?,?,?,?,?,?,?,'ONBOARDING')
+            """, (symbol, isin, trade_type, buy_date, qty, qty, avg_price))
+            # Also log as a synthetic BUY transaction
+            conn.execute("""
+                INSERT INTO stock_transactions
+                    (trade_date, symbol, isin, action, qty, price, trade_type, net_amount, lot_source)
+                VALUES (?,?,?,'BUY',?,?,?,?,'ONBOARDING')
+            """, (buy_date, symbol, isin, qty, avg_price, trade_type, round(qty * avg_price, 2)))
+            # Mirror into invest_transactions so Asset07 stays in sync
+            conn.execute("""
+                INSERT INTO invest_transactions
+                    (entry_date, stock_name, asset_type, action, quantity, price, invested_value)
+                VALUES (?,?,?,?,?,?,?)
+            """, (buy_date, symbol, 'Stock', 'BUY', qty, avg_price,
+                  round(qty * avg_price, 2)))
+
+        conn.execute("INSERT OR REPLACE INTO app_settings (key, value) VALUES ('demat_onboarded','1')")
+        conn.commit()
+        # Sync holdings → Wealth Engine assets table
+        _sync_demat_to_wealth(conn)
+        return jsonify({'success': True})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+
+@app.route('/api/demat/wallet')
+def api_demat_wallet():
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT id, txn_date, type, amount, note FROM demat_wallet ORDER BY txn_date DESC, id DESC LIMIT 100"
+    ).fetchall()
+    balance = _demat_wallet_balance(conn)
+    conn.close()
+    return jsonify({'balance': balance, 'entries': [dict(r) for r in rows]})
+
+
+@app.route('/api/demat/wallet', methods=['POST'])
+def api_demat_wallet_add():
+    d      = request.get_json(force=True)
+    conn   = get_db()
+    wtype  = (d.get('type') or '').upper()
+    amount = float(d.get('amount') or 0)
+    date   = (d.get('date') or datetime.now().strftime('%Y-%m-%d'))[:10]
+    note   = d.get('note', '')
+    if wtype not in ('DEPOSIT', 'WITHDRAW') or amount <= 0:
+        conn.close()
+        return jsonify({'error': 'type must be DEPOSIT or WITHDRAW, amount > 0'}), 400
+
+    # Mirror to transactions table for P&L / cash-flow tracking
+    if wtype == 'DEPOSIT':
+        conn.execute(
+            "INSERT INTO transactions (type, category, sub_category, amount, date, note) VALUES (?,?,?,?,?,?)",
+            ('investment', 'Stocks', 'Demat Deposit', amount, date, note or 'Zerodha Pay-in')
+        )
+        # Increment invested capital
+        ic_row = conn.execute("SELECT value FROM app_settings WHERE key='demat_invested_capital'").fetchone()
+        new_ic = round(float(ic_row['value'] if ic_row else 0) + amount, 2)
+        conn.execute("INSERT OR REPLACE INTO app_settings (key,value) VALUES ('demat_invested_capital',?)", (str(new_ic),))
+    else:
+        conn.execute(
+            "INSERT INTO transactions (type, category, sub_category, amount, date, note) VALUES (?,?,?,?,?,?)",
+            ('income', 'Investment Return', 'Demat Withdrawal', amount, date, note or 'Zerodha Pay-out')
+        )
+        # Decrement invested capital
+        ic_row = conn.execute("SELECT value FROM app_settings WHERE key='demat_invested_capital'").fetchone()
+        new_ic = round(max(0, float(ic_row['value'] if ic_row else 0) - amount), 2)
+        conn.execute("INSERT OR REPLACE INTO app_settings (key,value) VALUES ('demat_invested_capital',?)", (str(new_ic),))
+    conn.commit()
+    ref_txn_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+    conn.execute(
+        "INSERT INTO demat_wallet (txn_date, type, amount, note, ref_txn_id) VALUES (?,?,?,?,?)",
+        (date, wtype, amount, note, ref_txn_id)
+    )
+    conn.commit()
+    balance = _demat_wallet_balance(conn)
+    # Keep portfolio Asset07 InvestedValue in sync with updated pay-in total
+    _sync_demat_to_wealth(conn)
+    conn.close()
+    return jsonify({'success': True, 'balance': balance})
+
+
+@app.route('/api/demat/holdings')
+def api_demat_holdings():
+    """Open lots grouped by symbol+trade_type with current_price from nse_master."""
+    conn = get_db()
+    lots = conn.execute("""
+        SELECT h.id, h.symbol, h.isin, h.trade_type, h.buy_date,
+               h.qty_original, h.qty_remaining, h.buy_price, h.lot_source,
+               COALESCE(n.ltp, 0) AS current_price,
+               COALESCE(n.company_name, h.symbol) AS company_name
+        FROM stock_holdings h
+        LEFT JOIN nse_master n ON UPPER(n.symbol) = UPPER(h.symbol)
+        WHERE h.qty_remaining > 0
+        ORDER BY h.symbol, h.trade_type, h.buy_date
+    """).fetchall()
+
+    # Group by symbol+trade_type
+    groups = {}
+    for lot in lots:
+        key = f"{lot['symbol'].upper()}|{lot['trade_type']}"
+        if key not in groups:
+            groups[key] = {
+                'symbol': lot['symbol'].upper(),
+                'company_name': lot['company_name'],
+                'trade_type': lot['trade_type'],
+                'current_price': float(lot['current_price']),
+                'total_qty': 0, 'total_invested': 0, 'lots': []
+            }
+        g = groups[key]
+        qty = float(lot['qty_remaining'])
+        g['total_qty']      = round(g['total_qty'] + qty, 6)
+        g['total_invested'] = round(g['total_invested'] + qty * lot['buy_price'], 2)
+        g['lots'].append({
+            'id': lot['id'], 'buy_date': lot['buy_date'],
+            'qty_remaining': qty, 'buy_price': float(lot['buy_price']),
+            'lot_source': lot['lot_source']
+        })
+
+    result = []
+    for g in groups.values():
+        qty = g['total_qty']
+        invested = g['total_invested']
+        avg_price = round(invested / qty, 4) if qty > 0 else 0
+        cp = g['current_price']
+        current_val = round(qty * cp, 2)
+        pnl = round(current_val - invested, 2)
+        pnl_pct = round(pnl / invested * 100, 2) if invested > 0 else 0
+        result.append({
+            'symbol': g['symbol'], 'company_name': g['company_name'],
+            'trade_type': g['trade_type'],
+            'total_qty': qty, 'avg_price': avg_price,
+            'total_invested': invested, 'current_price': cp,
+            'current_value': current_val, 'unrealized_pnl': pnl, 'pnl_pct': pnl_pct,
+            'lots': g['lots']
+        })
+    conn.close()
+    return jsonify(result)
+
+
+@app.route('/api/demat/portfolio_summary')
+def api_demat_portfolio_summary():
+    conn = get_db()
+
+    # One-time migration: old onboarding stored invested_capital as a DEPOSIT in demat_wallet
+    # with note 'Onboarding: historical capital baseline'. Move it to app_settings and remove
+    # that wallet entry so it doesn't inflate the cash balance.
+    ic_row = conn.execute("SELECT value FROM app_settings WHERE key='demat_invested_capital'").fetchone()
+    if not ic_row:
+        old_entries = conn.execute(
+            "SELECT id, amount FROM demat_wallet WHERE type='DEPOSIT' AND note LIKE '%historical capital%'"
+        ).fetchall()
+        if old_entries:
+            migrated_capital = round(sum(float(e['amount']) for e in old_entries), 2)
+            conn.execute(
+                "INSERT OR REPLACE INTO app_settings (key,value) VALUES ('demat_invested_capital',?)",
+                (str(migrated_capital),)
+            )
+            # Remove these entries so they don't count toward cash balance
+            for e in old_entries:
+                conn.execute("DELETE FROM demat_wallet WHERE id=?", (e['id'],))
+            conn.commit()
+            ic_row = conn.execute("SELECT value FROM app_settings WHERE key='demat_invested_capital'").fetchone()
+
+    invested_capital = round(float(ic_row['value']) if ic_row else 0, 2)
+    cash_balance = _demat_wallet_balance(conn)
+
+    # Holdings per trade_type
+    lots = conn.execute("""
+        SELECT h.symbol, h.trade_type, h.qty_remaining, h.buy_price,
+               COALESCE(n.ltp, 0) AS ltp
+        FROM stock_holdings h
+        LEFT JOIN nse_master n ON UPPER(n.symbol) = UPPER(h.symbol)
+        WHERE h.qty_remaining > 0
+    """).fetchall()
+
+    def _agg(tt):
+        rows = [l for l in lots if l['trade_type'] == tt]
+        inv = round(sum(float(l['qty_remaining']) * float(l['buy_price']) for l in rows), 2)
+        cur = round(sum(float(l['qty_remaining']) * float(l['ltp'])       for l in rows), 2)
+        return inv, cur
+
+    long_inv,  long_cur  = _agg('LONG')
+    swing_inv, swing_cur = _agg('SWING')
+    holdings_value   = round(long_cur + swing_cur, 2)
+    current_portfolio = round(cash_balance + holdings_value, 2)
+    total_invested_holdings = round(long_inv + swing_inv, 2)
+    unrealized_pnl = round(holdings_value - total_invested_holdings, 2)
+
+    long_unreal  = round(long_cur  - long_inv,  2)
+    swing_unreal = round(swing_cur - swing_inv, 2)
+    long_unreal_pct  = round(long_unreal  / long_inv  * 100, 2) if long_inv  > 0 else 0
+    swing_unreal_pct = round(swing_unreal / swing_inv * 100, 2) if swing_inv > 0 else 0
+
+    # Realized P&L per trade_type
+    pnl_rows = conn.execute("""
+        SELECT trade_type, COALESCE(SUM(net_pnl),0) AS pnl FROM stock_pnl GROUP BY trade_type
+    """).fetchall()
+    realized = {r['trade_type']: round(float(r['pnl']), 2) for r in pnl_rows}
+
+    conn.close()
+    return jsonify({
+        'invested_capital':    invested_capital,
+        'cash_balance':        cash_balance,
+        'holdings_value':      holdings_value,
+        'current_portfolio':   current_portfolio,
+        'unrealized_pnl':      unrealized_pnl,
+        # Long term breakdown
+        'long_invested':       long_inv,
+        'long_current':        long_cur,
+        'long_unrealized':     long_unreal,
+        'long_unrealized_pct': long_unreal_pct,
+        'long_realized':       realized.get('LONG', 0),
+        # Swing breakdown
+        'swing_invested':       swing_inv,
+        'swing_current':        swing_cur,
+        'swing_unrealized':     swing_unreal,
+        'swing_unrealized_pct': swing_unreal_pct,
+        'swing_realized':       realized.get('SWING', 0),
+        # Legacy keys
+        'realized_pnl_swing': realized.get('SWING', 0),
+        'realized_pnl_long':  realized.get('LONG', 0),
+    })
+
+
+@app.route('/api/demat/pnl')
+def api_demat_pnl():
+    trade_type = request.args.get('trade_type', '')
+    conn = get_db()
+    q = "SELECT * FROM stock_pnl"
+    p = []
+    if trade_type:
+        q += " WHERE trade_type=?"; p.append(trade_type.upper())
+    q += " ORDER BY sell_date DESC LIMIT 200"
+    rows = conn.execute(q, p).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+
+def _sync_demat_to_wealth(conn):
+    """Write stock_holdings totals directly into assets/portfolio for Wealth Engine.
+    Bypasses invest_transactions. Also purges corrupt Asset07 rows with empty symbols.
+    Returns list of synced symbols.
+    """
+    holdings = conn.execute("""
+        SELECT h.symbol,
+               SUM(h.qty_remaining)              AS total_qty,
+               SUM(h.qty_remaining * h.buy_price) AS total_invested,
+               COALESCE(n.ltp, 0)                AS ltp
+        FROM stock_holdings h
+        LEFT JOIN nse_master n ON UPPER(n.symbol) = UPPER(h.symbol)
+        WHERE h.qty_remaining > 0
+        GROUP BY h.symbol
+    """).fetchall()
+
+    synced = []
+    for h in holdings:
+        sym       = h['symbol'].strip().upper()
+        total_qty = round(float(h['total_qty']), 6)
+        invested  = round(float(h['total_invested']), 2)
+        ltp       = float(h['ltp'])
+        avg_price = round(invested / total_qty, 4) if total_qty > 0 else 0
+        cur_value = round(total_qty * ltp, 2) if ltp > 0 else invested
+
+        mapping_row = conn.execute(
+            "SELECT MappingID FROM AssetMapping WHERE UPPER(TRIM(AssetSymbol))=? LIMIT 1", (sym,)
+        ).fetchone()
+        if mapping_row:
+            mapping_id = mapping_row['MappingID']
+            conn.execute("UPDATE AssetMapping SET AssetId='Asset07' WHERE MappingID=?", (mapping_id,))
+        else:
+            conn.execute(
+                "INSERT INTO AssetMapping (AssetName, AssetSymbol, AssetId) VALUES (?,?,'Asset07')", (sym, sym)
+            )
+            mapping_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+        existing = conn.execute("SELECT AssetEntryID FROM assets WHERE MappingID=? LIMIT 1", (mapping_id,)).fetchone()
+        if existing:
+            conn.execute("""
+                UPDATE assets SET qty=?, avgprice=?, investedvalue=?, currentvalue=?,
+                    ltp=?, assetname=?, symbol=?, updatedat=datetime('now')
+                WHERE AssetEntryID=?
+            """, (total_qty, avg_price, invested, cur_value, ltp, sym, sym, existing['AssetEntryID']))
+        else:
+            conn.execute("""
+                INSERT INTO assets (MappingID, qty, avgprice, ltp, investedvalue, currentvalue,
+                                    pnl, pnlpct, assetname, symbol, updatedat)
+                VALUES (?,?,?,?,?,?,0,0,?,?,datetime('now'))
+            """, (mapping_id, total_qty, avg_price, ltp, invested, cur_value, sym, sym))
+        synced.append(sym)
+
+    # Purge corrupt Asset07 rows: no symbol + not a real stock holding
+    if synced:
+        placeholders = ','.join('?' * len(synced))
+        conn.execute(f"""
+            DELETE FROM assets WHERE AssetEntryID IN (
+                SELECT a.AssetEntryID FROM assets a
+                JOIN AssetMapping am ON a.MappingID = am.MappingID
+                WHERE am.AssetId = 'Asset07'
+                  AND (TRIM(COALESCE(am.AssetSymbol,'')) = '')
+            )
+        """)
+
+    _update_portfolio_from_assets(conn)
+
+    # Override Asset07 InvestedValue with total pay-ins (demat_invested_capital) so that
+    # the Wealth Engine shows true capital deployed, not fluctuating cost basis of open lots.
+    # CurrentValue = cash_balance + market value of all holdings.
+    ic_row = conn.execute("SELECT value FROM app_settings WHERE key='demat_invested_capital'").fetchone()
+    if ic_row and float(ic_row['value'] or 0) > 0:
+        ic      = round(float(ic_row['value']), 2)
+        # total current value = cash in wallet + market value of all open holdings
+        cash_bal = _demat_wallet_balance(conn)
+        mkt_lots = conn.execute("""
+            SELECT h.qty_remaining, COALESCE(n.ltp, h.buy_price) AS price
+            FROM stock_holdings h
+            LEFT JOIN nse_master n ON UPPER(n.symbol)=UPPER(h.symbol)
+            WHERE h.qty_remaining > 0
+        """).fetchall()
+        mkt_val  = round(sum(float(l['qty_remaining']) * float(l['price']) for l in mkt_lots), 2)
+        cur_total = round(cash_bal + mkt_val, 2)
+        ret       = round(cur_total - ic, 2)
+        ret_pct   = round(ret / ic * 100, 2) if ic > 0 else 0
+        conn.execute("""
+            UPDATE portfolio
+            SET InvestedValue=?, CurrentValue=?, ReturnValue=?, ReturnPCT=?, UpdateAt=datetime('now')
+            WHERE AssetID='Asset07'
+        """, (ic, cur_total, ret, ret_pct))
+
+    conn.commit()
+    return synced
+
+
+@app.route('/api/demat/sync_to_wealth', methods=['POST'])
+def api_demat_sync_to_wealth():
+    """Sync demat stock_holdings → Wealth Engine assets/portfolio."""
+    conn = get_db()
+    try:
+        synced = _sync_demat_to_wealth(conn)
+        conn.close()
+        return jsonify({'success': True, 'synced_symbols': len(synced), 'symbols': synced})
+    except Exception as e:
+        conn.rollback(); conn.close()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/demat/sync_prices', methods=['POST'])
+def api_demat_sync_prices():
+    """Fetch live LTP for all stock_holdings symbols via yfinance, update nse_master."""
+    import yfinance as yf
+    conn = get_db()
+    try:
+        symbols = conn.execute(
+            "SELECT DISTINCT UPPER(symbol) AS symbol FROM stock_holdings WHERE qty_remaining > 0"
+        ).fetchall()
+        updated = []
+        failed  = []
+        for row in symbols:
+            sym = row['symbol']
+            # Ensure symbol exists in nse_master
+            conn.execute(
+                "INSERT OR IGNORE INTO nse_master (symbol, company_name) VALUES (?,?)",
+                (sym, sym)
+            )
+            ltp = None
+            for suffix in ['.NS', '.BO']:
+                try:
+                    ticker = yf.Ticker(sym + suffix)
+                    info   = ticker.fast_info
+                    price  = getattr(info, 'last_price', None) or getattr(info, 'previous_close', None)
+                    if price and float(price) > 0:
+                        ltp = round(float(price), 2)
+                        break
+                except Exception:
+                    pass
+            if ltp:
+                conn.execute("UPDATE nse_master SET ltp=? WHERE UPPER(symbol)=?", (ltp, sym))
+                updated.append({'symbol': sym, 'ltp': ltp})
+            else:
+                failed.append(sym)
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True, 'updated': updated, 'failed': failed})
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/demat/reset_tradebook', methods=['POST'])
+def api_demat_reset_tradebook():
+    """Clear all tradebook-sourced data so a fresh re-upload can be done."""
+    conn = get_db()
+    try:
+        # Remove all trade transactions
+        conn.execute("DELETE FROM stock_transactions")
+        # Remove all realized P&L
+        conn.execute("DELETE FROM stock_pnl")
+        # Remove lots added by tradebook; restore ONBOARDING lots to full qty
+        conn.execute("DELETE FROM stock_holdings WHERE lot_source != 'ONBOARDING'")
+        conn.execute("UPDATE stock_holdings SET qty_remaining = qty_original WHERE lot_source = 'ONBOARDING'")
+        # Remove trade-related wallet entries (BUY/SELL/CHARGE from trades)
+        conn.execute("DELETE FROM demat_wallet WHERE type IN ('BUY','SELL','CHARGE')")
+        # Remove mirrored invest_transactions from tradebook/onboarding
+        conn.execute("DELETE FROM invest_transactions WHERE rationale IS NULL AND stock_name IN (SELECT DISTINCT symbol FROM stock_holdings)")
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True, 'message': 'Tradebook data cleared. Ready for fresh upload.'})
+    except Exception as e:
+        conn.rollback(); conn.close()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/demat/tradebook_upload', methods=['POST'])
+def api_demat_tradebook_upload():
+    """Upload Zerodha tradebook CSV. trade_type param: LONG or SWING (applies to all rows)."""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    f          = request.files['file']
+    trade_type = (request.form.get('trade_type') or 'LONG').upper()
+    if trade_type not in ('LONG', 'SWING'):
+        trade_type = 'LONG'
+
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.csv')
+    try:
+        f.save(tmp.name); tmp.close()
+        df = pd.read_csv(tmp.name)
+        df.columns = [c.strip() for c in df.columns]
+
+        # Normalize to lowercase first, then alias to canonical names
+        df.columns = [c.lower().strip() for c in df.columns]
+        # Column alias map — handles both title-case export and lowercase Zerodha CSV
+        _COL = {
+            'trade_type': 'action',    # Zerodha: trade_type = buy/sell
+            'quantity':   'qty',       # Zerodha: quantity
+            'order_execution_time': 'exec_time',
+            'trade_id':   'trade_id',
+        }
+        df.rename(columns=_COL, inplace=True)
+
+        required = {'symbol', 'trade_date', 'action', 'qty', 'price'}
+        missing  = required - set(df.columns)
+        if missing:
+            return jsonify({'error': f'Missing columns: {", ".join(missing)}', 'columns_found': list(df.columns)}), 400
+
+        conn     = get_db()
+        inserted = skipped = dupes = 0
+        errors   = []
+        preview  = []
+        affected_symbols = set()
+
+        for i, row in df.iterrows():
+            try:
+                symbol    = str(row.get('symbol','') or '').strip().upper()
+                isin      = str(row.get('isin','')   or '').strip()
+                action    = str(row.get('action','') or '').strip().upper()
+                qty       = float(row.get('qty',0)   or 0)
+                price     = float(row.get('price',0) or 0)
+                # Prefer trade_id (unique per fill) over order_id for dedup
+                trade_id  = str(row.get('trade_id','') or '').strip()
+                order_id  = str(row.get('order_id','') or '').strip()
+                dedup_key = trade_id or order_id   # trade_id is per-fill; order_id may be shared
+                exchange  = str(row.get('exchange','NSE') or 'NSE').strip()
+
+                raw_date   = str(row.get('trade_date','') or '').strip()
+                trade_date = _normalise_date(raw_date)
+
+                if not symbol or qty <= 0 or action not in ('BUY','SELL'):
+                    skipped += 1; continue
+
+                # Duplicate guard using trade_id (unique per fill) to avoid skipping partial fills
+                if dedup_key:
+                    dup = conn.execute(
+                        "SELECT id FROM stock_transactions WHERE zerodha_order_id=? AND symbol=?",
+                        (dedup_key, symbol)
+                    ).fetchone()
+                    if dup:
+                        dupes += 1; continue
+
+                charges = _zerodha_charges(action, qty, price)
+                net_amt = round(qty * price, 2)
+                if action == 'BUY':
+                    net_amt_signed = -(net_amt + charges['total'])
+                else:
+                    net_amt_signed = net_amt - charges['total']
+
+                # Insert stock_transaction
+                cur = conn.execute("""
+                    INSERT INTO stock_transactions
+                        (trade_date, symbol, isin, action, qty, price, trade_type,
+                         exchange, stt, other_charges, total_charges, net_amount, zerodha_order_id)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+                """, (trade_date, symbol, isin, action, qty, price, trade_type,
+                      exchange, charges['stt'],
+                      charges['exchange'] + charges['gst'] + charges['sebi'] + charges['stamp'],
+                      charges['total'], net_amt_signed, dedup_key))
+                txn_id = cur.lastrowid
+
+                if action == 'BUY':
+                    # Create FIFO lot
+                    conn.execute("""
+                        INSERT INTO stock_holdings
+                            (symbol, isin, trade_type, buy_date, qty_original, qty_remaining, buy_price)
+                        VALUES (?,?,?,?,?,?,?)
+                    """, (symbol, isin, trade_type, trade_date, qty, qty, price))
+                    # Mirror into invest_transactions for Asset07
+                    conn.execute("""
+                        INSERT INTO invest_transactions (entry_date, stock_name, asset_type, action, quantity, price, invested_value)
+                        VALUES (?,?,?,?,?,?,?)
+                    """, (trade_date, symbol, 'Stock', 'BUY', qty, price, round(qty*price,2)))
+                    affected_symbols.add(symbol)
+                    # Deduct from wallet
+                    conn.execute(
+                        "INSERT INTO demat_wallet (txn_date, type, amount, note, ref_txn_id) VALUES (?,?,?,?,?)",
+                        (trade_date, 'BUY', net_amt, f'BUY {qty} {symbol} @ {price}', txn_id)
+                    )
+                    if charges['total'] > 0:
+                        conn.execute(
+                            "INSERT INTO demat_wallet (txn_date, type, amount, note, ref_txn_id) VALUES (?,?,?,?,?)",
+                            (trade_date, 'CHARGE', charges['total'], f'Charges {symbol} {trade_date}', txn_id)
+                        )
+                else:  # SELL
+                    # Mirror into invest_transactions for Asset07
+                    conn.execute("""
+                        INSERT INTO invest_transactions (entry_date, stock_name, asset_type, action, quantity, price, invested_value)
+                        VALUES (?,?,?,?,?,?,?)
+                    """, (trade_date, symbol, 'Stock', 'SELL', qty, price, round(qty*price,2)))
+                    affected_symbols.add(symbol)
+                    consumed, unfilled = _fifo_sell(conn, symbol, trade_type, qty, price, trade_date, txn_id)
+                    lot_ids = [c['lot_id'] for c in consumed]
+                    conn.execute("UPDATE stock_transactions SET lot_ids_affected=? WHERE id=?",
+                                 (_json.dumps(lot_ids), txn_id))
+
+                    # Write P&L records
+                    for c in consumed:
+                        net_pnl = round(c['gross_pnl'] - (charges['total'] * c['qty'] / qty), 2)
+                        conn.execute("""
+                            INSERT INTO stock_pnl
+                                (sell_txn_id, symbol, sell_date, trade_type, qty_sold,
+                                 avg_buy_price, sell_price, gross_pnl, charges, net_pnl,
+                                 holding_days, tax_category)
+                            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                        """, (txn_id, symbol, trade_date, trade_type, c['qty'],
+                              c['buy_price'], price, c['gross_pnl'],
+                              round(charges['total'] * c['qty'] / qty, 2),
+                              net_pnl, c['holding_days'], c['tax_category']))
+
+                    # Add proceeds to wallet
+                    proceeds = round(net_amt - charges['total'], 2)
+                    conn.execute(
+                        "INSERT INTO demat_wallet (txn_date, type, amount, note, ref_txn_id) VALUES (?,?,?,?,?)",
+                        (trade_date, 'SELL', proceeds, f'SELL {qty} {symbol} @ {price}', txn_id)
+                    )
+                    if unfilled > 0:
+                        errors.append(f'Row {i+2}: {symbol} — sold {unfilled} more shares than available lots ({trade_type})')
+
+                inserted += 1
+                if len(preview) < 20:
+                    preview.append({
+                        'symbol': symbol, 'action': action, 'qty': qty, 'price': price,
+                        'trade_date': trade_date, 'trade_type': trade_type,
+                        'charges': charges['total']
+                    })
+            except Exception as e:
+                errors.append(f'Row {i+2}: {e}')
+
+        conn.commit()
+        # Sync all holdings → Wealth Engine
+        _sync_demat_to_wealth(conn)
+        balance = _demat_wallet_balance(conn)
+        conn.close()
+        return jsonify({
+            'success': True, 'inserted': inserted, 'skipped': skipped,
+            'duplicates': dupes, 'errors': errors[:20],
+            'wallet_balance': balance, 'preview': preview
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        try: os.unlink(tmp.name)
+        except: pass
+
+
+@app.route('/api/demat/corporate_action', methods=['POST'])
+def api_demat_corporate_action():
+    """Handle SPLIT or BONUS for a symbol."""
+    d      = request.get_json(force=True)
+    symbol = (d.get('symbol') or '').strip().upper()
+    action = (d.get('action') or '').upper()  # SPLIT or BONUS
+    conn   = get_db()
+    try:
+        if action == 'SPLIT':
+            ratio = float(d.get('ratio') or 1)  # e.g. 2 means 2-for-1 split
+            if ratio <= 0:
+                return jsonify({'error': 'ratio must be > 0'}), 400
+            lots = conn.execute(
+                "SELECT id, qty_remaining, buy_price FROM stock_holdings WHERE UPPER(symbol)=? AND qty_remaining>0",
+                (symbol,)
+            ).fetchall()
+            for lot in lots:
+                new_qty   = round(lot['qty_remaining'] * ratio, 6)
+                new_price = round(lot['buy_price'] / ratio, 4)
+                conn.execute("UPDATE stock_holdings SET qty_remaining=?, buy_price=? WHERE id=?",
+                             (new_qty, new_price, lot['id']))
+            # Also update qty_original proportionally
+            conn.execute("""
+                UPDATE stock_holdings SET qty_original = qty_original * ?
+                WHERE UPPER(symbol)=?
+            """, (ratio, symbol))
+            conn.execute("""
+                INSERT INTO stock_transactions (trade_date, symbol, action, qty, price, trade_type, lot_source)
+                VALUES (?,?,'SPLIT',?,?,?,?)
+            """, (d.get('date') or datetime.now().strftime('%Y-%m-%d'), symbol, ratio, 0, 'NA', 'CORPORATE'))
+            conn.commit()
+            return jsonify({'success': True, 'lots_updated': len(lots)})
+
+        elif action == 'BONUS':
+            trade_type = (d.get('trade_type') or 'LONG').upper()
+            qty        = float(d.get('qty') or 0)
+            bonus_date = (d.get('date') or datetime.now().strftime('%Y-%m-%d'))[:10]
+            if qty <= 0:
+                return jsonify({'error': 'qty must be > 0'}), 400
+            conn.execute("""
+                INSERT INTO stock_holdings (symbol, trade_type, buy_date, qty_original, qty_remaining, buy_price, lot_source)
+                VALUES (?,?,?,?,?,0,'BONUS')
+            """, (symbol, trade_type, bonus_date, qty, qty))
+            conn.execute("""
+                INSERT INTO stock_transactions (trade_date, symbol, action, qty, price, trade_type, lot_source)
+                VALUES (?,?,'BONUS',?,0,?,'CORPORATE')
+            """, (bonus_date, symbol, qty, trade_type))
+            conn.commit()
+            return jsonify({'success': True})
+
+        else:
+            return jsonify({'error': 'action must be SPLIT or BONUS'}), 400
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+
+@app.route('/api/demat/dividends')
+def api_demat_dividends_list():
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT id, symbol, date, per_share, total_amount FROM stock_dividends ORDER BY date DESC LIMIT 100"
+    ).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/api/demat/dividend', methods=['POST'])
+def api_demat_dividend_add():
+    """Record a dividend: adds to demat_wallet (DIVIDEND) + transactions (income)."""
+    d      = request.get_json(force=True)
+    symbol = (d.get('symbol') or '').strip().upper()
+    total  = float(d.get('total_amount') or 0)
+    pps    = float(d.get('per_share')    or 0)
+    date   = (d.get('date') or datetime.now().strftime('%Y-%m-%d'))[:10]
+    if not symbol or total <= 0:
+        return jsonify({'error': 'symbol and total_amount required'}), 400
+    conn = get_db()
+    try:
+        # Record in dividend log
+        conn.execute(
+            "INSERT INTO stock_dividends (symbol, date, per_share, total_amount) VALUES (?,?,?,?)",
+            (symbol, date, pps, total)
+        )
+        # Add to demat wallet (increases cash balance)
+        conn.execute(
+            "INSERT INTO demat_wallet (txn_date, type, amount, note) VALUES (?,?,?,?)",
+            (date, 'DIVIDEND', total, f'Dividend from {symbol}')
+        )
+        # Mirror to transactions as income (Investment Return)
+        conn.execute(
+            "INSERT INTO transactions (type, category, sub_category, amount, date, note) VALUES (?,?,?,?,?,?)",
+            ('income', 'Investment Return', 'Dividend', total, date, f'Dividend from {symbol}')
+        )
+        conn.commit()
+        balance = _demat_wallet_balance(conn)
+        conn.close()
+        return jsonify({'success': True, 'balance': balance})
+    except Exception as e:
+        conn.rollback(); conn.close()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/demat/update_price', methods=['POST'])
+def api_demat_update_price():
+    """Manually update current price for a symbol in nse_master (used for portfolio valuation)."""
+    d      = request.get_json(force=True)
+    symbol = (d.get('symbol') or '').strip().upper()
+    price  = float(d.get('price') or 0)
+    if not symbol or price <= 0:
+        return jsonify({'error': 'symbol and price required'}), 400
+    conn = get_db()
+    existing = conn.execute("SELECT symbol FROM nse_master WHERE UPPER(symbol)=?", (symbol,)).fetchone()
+    if existing:
+        conn.execute("UPDATE nse_master SET ltp=?, updated_at=datetime('now') WHERE UPPER(symbol)=?",
+                     (price, symbol))
+    else:
+        conn.execute("INSERT INTO nse_master (symbol, ltp, company_name) VALUES (?,?,?)",
+                     (symbol, price, symbol))
+    conn.commit(); conn.close()
+    return jsonify({'success': True})
 
 
 if __name__ == '__main__':

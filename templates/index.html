@@ -570,6 +570,34 @@ tr:hover td{background:var(--surface2)}
 .invtx-tbl-toggle:hover{background:var(--surface2)}
 .invtx-tbl-toggle span:first-child{font-size:13px;font-weight:700;color:var(--text)}
 .invtx-card-active{box-shadow:0 0 0 2.5px var(--accent) !important}
+/* — Demat Portfolio — */
+.trading-tab{background:none;border:none;border-bottom:2.5px solid transparent;padding:10px 20px;font-size:13px;font-weight:700;color:var(--muted2);cursor:pointer;transition:color .15s,border-color .15s;font-family:'Plus Jakarta Sans',sans-serif}
+.trading-tab.active{color:var(--mod-p,#8b5cf6);border-bottom-color:var(--mod-p,#8b5cf6)}
+.demat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;display:flex;flex-direction:column;gap:4px}
+.demat-card .dc-label{font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px}
+.demat-card .dc-value{font-size:20px;font-weight:800;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text)}
+.demat-card .dc-sub{font-size:11px;color:var(--muted2)}
+.demat-badge-long{background:rgba(16,185,129,.14);color:#10b981;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.4px}
+.demat-badge-swing{background:rgba(245,158,11,.14);color:#f59e0b;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.4px}
+.demat-onboard-card{background:linear-gradient(135deg,rgba(139,92,246,.1),rgba(245,158,11,.07));border:1.5px dashed var(--mod-p,#8b5cf6);border-radius:var(--r);padding:28px 24px}
+.demat-upload-drop{border:2px dashed var(--border);border-radius:var(--r);padding:24px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+.demat-upload-drop:hover,.demat-upload-drop.drag-over{border-color:var(--mod-p,#8b5cf6);background:var(--mod-bg,rgba(139,92,246,.06))}
+.demat-toggle{display:flex;background:var(--surface2);border-radius:8px;padding:3px;gap:3px}
+.demat-toggle button{flex:1;padding:6px 14px;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s,color .15s;background:none;color:var(--muted2);font-family:'Plus Jakarta Sans',sans-serif}
+.demat-toggle button.active{background:var(--mod-p,#8b5cf6);color:#fff}
+.demat-tbl th{font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;padding:10px 12px;text-align:right;background:var(--surface2)}
+.demat-tbl th:first-child{text-align:left}
+.demat-tbl td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;text-align:right;color:var(--text)}
+.demat-tbl td:first-child{text-align:left;font-weight:700}
+.demat-tbl tr:last-child td{border-bottom:none}
+.demat-tbl tr:hover td{background:var(--surface2)}
+.dc-pos{color:#10b981;font-weight:700}
+.dc-neg{color:#f43f5e;font-weight:700}
+.demat-collapse-wrap{border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.demat-collapse-hdr{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;cursor:pointer;background:var(--surface);user-select:none;transition:background .12s}
+.demat-collapse-hdr:hover{background:var(--surface2)}
+.demat-collapse-chv{color:var(--muted2);font-size:14px;transition:transform .2s;flex-shrink:0}
+.demat-collapse-body{padding:16px 18px;background:var(--surface);border-top:1px solid var(--border)}
 /* — Loans → Violet + Rose — */
 #page-loans{
   --mod-p:#8b5cf6;--mod-d:rgba(139,92,246,.14);--mod-bg:rgba(139,92,246,.06);
@@ -874,6 +902,7 @@ tr:hover td{background:var(--surface2)}
   border-radius:16px;padding:18px;cursor:pointer;
   transition:all .22s ease;position:relative;overflow:hidden;
   box-shadow:0 4px 18px rgba(0,0,0,.22);
+  color:#fff !important;
 }
 .wce-cat-card:hover{
   transform:translateY(-4px);
@@ -3348,75 +3377,440 @@ html:not([data-theme="dark"]) tr:hover td { background:rgba(99,102,241,.04) !imp
   <div class="header">
     <div>
       <div class="page-title">Trading Strategy</div>
-      <div class="page-sub">GTT buy/sell targets · SIP-level entry points · 52-week analysis</div>
+      <div class="page-sub">GTT signals · Demat portfolio · Swing P&amp;L</div>
     </div>
     <div class="header-actions">
-      <button class="btn btn-ghost btn-sm" onclick="loadTradingStrategy()">🔄 Refresh</button>
-      <button class="btn btn-primary btn-sm" onclick="syncNSEThenStrategy()">⚡ Sync NSE + Refresh</button>
+      <button class="btn btn-ghost btn-sm" id="tradingRefreshBtn" onclick="onTradingRefresh()">🔄 Refresh</button>
+      <button class="btn btn-primary btn-sm" id="tradingSyncBtn" onclick="onTradingSync()">⚡ Sync Prices</button>
+      <button class="btn btn-sm" id="dematWealthSyncBtn" style="display:none;background:#8b5cf622;color:#8b5cf6;border:1px solid #8b5cf644" onclick="syncDematToWealth()">📊 Sync to Wealth</button>
     </div>
   </div>
 
-  <!-- ── Global Config Panel ────────────────────────────────────────────── -->
-  <div class="table-card" style="margin-bottom:18px;padding:18px 22px">
-    <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
-      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--mod-p,#6366f1);min-width:140px">
-        ⚙️ Strategy Settings
+  <!-- Tab bar -->
+  <div style="display:flex;border-bottom:2px solid var(--border);margin-bottom:18px">
+    <button id="tradingTab-demat" class="trading-tab active" onclick="switchTradingTab('demat')">💼 Demat Portfolio</button>
+    <button id="tradingTab-gtt"   class="trading-tab"        onclick="switchTradingTab('gtt')">📊 GTT Strategy</button>
+  </div>
+
+  <!-- ══ GTT Strategy panel (existing) ══ -->
+  <div id="tradingPanel-gtt" style="display:none">
+    <!-- ── Global Config Panel ──────────────────────────────────────────── -->
+    <div class="table-card" style="margin-bottom:18px;padding:18px 22px">
+      <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--mod-p,#6366f1);min-width:140px">
+          ⚙️ Strategy Settings
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <label style="font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px">Max Allocation (₹)</label>
+          <input id="tsMaxAlloc" type="number" min="1000" step="1000" value="50000"
+            style="width:110px;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;outline:none"
+            onchange="renderTradingTable()" />
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <label style="font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px">SIP Level %</label>
+          <input id="tsSipPct" type="number" min="1" max="30" step="1" value="10"
+            style="width:72px;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;outline:none"
+            onchange="renderTradingTable()" />
+          <span style="font-size:12px;color:var(--muted2)">%</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted2);flex:1">
+          <span id="tsLegend" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center"></span>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <label style="font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px">Max Allocation (₹)</label>
-        <input id="tsMaxAlloc" type="number" min="1000" step="1000" value="50000"
-          style="width:110px;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;outline:none"
-          onchange="renderTradingTable()" />
+    </div>
+    <div id="tsSummaryStrip" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px"></div>
+    <div class="table-card" style="padding:0;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px">
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700">📊 GTT Signal Table</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input id="tsSymbolFilter" type="text" placeholder="🔍 Filter symbol…" oninput="tsApplyFilter()"
+            style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;outline:none;width:160px"/>
+          <div style="font-size:11px;color:var(--muted2)" id="tsLastSync">—</div>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <label style="font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px">SIP Level %</label>
-        <input id="tsSipPct" type="number" min="1" max="30" step="1" value="10"
-          style="width:72px;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;outline:none"
-          onchange="renderTradingTable()" />
-        <span style="font-size:12px;color:var(--muted2)">%</span>
+      <div class="table-wrap" id="tsTblWrap" style="overflow-x:auto">
+        <div class="empty" id="tsEmpty" style="padding:40px"><div class="empty-icon">📈</div><p>Loading trading data…</p></div>
       </div>
-      <div style="font-size:11px;color:var(--muted2);flex:1">
-        <span id="tsLegend" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center"></span>
+    </div>
+    <div style="margin-top:14px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
+      <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.ts-formula-arrow').style.transform=this.nextElementSibling.style.display==='block'?'rotate(90deg)':'rotate(0deg)'"
+           style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;background:var(--surface);cursor:pointer;user-select:none">
+        <strong style="color:var(--text);font-size:12px">📐 Formula Reference</strong>
+        <span class="ts-formula-arrow" style="color:var(--muted2);font-size:13px;transition:transform .2s">▶</span>
+      </div>
+      <div style="display:none;padding:12px 18px;background:var(--surface);font-size:11px;color:var(--muted2);line-height:2;border-top:1px solid var(--border)">
+        <b>Level 1</b> = 52W High × (1 − SIP%) &nbsp;·&nbsp;
+        <b>Level 2</b> = 52W High × (1 − 2×SIP%) &nbsp;·&nbsp;
+        <b>Level 3</b> = 52W High × (1 − 3×SIP%)<br>
+        <b>Buy GTT</b>: If AvailableQuota &gt; LTP → check last-buy vs levels → suggest next entry price &amp; qty<br>
+        <b>Available Quota</b> = MaxAllocation − Invested Value &nbsp;·&nbsp;
+        <b>Sell GTT</b> = AvgPrice × (1 + Target%) — configurable per asset on Live Market page &nbsp;·&nbsp;
+        <b>Stop Loss</b> = AvgPrice × 0.85<br>
+        <b>Book Profit</b>: shown when actual P&amp;L% ≥ Target% for that stock
+      </div>
+    </div>
+  </div><!-- /tradingPanel-gtt -->
+
+  <!-- ══ Demat Portfolio panel ══ -->
+  <div id="tradingPanel-demat" style="display:none">
+
+    <!-- Onboarding wizard — collapsed by default, always accessible -->
+    <div id="dematOnboardCard" style="display:none;margin-bottom:20px;border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden">
+      <!-- Collapsed header (always visible when card is shown) -->
+      <div id="obHeader" onclick="toggleOnboardBody()"
+           style="display:flex;align-items:center;justify-content:space-between;padding:13px 18px;cursor:pointer;background:linear-gradient(90deg,rgba(139,92,246,.12),rgba(245,158,11,.07));user-select:none">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:18px">🚀</span>
+          <div>
+            <div style="font-size:13px;font-weight:800;color:var(--mod-p,#8b5cf6)">Set up Demat Portfolio</div>
+            <div style="font-size:11px;color:var(--muted2)">One-time setup — seed existing holdings &amp; demat wallet balance</div>
+          </div>
+        </div>
+        <span id="obChevron" style="color:var(--muted2);font-size:14px;transition:transform .2s">▸</span>
+      </div>
+      <!-- Expanded body — collapsed by default -->
+      <div id="obBody" style="display:none;padding:18px 20px;background:var(--surface)">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Historical Capital Invested (₹)</label>
+            <input id="obCapital" type="number" min="0" placeholder="e.g. 500000"
+              style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;outline:none;box-sizing:border-box"/>
+            <div style="font-size:10px;color:var(--muted2);margin-top:3px">Total ever transferred to Zerodha</div>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Current Demat Cash (₹)</label>
+            <input id="obCash" type="number" min="0" placeholder="e.g. 12000"
+              style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;outline:none;box-sizing:border-box"/>
+            <div style="font-size:10px;color:var(--muted2);margin-top:3px">Cash sitting in Zerodha today</div>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Onboarding Date</label>
+            <input id="obDate" type="date"
+              style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;outline:none;box-sizing:border-box"/>
+          </div>
+        </div>
+
+        <!-- Holdings: Manual + CSV upload tabs -->
+        <div style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <span style="font-size:12px;font-weight:700;color:var(--text)">Existing Holdings <span style="color:var(--muted2);font-weight:500">(optional)</span></span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <!-- Input method toggle -->
+              <div class="demat-toggle">
+                <button id="obModeManual" class="active" onclick="setObMode('manual')">✏️ Manual</button>
+                <button id="obModeCsv"    onclick="setObMode('csv')">📄 CSV Upload</button>
+              </div>
+              <button id="obAddRowBtn" class="btn btn-ghost btn-sm" onclick="obAddRow()">+ Add Row</button>
+            </div>
+          </div>
+
+          <!-- Manual entry table -->
+          <div id="obManualSection">
+            <div style="overflow-x:auto">
+              <table style="width:100%;border-collapse:collapse;min-width:580px">
+                <thead><tr style="background:var(--surface2)">
+                  <th style="padding:8px 10px;font-size:11px;font-weight:700;color:var(--muted2);text-align:left;border-radius:6px 0 0 0">Symbol</th>
+                  <th style="padding:8px 10px;font-size:11px;font-weight:700;color:var(--muted2);text-align:left">Type</th>
+                  <th style="padding:8px 10px;font-size:11px;font-weight:700;color:var(--muted2);text-align:right">Qty</th>
+                  <th style="padding:8px 10px;font-size:11px;font-weight:700;color:var(--muted2);text-align:right">Avg Price</th>
+                  <th style="padding:8px 10px;font-size:11px;font-weight:700;color:var(--muted2);text-align:center">Buy Date</th>
+                  <th style="padding:8px 10px;font-size:11px;font-weight:700;color:var(--muted2);border-radius:0 6px 0 0"></th>
+                </tr></thead>
+                <tbody id="obHoldingsTbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- CSV upload section -->
+          <div id="obCsvSection" style="display:none">
+            <div style="font-size:11px;color:var(--muted2);margin-bottom:8px">
+              CSV columns: <code style="background:var(--surface2);padding:1px 6px;border-radius:4px;font-size:10px">symbol, trade_type, qty, avg_price, buy_date</code>
+              &nbsp;·&nbsp;
+              <a href="#" onclick="downloadObSampleCsv();return false" style="color:var(--mod-p,#8b5cf6);font-size:11px;font-weight:600">⬇ Download sample</a>
+            </div>
+            <div class="demat-upload-drop" id="obCsvDrop" onclick="document.getElementById('obCsvFileInput').click()" style="padding:18px">
+              <div style="font-size:22px;margin-bottom:4px">📂</div>
+              <div style="font-size:12px;font-weight:700;color:var(--text)">Click to select holdings CSV</div>
+              <div style="font-size:11px;color:var(--muted2);margin-top:3px" id="obCsvFileName">holdings.csv</div>
+            </div>
+            <input id="obCsvFileInput" type="file" accept=".csv" style="display:none" onchange="onObCsvSelect(this)"/>
+            <div id="obCsvPreview" style="display:none;margin-top:10px;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+              <table class="demat-tbl" style="width:100%;border-collapse:collapse;font-size:11px" id="obCsvPreviewTbl"></table>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="btn btn-primary" onclick="submitOnboarding()">✅ Complete Setup</button>
+          <div id="obResult" style="font-size:12px;color:var(--muted2)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary cards -->
+    <div id="dematSummaryStrip" style="margin-bottom:20px"></div>
+
+    <!-- Realized P&L table (above holdings) -->
+    <div class="table-card" style="padding:0;overflow:hidden;margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px">
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700">💰 Realized P&amp;L</div>
+        <div class="demat-toggle">
+          <button id="pnlFilterAll"   class="active" onclick="dematFilterPnl('')">All</button>
+          <button id="pnlFilterSwing" onclick="dematFilterPnl('SWING')">Swing</button>
+          <button id="pnlFilterLong"  onclick="dematFilterPnl('LONG')">Long</button>
+        </div>
+      </div>
+      <div class="table-wrap" style="overflow-x:auto">
+        <table class="demat-tbl" style="width:100%;border-collapse:collapse">
+          <thead><tr>
+            <th style="text-align:left">Symbol</th>
+            <th>Type</th>
+            <th>Sell Date</th>
+            <th>Qty</th>
+            <th>Buy Price</th>
+            <th>Sell Price</th>
+            <th>Gross P&amp;L</th>
+            <th>Charges</th>
+            <th>Net P&amp;L</th>
+            <th>Days</th>
+            <th>Tax</th>
+          </tr></thead>
+          <tbody id="dematPnlTbody"><tr><td colspan="11" style="text-align:center;padding:24px;color:var(--muted2)">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Holdings table -->
+    <div class="table-card" style="padding:0;overflow:hidden;margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px">
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700">📦 Holdings</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <input type="text" placeholder="Search symbol…" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:12px;width:140px"
+            oninput="_dematHoldingSearch=this.value;renderDematHoldings()">
+          <div class="demat-toggle">
+            <button id="dhFilterAll"   class="active" onclick="dematFilterHoldings('ALL')">All</button>
+            <button id="dhFilterLong"  onclick="dematFilterHoldings('LONG')">Long</button>
+            <button id="dhFilterSwing" onclick="dematFilterHoldings('SWING')">Swing</button>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="openDematPriceModal()">✏️ Update Price</button>
+        </div>
+      </div>
+      <div class="table-wrap" style="overflow-x:auto">
+        <table id="dematHoldingsTable" class="demat-tbl" style="width:100%;border-collapse:collapse">
+          <thead><tr>
+            <th data-sort="symbol" style="text-align:left;cursor:pointer" onclick="dematSortHoldings('symbol')">Symbol<span class="sort-ind"> ⇅</span></th>
+            <th>Type</th>
+            <th data-sort="total_qty" style="cursor:pointer" onclick="dematSortHoldings('total_qty')">Qty<span class="sort-ind"> ⇅</span></th>
+            <th data-sort="avg_price" style="cursor:pointer" onclick="dematSortHoldings('avg_price')">Avg Cost<span class="sort-ind"> ⇅</span></th>
+            <th data-sort="current_price" style="cursor:pointer" onclick="dematSortHoldings('current_price')">LTP<span class="sort-ind"> ⇅</span></th>
+            <th data-sort="total_invested" style="cursor:pointer" onclick="dematSortHoldings('total_invested')">Invested<span class="sort-ind"> ⇅</span></th>
+            <th data-sort="current_value" style="cursor:pointer" onclick="dematSortHoldings('current_value')">Value<span class="sort-ind"> ⇅</span></th>
+            <th data-sort="unrealized_pnl" style="cursor:pointer" onclick="dematSortHoldings('unrealized_pnl')">P&amp;L<span class="sort-ind"> ⇅</span></th>
+            <th data-sort="pnl_pct" style="cursor:pointer" onclick="dematSortHoldings('pnl_pct')">P&amp;L %<span class="sort-ind"> ⇅</span></th>
+            <th>Tax</th>
+          </tr></thead>
+          <tbody id="dematHoldingsTbody"><tr><td colspan="10" style="text-align:center;padding:24px;color:var(--muted2)">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Collapsible action panels ─────────────────────────────────────── -->
+
+    <!-- Tradebook Upload (collapsed) -->
+    <div class="demat-collapse-wrap" style="margin-bottom:10px">
+      <div class="demat-collapse-hdr" onclick="dematToggle('tbPanel')">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:16px">📤</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text)">Upload Zerodha Tradebook</div>
+            <div style="font-size:11px;color:var(--muted2)">Import buy/sell trades from Zerodha CSV · FIFO engine auto-runs</div>
+          </div>
+        </div>
+        <span class="demat-collapse-chv" id="tbPanelChv">▸</span>
+      </div>
+      <div id="tbPanel" class="demat-collapse-body" style="display:none">
+        <div style="margin-bottom:12px">
+          <label style="font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Trade Type for this file</label>
+          <div class="demat-toggle" style="max-width:220px">
+            <button id="tbToggleLong"  class="active" onclick="setTbTradeType('LONG')">📈 Long Term</button>
+            <button id="tbToggleSwing" onclick="setTbTradeType('SWING')">🔄 Swing Trade</button>
+          </div>
+        </div>
+        <div class="demat-upload-drop" id="tbDropZone" onclick="document.getElementById('tbFileInput').click()">
+          <div style="font-size:28px;margin-bottom:6px">📂</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text)">Click to select Zerodha Tradebook CSV</div>
+          <div style="font-size:11px;color:var(--muted2);margin-top:4px" id="tbFileName">tradebook.csv</div>
+        </div>
+        <input id="tbFileInput" type="file" accept=".csv" style="display:none" onchange="onTbFileSelect(this)"/>
+        <div id="tbPreviewWrap" style="display:none;margin-top:12px">
+          <div style="font-size:11px;color:var(--muted2);margin-bottom:6px" id="tbPreviewLabel"></div>
+          <div style="overflow-x:auto;max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+            <table class="demat-tbl" style="width:100%;border-collapse:collapse;font-size:11px" id="tbPreviewTbl"></table>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn btn-primary btn-sm" id="tbCommitBtn" style="display:none" onclick="commitTradebook()">✅ Done</button>
+          <button class="btn btn-ghost btn-sm" id="tbCancelBtn" style="display:none" onclick="resetTbUpload()">Cancel</button>
+          <button class="btn btn-sm" style="background:#f43f5e22;color:#f43f5e;border:1px solid #f43f5e44" onclick="resetTradebookData()">🗑 Clear & Re-import</button>
+        </div>
+        <div id="tbResult" style="margin-top:8px;font-size:12px"></div>
+      </div>
+    </div>
+
+    <!-- Demat Wallet (collapsed) -->
+    <div class="demat-collapse-wrap" style="margin-bottom:10px">
+      <div class="demat-collapse-hdr" onclick="dematToggle('walletPanel')">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:16px">🏦</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text)">Update Demat Wallet</div>
+            <div style="font-size:11px;color:var(--muted2)">Record Zerodha Pay-in (deposit) or Pay-out (withdrawal) &nbsp;·&nbsp; Balance: <span id="dematWalletBal" style="color:#10b981;font-weight:700">₹0</span></div>
+          </div>
+        </div>
+        <span class="demat-collapse-chv" id="walletPanelChv">▸</span>
+      </div>
+      <div id="walletPanel" class="demat-collapse-body" style="display:none">
+        <div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:10px;align-items:end;margin-bottom:12px">
+          <div class="demat-toggle">
+            <button id="wTypeDeposit" class="active" onclick="setWalletType('DEPOSIT')">Pay-in</button>
+            <button id="wTypeWithdraw" onclick="setWalletType('WITHDRAW')">Pay-out</button>
+          </div>
+          <input id="wAmt" type="number" min="0" placeholder="Amount ₹"
+            style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;outline:none"/>
+          <input id="wDate" type="date"
+            style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;outline:none"/>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="submitWalletEntry()">Add Entry</button>
+        <div style="margin-top:14px;max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+          <table style="width:100%;border-collapse:collapse;font-size:11px">
+            <thead><tr style="background:var(--surface2);position:sticky;top:0">
+              <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--muted2)">Date</th>
+              <th style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted2)">Type</th>
+              <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--muted2)">Amount</th>
+              <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--muted2)">Note</th>
+            </tr></thead>
+            <tbody id="walletLedgerTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dividend (collapsed) -->
+    <div class="demat-collapse-wrap" style="margin-bottom:10px">
+      <div class="demat-collapse-hdr" onclick="dematToggle('divPanel')">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:16px">💵</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text)">Record Dividend</div>
+            <div style="font-size:11px;color:var(--muted2)">Log dividend received — credited to wallet + income ledger</div>
+          </div>
+        </div>
+        <span class="demat-collapse-chv" id="divPanelChv">▸</span>
+      </div>
+      <div id="divPanel" class="demat-collapse-body" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;align-items:end;margin-bottom:12px">
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Symbol</label>
+            <input id="divSymbol" type="text" placeholder="e.g. BSE"
+              style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;outline:none;text-transform:uppercase;box-sizing:border-box"/>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Dividend / Share (₹)</label>
+            <input id="divPerShare" type="number" min="0" step="0.01" placeholder="e.g. 5.00"
+              style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;outline:none;box-sizing:border-box"/>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Total Received (₹)</label>
+            <input id="divTotal" type="number" min="0" placeholder="Auto-calc or override"
+              style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;outline:none;box-sizing:border-box"/>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Date</label>
+            <input id="divDate" type="date"
+              style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;outline:none;box-sizing:border-box"/>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--muted2);margin-bottom:10px" id="divCalcHint"></div>
+        <button class="btn btn-primary btn-sm" onclick="submitDividend()">Record Dividend</button>
+        <div id="divResult" style="margin-top:8px;font-size:12px;color:var(--muted2)"></div>
+        <!-- Dividend history -->
+        <div style="margin-top:14px;max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+          <table style="width:100%;border-collapse:collapse;font-size:11px">
+            <thead><tr style="background:var(--surface2);position:sticky;top:0">
+              <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--muted2)">Date</th>
+              <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--muted2)">Symbol</th>
+              <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--muted2)">Per Share</th>
+              <th style="padding:6px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--muted2)">Total</th>
+            </tr></thead>
+            <tbody id="divHistoryTbody"><tr><td colspan="4" style="text-align:center;padding:12px;color:var(--muted2)">No dividends recorded</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Corporate Action (collapsed) -->
+    <div class="demat-collapse-wrap" style="margin-bottom:10px">
+      <div class="demat-collapse-hdr" onclick="dematToggle('caPanel')">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:16px">🔀</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text)">Corporate Action</div>
+            <div style="font-size:11px;color:var(--muted2)">Stock split or bonus shares — adjusts FIFO lots automatically</div>
+          </div>
+        </div>
+        <span class="demat-collapse-chv" id="caPanelChv">▸</span>
+      </div>
+      <div id="caPanel" class="demat-collapse-body" style="display:none">
+        <div style="display:grid;gap:10px">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <div class="demat-toggle">
+              <button id="caTypeSplit" class="active" onclick="setCaType('SPLIT')">Split</button>
+              <button id="caTypeBonus" onclick="setCaType('BONUS')">Bonus</button>
+            </div>
+            <input id="caSymbol" type="text" placeholder="Symbol (e.g. BSE)"
+              style="flex:1;min-width:120px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;outline:none;text-transform:uppercase"/>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap" id="caSplitRow">
+            <input id="caRatio" type="number" min="0.1" step="0.1" placeholder="Split ratio (e.g. 2 for 2:1)"
+              style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;outline:none"/>
+            <input id="caDate" type="date"
+              style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;outline:none"/>
+          </div>
+          <div style="display:none;gap:10px;flex-wrap:wrap" id="caBonusRow">
+            <div class="demat-toggle">
+              <button id="caBonusLong"  class="active" onclick="setCaBonusType('LONG')">Long</button>
+              <button id="caBonusSwing" onclick="setCaBonusType('SWING')">Swing</button>
+            </div>
+            <input id="caBonusQty" type="number" min="1" placeholder="Bonus qty received"
+              style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;outline:none"/>
+            <input id="caBonusDate" type="date"
+              style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;outline:none"/>
+          </div>
+          <div>
+            <button class="btn btn-primary btn-sm" onclick="submitCorporateAction()">Apply</button>
+          </div>
+          <div id="caResult" style="font-size:12px;color:var(--muted2)"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /tradingPanel-demat -->
+
+  <!-- Update Price Modal -->
+  <div id="dematPriceModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:none;align-items:center;justify-content:center">
+    <div style="background:var(--surface);border-radius:var(--r);padding:24px;min-width:300px;box-shadow:0 8px 32px rgba(0,0,0,.3)">
+      <div style="font-size:14px;font-weight:700;margin-bottom:14px">✏️ Update Current Price</div>
+      <input id="priceSymbol" type="text" placeholder="Symbol (e.g. BSE)"
+        style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;outline:none;box-sizing:border-box;margin-bottom:8px;text-transform:uppercase"/>
+      <input id="priceValue" type="number" min="0" placeholder="Current Price ₹"
+        style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;outline:none;box-sizing:border-box;margin-bottom:12px"/>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm" onclick="submitPriceUpdate()">Update</button>
+        <button class="btn btn-ghost btn-sm" onclick="closeDematPriceModal()">Cancel</button>
       </div>
     </div>
   </div>
 
-  <!-- ── Summary strip ──────────────────────────────────────────────────── -->
-  <div id="tsSummaryStrip" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px"></div>
-
-  <!-- ── Main Table ─────────────────────────────────────────────────────── -->
-  <div class="table-card" style="padding:0;overflow:hidden">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px">
-      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700">📊 GTT Signal Table</div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <input id="tsSymbolFilter" type="text" placeholder="🔍 Filter symbol…" oninput="tsApplyFilter()"
-          style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;outline:none;width:160px"/>
-        <div style="font-size:11px;color:var(--muted2)" id="tsLastSync">—</div>
-      </div>
-    </div>
-    <div class="table-wrap" id="tsTblWrap" style="overflow-x:auto">
-      <div class="empty" id="tsEmpty" style="padding:40px"><div class="empty-icon">📈</div><p>Loading trading data…</p></div>
-    </div>
-  </div>
-
-  <!-- ── Formula Legend (collapsible) ──────────────────────────────────── -->
-  <div style="margin-top:14px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
-    <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.ts-formula-arrow').style.transform=this.nextElementSibling.style.display==='block'?'rotate(90deg)':'rotate(0deg)'"
-         style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;background:var(--surface);cursor:pointer;user-select:none">
-      <strong style="color:var(--text);font-size:12px">📐 Formula Reference</strong>
-      <span class="ts-formula-arrow" style="color:var(--muted2);font-size:13px;transition:transform .2s">▶</span>
-    </div>
-    <div style="display:none;padding:12px 18px;background:var(--surface);font-size:11px;color:var(--muted2);line-height:2;border-top:1px solid var(--border)">
-      <b>Level 1</b> = 52W High × (1 − SIP%) &nbsp;·&nbsp;
-      <b>Level 2</b> = 52W High × (1 − 2×SIP%) &nbsp;·&nbsp;
-      <b>Level 3</b> = 52W High × (1 − 3×SIP%)<br>
-      <b>Buy GTT</b>: If AvailableQuota &gt; LTP → check last-buy vs levels → suggest next entry price &amp; qty<br>
-      <b>Available Quota</b> = MaxAllocation − Invested Value &nbsp;·&nbsp;
-      <b>Sell GTT</b> = AvgPrice × (1 + Target%) — configurable per asset on Live Market page &nbsp;·&nbsp;
-      <b>Stop Loss</b> = AvgPrice × 0.85<br>
-      <b>Book Profit</b>: shown when actual P&amp;L% ≥ Target% for that stock
-    </div>
-  </div>
 </div>
 
 <!-- ════════════ ALERTS ════════════ -->
@@ -4326,7 +4720,7 @@ function showPage(name, el) {
   if (name === 'help')          loadHelpDocs();
   if (name === 'nse')           loadNSE();
   if (name === 'invtx')         loadInvTx();
-  if (name === 'trading')       loadTradingStrategy();
+  if (name === 'trading')       { switchTradingTab('demat'); }
   if (name === 'wce')           loadWCE();
   if (name === 'detail')        loadDetailPage();
 }
@@ -4341,11 +4735,11 @@ const _UNIVERSE_TABS = [
 ];
 // Wealth Engine sub-tabs config
 const _WCE_TABS = [
-  { name:'wce',       label:'💎 Overview',    color:'#f59e0b' },
-  { name:'portfolio', label:'📈 Portfolio',   color:'#6366f1' },
-  { name:'nse',       label:'📡 Live Market', color:'#14b8a6' },
-  { name:'invtx',     label:'💼 Investments', color:'#10b981' },
-  { name:'trading',   label:'🎯 Trading',     color:'#8b5cf6' },
+  { name:'wce',       label:'💎 Portfolio',         color:'#f59e0b' },
+  { name:'portfolio', label:'📈 Dashboard',          color:'#6366f1' },
+  { name:'trading',   label:'📊 Stock Desk',         color:'#8b5cf6' },
+  { name:'nse',       label:'📡 Live Market',        color:'#14b8a6' },
+  { name:'invtx',     label:'💼 Investment Trends',  color:'#10b981' },
 ];
 // Money Tracker sub-tabs config  (Loans before Transactions per UX request)
 const _MONEY_TABS = [
@@ -7618,7 +8012,7 @@ async function loadLoans() {
         ${next ? `<div style="text-align:right;min-width:140px">
           <div style="font-size:9px;font-weight:700;color:var(--invest);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">🏁 Next to Close</div>
           <div style="font-size:13px;font-weight:800;color:var(--text)">${next.name}</div>
-          <div style="font-size:11px;color:var(--muted2);margin-top:2px">₹${fmt(next.balance)} remaining</div>
+          <div style="font-size:11px;color:var(--muted2);margin-top:2px">${fmt(next.balance)} remaining</div>
           <div style="font-size:11px;color:var(--invest)">~${fmt(next.expected_emi)}/mo EMI</div>
         </div>` : ''}
       </div>
@@ -8301,6 +8695,694 @@ let _tsFilter     = '';   // symbol filter text
 let _tsCardFilter = '';   // '' | 'buy' | 'sell' | 'stoploss'
 const TS_PAGE_SIZE = 5;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// TRADING PAGE — TAB SWITCH
+// ─────────────────────────────────────────────────────────────────────────────
+let _activeTradingTab = 'demat';
+
+function switchTradingTab(tab) {
+  _activeTradingTab = tab;
+  document.querySelectorAll('.trading-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById(`tradingTab-${tab}`)?.classList.add('active');
+  document.getElementById('tradingPanel-gtt').style.display   = tab === 'gtt'   ? '' : 'none';
+  document.getElementById('tradingPanel-demat').style.display = tab === 'demat' ? '' : 'none';
+
+  const refreshBtn   = document.getElementById('tradingRefreshBtn');
+  const syncBtn      = document.getElementById('tradingSyncBtn');
+  const wealthSyncBtn= document.getElementById('dematWealthSyncBtn');
+  if (tab === 'gtt') {
+    refreshBtn.textContent = '🔄 Refresh';
+    syncBtn.textContent    = '⚡ Sync NSE';
+    if (wealthSyncBtn) wealthSyncBtn.style.display = 'none';
+  } else {
+    refreshBtn.textContent = '🔄 Refresh';
+    syncBtn.textContent    = '⚡ Sync Prices';
+    if (wealthSyncBtn) wealthSyncBtn.style.display = '';
+    loadDematPortfolio();
+  }
+}
+
+function onTradingRefresh() {
+  if (_activeTradingTab === 'gtt') loadTradingStrategy();
+  else loadDematPortfolio();
+}
+async function syncDematToWealth() {
+  const btn = document.getElementById('dematWealthSyncBtn');
+  btn.disabled = true; btn.textContent = '⏳ Syncing…';
+  try {
+    const r = await fetch('/api/demat/sync_to_wealth', {method:'POST'}).then(r=>r.json());
+    if (r.error) { toast(r.error, 'error'); }
+    else { toast(`Synced ${r.synced_symbols} stocks to Wealth Engine`, 'success'); }
+  } catch(e) { toast(e.message, 'error'); }
+  btn.disabled = false; btn.textContent = '📊 Sync to Wealth';
+}
+async function onTradingSync() {
+  if (_activeTradingTab === 'gtt') { syncNSEThenStrategy(); return; }
+  const btn = document.getElementById('tradingSyncBtn');
+  btn.disabled = true; btn.textContent = '⏳ Syncing…';
+  try {
+    const r = await fetch('/api/demat/sync_prices', {method:'POST'});
+    const j = await r.json();
+    if (j.failed && j.failed.length) console.warn('LTP fetch failed for:', j.failed.join(', '));
+  } catch(_) {}
+  btn.disabled = false; btn.textContent = '⚡ Sync Prices';
+  await loadDematPortfolio();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEMAT PORTFOLIO — STATE
+// ─────────────────────────────────────────────────────────────────────────────
+let _dematHoldings     = [];
+let _dematPnl          = [];
+let _dematHoldingFilter= 'ALL';
+let _dematHoldingSearch= '';
+let _dematHoldingSort  = {col:'symbol', dir:1};
+let _dematPnlFilter    = '';
+let _tbTradeType       = 'LONG';
+let _tbFile            = null;
+let _tbPreviewData     = null;
+let _caType            = 'SPLIT';
+let _caBonusType       = 'LONG';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEMAT PORTFOLIO — LOAD
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadDematPortfolio() {
+  // Seed date inputs to today if empty
+  const today = new Date().toISOString().slice(0,10);
+  ['wDate','caDate','caBonusDate','divDate'].forEach(id => { const el = document.getElementById(id); if (el && !el.value) el.value = today; });
+  try {
+    const [statusRes, summRes, holdRes, pnlRes, walletRes] = await Promise.all([
+      fetch('/api/demat/onboarding_status').then(r => r.json()),
+      fetch('/api/demat/portfolio_summary').then(r => r.json()),
+      fetch('/api/demat/holdings').then(r => r.json()),
+      fetch('/api/demat/pnl').then(r => r.json()),
+      fetch('/api/demat/wallet').then(r => r.json()),
+    ]);
+
+    // Onboarding section: always show as collapsed header; auto-expand only if not yet onboarded
+    const ob = document.getElementById('dematOnboardCard');
+    ob.style.display = '';  // always visible
+    const dt = document.getElementById('obDate');
+    if (dt && !dt.value) dt.value = new Date().toISOString().slice(0,10);
+    if (!statusRes.onboarded) {
+      // Auto-expand on first visit
+      const obBody = document.getElementById('obBody');
+      const chevron = document.getElementById('obChevron');
+      if (obBody && obBody.style.display === 'none') {
+        obBody.style.display = '';
+        if (chevron) chevron.style.transform = 'rotate(90deg)';
+      }
+      if (!document.querySelector('#obHoldingsTbody tr')) obAddRow();
+      // Update header to reflect pending state
+      ob.style.borderColor = 'rgba(139,92,246,.5)';
+    } else {
+      ob.style.borderColor = '';
+    }
+
+    _dematHoldings = holdRes;
+    _dematPnl      = pnlRes;
+
+    renderDematSummaryCards(summRes);
+    renderDematHoldings();
+    renderDematPnl();
+    renderWalletLedger(walletRes);
+    document.getElementById('dematWalletBal').textContent = '₹' + fmt(walletRes.balance || 0);
+    loadDividendHistory();
+  } catch(e) {
+    toast('Could not load demat portfolio: ' + e.message, 'error');
+  }
+}
+
+function _dematCard(grad, icon, label, val, sub, pnl=false, extra='') {
+  const sign = pnl ? (val >= 0 ? '+' : '-') : '';
+  const valHtml = `${sign}${fmt(Math.abs(val))}`;
+  return `<div style="background:${grad};border-radius:16px;padding:18px 20px;min-width:0;position:relative;overflow:hidden">
+    <div style="position:absolute;right:14px;top:14px;font-size:26px;opacity:.25">${icon}</div>
+    <div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:8px">${label}</div>
+    <div style="font-size:${Math.abs(val)>=10000000?'20px':'22px'};font-weight:800;color:#fff;margin-bottom:4px">${valHtml}</div>
+    <div style="font-size:11px;color:rgba(255,255,255,.65)">${sub}</div>
+    ${extra ? `<div style="font-size:11px;color:rgba(255,255,255,.8);margin-top:6px;font-weight:600">${extra}</div>` : ''}
+  </div>`;
+}
+function renderDematSummaryCards(s) {
+  const strip = document.getElementById('dematSummaryStrip');
+  if (!strip) return;
+
+  const longTotal  = (s.long_realized||0)  + (s.long_unrealized||0);
+  const swingTotal = (s.swing_realized||0) + (s.swing_unrealized||0);
+
+  // Row 1: 4 overview cards
+  const row1 = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
+    ${_dematCard('linear-gradient(135deg,#6366f1,#8b5cf6)', '💰', 'Invested Capital',   s.invested_capital,  'Total transferred to Zerodha')}
+    ${_dematCard('linear-gradient(135deg,#0ea5e9,#06b6d4)', '🏦', 'Available Demat Cash', s.cash_balance,    'Uninvested wallet balance')}
+    ${_dematCard('linear-gradient(135deg,#f59e0b,#f97316)', '📊', 'Portfolio Value',    s.current_portfolio, 'Cash + Market value')}
+    ${_dematCard('linear-gradient(135deg,#10b981,#059669)', '📦', 'Holdings Value',      s.holdings_value,   'Current market value of stocks',false,
+      s.holdings_value>0 ? (s.unrealized_pnl>=0?'▲ ':'▼ ')+fmt(Math.abs(s.unrealized_pnl))+' unrealized' : '')}
+  </div>`;
+
+  // Row 2: Long Term (4 cards)
+  const longPnlGrad  = s.long_unrealized>=0  ? 'linear-gradient(135deg,#10b981,#14b8a6)' : 'linear-gradient(135deg,#f43f5e,#e11d48)';
+  const longRealGrad = s.long_realized>=0    ? 'linear-gradient(135deg,#8b5cf6,#6366f1)' : 'linear-gradient(135deg,#f97316,#ef4444)';
+  const row2 = `<div style="margin-bottom:6px">
+    <div style="font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted2);margin-bottom:8px;padding-left:4px">📗 Long Term Portfolio</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+      ${_dematCard('linear-gradient(135deg,#1e3a5f,#1e40af)', '📈', 'LT Invested',       s.long_invested||0,  'Cost basis of long-term lots')}
+      ${_dematCard('linear-gradient(135deg,#0f4c75,#1565c0)', '💹', 'LT Current Value',  s.long_current||0,   'Market value of long holdings')}
+      ${_dematCard(longPnlGrad, '📊', 'LT Unrealized P&L', s.long_unrealized||0,
+          (s.long_unrealized_pct||0).toFixed(2)+'% return on cost', true,
+          (s.long_unrealized||0)>=0 ? '▲ Gain' : '▼ Loss')}
+      ${_dematCard(longRealGrad, '🏆', 'LT Realized P&L',  s.long_realized||0,    'Closed long-term trades', true)}
+    </div>
+  </div>`;
+
+  // Row 3: Swing Trade (4 cards)
+  const swingPnlGrad  = s.swing_unrealized>=0 ? 'linear-gradient(135deg,#10b981,#14b8a6)' : 'linear-gradient(135deg,#f43f5e,#e11d48)';
+  const swingRealGrad = s.swing_realized>=0   ? 'linear-gradient(135deg,#d946ef,#8b5cf6)' : 'linear-gradient(135deg,#f97316,#ef4444)';
+  const row3 = `<div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted2);margin-bottom:8px;padding-left:4px">🔄 Swing Trade Portfolio</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+      ${_dematCard('linear-gradient(135deg,#3b1f6e,#6d28d9)', '📉', 'Swing Invested',    s.swing_invested||0, 'Cost basis of swing lots')}
+      ${_dematCard('linear-gradient(135deg,#4c1d95,#7c3aed)', '💱', 'Swing Current',     s.swing_current||0,  'Market value of swing holdings')}
+      ${_dematCard(swingPnlGrad, '⚡', 'Swing Unrealized',  s.swing_unrealized||0,
+          (s.swing_unrealized_pct||0).toFixed(2)+'% return on cost', true,
+          (s.swing_unrealized||0)>=0 ? '▲ Gain' : '▼ Loss')}
+      ${_dematCard(swingRealGrad, '🎯', 'Swing Realized P&L', s.swing_realized||0,  'Closed swing trades', true)}
+    </div>
+  </div>`;
+
+  strip.innerHTML = row1 + row2 + '<div style="height:12px"></div>' + row3;
+}
+
+function dematSortHoldings(col) {
+  if (_dematHoldingSort.col === col) _dematHoldingSort.dir *= -1;
+  else { _dematHoldingSort.col = col; _dematHoldingSort.dir = 1; }
+  renderDematHoldings();
+}
+function renderDematHoldings() {
+  const tbody = document.getElementById('dematHoldingsTbody');
+  if (!tbody) return;
+  const search = (_dematHoldingSearch || '').toLowerCase();
+  let rows = _dematHoldings.filter(h =>
+    (_dematHoldingFilter === 'ALL' || h.trade_type === _dematHoldingFilter) &&
+    (!search || h.symbol.toLowerCase().includes(search) || (h.company_name||'').toLowerCase().includes(search))
+  );
+  // Sort
+  const {col, dir} = _dematHoldingSort;
+  const numCols = ['total_qty','avg_price','current_price','total_invested','current_value','unrealized_pnl','pnl_pct'];
+  rows = rows.slice().sort((a,b) => {
+    let va = a[col], vb = b[col];
+    if (numCols.includes(col)) { va = parseFloat(va)||0; vb = parseFloat(vb)||0; }
+    else { va = (va||'').toString().toLowerCase(); vb = (vb||'').toString().toLowerCase(); }
+    return va < vb ? -dir : va > vb ? dir : 0;
+  });
+  // Update sort indicators
+  document.querySelectorAll('#dematHoldingsTable th[data-sort]').forEach(th => {
+    const s = th.dataset.sort;
+    th.style.color = s === col ? 'var(--accent)' : '';
+    const ind = th.querySelector('.sort-ind');
+    if (ind) ind.textContent = s === col ? (dir === 1 ? ' ▲' : ' ▼') : ' ⇅';
+  });
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--muted2)">No holdings found</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(h => {
+    const pnlCls = h.unrealized_pnl >= 0 ? 'dc-pos' : 'dc-neg';
+    const badge  = h.trade_type === 'LONG' ? `<span class="demat-badge-long">LONG</span>` : `<span class="demat-badge-swing">SWING</span>`;
+    const tax = h.lots?.some(l => {
+      try { return (new Date() - new Date(l.buy_date)) / 86400000 >= 365; } catch { return false; }
+    }) ? '<span style="color:#f59e0b;font-size:10px;font-weight:700">LTCG</span>' : '<span style="color:#6366f1;font-size:10px;font-weight:700">STCG</span>';
+    return `<tr>
+      <td><div style="font-weight:700">${h.symbol}</div><div style="font-size:10px;color:var(--muted2)">${h.company_name||''}</div></td>
+      <td style="text-align:center">${badge}</td>
+      <td>${h.total_qty}</td>
+      <td>${fmt(h.avg_price)}</td>
+      <td>${h.current_price > 0 ? '₹'+fmt(h.current_price) : '<span style="color:var(--muted2)">—</span>'}</td>
+      <td>${fmt(h.total_invested)}</td>
+      <td>${h.current_price > 0 ? '₹'+fmt(h.current_value) : '—'}</td>
+      <td class="${pnlCls}">${h.current_price > 0 ? (h.unrealized_pnl>=0?'+':'')+'₹'+fmt(h.unrealized_pnl) : '—'}</td>
+      <td class="${pnlCls}">${h.current_price > 0 ? (h.pnl_pct>=0?'+':'')+h.pnl_pct.toFixed(2)+'%' : '—'}</td>
+      <td>${tax}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderDematPnl() {
+  const tbody = document.getElementById('dematPnlTbody');
+  if (!tbody) return;
+  const rows = _dematPnl.filter(r => !_dematPnlFilter || r.trade_type === _dematPnlFilter);
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--muted2)">No realized P&L records</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(r => {
+    const pnlCls  = r.net_pnl >= 0 ? 'dc-pos' : 'dc-neg';
+    const badge   = r.trade_type === 'LONG' ? `<span class="demat-badge-long">LONG</span>` : `<span class="demat-badge-swing">SWING</span>`;
+    const taxBadge= r.tax_category === 'LTCG'
+      ? '<span style="color:#f59e0b;font-size:10px;font-weight:700">LTCG</span>'
+      : '<span style="color:#6366f1;font-size:10px;font-weight:700">STCG</span>';
+    return `<tr>
+      <td>${r.symbol}</td>
+      <td style="text-align:center">${badge}</td>
+      <td>${r.sell_date}</td>
+      <td>${r.qty_sold}</td>
+      <td>${fmt(r.avg_buy_price)}</td>
+      <td>${fmt(r.sell_price)}</td>
+      <td class="${r.gross_pnl>=0?'dc-pos':'dc-neg'}">${r.gross_pnl>=0?'+':''}${fmt(Math.abs(r.gross_pnl))}</td>
+      <td style="color:var(--muted2)">${fmt(r.charges)}</td>
+      <td class="${pnlCls}">${r.net_pnl>=0?'+':''}${fmt(Math.abs(r.net_pnl))}</td>
+      <td>${r.holding_days}d</td>
+      <td>${taxBadge}</td>
+    </tr>`;
+  }).join('');
+}
+
+// Generic collapse toggle for demat panels
+function dematToggle(panelId) {
+  const body    = document.getElementById(panelId);
+  const chevron = document.getElementById(panelId + 'Chv');
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : '';
+  if (chevron) chevron.style.transform = open ? '' : 'rotate(90deg)';
+}
+
+function renderWalletLedger(walletData) {
+  const tbody = document.getElementById('walletLedgerTbody');
+  if (!tbody) return;
+  if (!walletData.entries?.length) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--muted2);padding:12px">No entries yet</td></tr>`;
+    return;
+  }
+  const typeColors = { DEPOSIT:'#10b981', WITHDRAW:'#f43f5e', BUY:'#f59e0b', SELL:'#6366f1', CHARGE:'#94a3b8', DIVIDEND:'#8b5cf6' };
+  tbody.innerHTML = walletData.entries.map(e => `
+    <tr>
+      <td style="padding:5px 10px;color:var(--muted2)">${e.txn_date}</td>
+      <td style="padding:5px 10px;font-weight:700;color:${typeColors[e.type]||'var(--text)'}">${e.type}</td>
+      <td style="padding:5px 10px;text-align:right;color:var(--text)">${fmt(e.amount)}</td>
+      <td style="padding:5px 10px;color:var(--muted2);font-size:10px">${e.note||''}</td>
+    </tr>`).join('');
+}
+
+function dematFilterHoldings(f) {
+  _dematHoldingFilter = f;
+  ['ALL','LONG','SWING'].forEach(v => {
+    document.getElementById(`dhFilter${v==='ALL'?'All':v[0]+v.slice(1).toLowerCase()}`)?.classList.toggle('active', v===f);
+  });
+  renderDematHoldings();
+}
+
+function dematFilterPnl(f) {
+  _dematPnlFilter = f;
+  document.getElementById('pnlFilterAll')?.classList.toggle('active', f==='');
+  document.getElementById('pnlFilterSwing')?.classList.toggle('active', f==='SWING');
+  document.getElementById('pnlFilterLong')?.classList.toggle('active', f==='LONG');
+  renderDematPnl();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ONBOARDING — COLLAPSE / CSV MODE
+// ─────────────────────────────────────────────────────────────────────────────
+function toggleOnboardBody() {
+  const body    = document.getElementById('obBody');
+  const chevron = document.getElementById('obChevron');
+  const open    = body.style.display !== 'none';
+  body.style.display    = open ? 'none' : '';
+  chevron.style.transform = open ? '' : 'rotate(90deg)';
+}
+
+let _obMode = 'manual';
+let _obCsvRows = [];
+
+function setObMode(mode) {
+  _obMode = mode;
+  document.getElementById('obModeManual')?.classList.toggle('active', mode === 'manual');
+  document.getElementById('obModeCsv')?.classList.toggle('active',    mode === 'csv');
+  document.getElementById('obManualSection').style.display = mode === 'manual' ? '' : 'none';
+  document.getElementById('obCsvSection').style.display    = mode === 'csv'    ? '' : 'none';
+  document.getElementById('obAddRowBtn').style.display     = mode === 'manual' ? '' : 'none';
+}
+
+function downloadObSampleCsv() {
+  const csv = 'symbol,trade_type,qty,avg_price,buy_date\nBSE,LONG,100,2800.00,2024-01-15\nRELIANCE,LONG,50,2400.00,2023-06-01\nINFY,SWING,30,1600.00,2025-03-10\n';
+  const a   = document.createElement('a');
+  a.href    = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download= 'holdings_seed_sample.csv';
+  a.click();
+}
+
+function onObCsvSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('obCsvFileName').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.trim().split('\n');
+    if (!lines.length) return;
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    _obCsvRows = [];
+    for (let i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      const vals = lines[i].split(',').map(v => v.trim());
+      const row  = {};
+      headers.forEach((h, idx) => row[h] = vals[idx] || '');
+      if (row.symbol) _obCsvRows.push(row);
+    }
+    // Render preview table
+    const preview = document.getElementById('obCsvPreview');
+    const tbl     = document.getElementById('obCsvPreviewTbl');
+    preview.style.display = '';
+    tbl.innerHTML = `
+      <thead><tr style="background:var(--surface2)">
+        <th style="padding:6px 10px;text-align:left;font-size:11px;color:var(--muted2)">Symbol</th>
+        <th style="padding:6px 10px;font-size:11px;color:var(--muted2)">Type</th>
+        <th style="padding:6px 10px;text-align:right;font-size:11px;color:var(--muted2)">Qty</th>
+        <th style="padding:6px 10px;text-align:right;font-size:11px;color:var(--muted2)">Avg Price</th>
+        <th style="padding:6px 10px;font-size:11px;color:var(--muted2)">Buy Date</th>
+      </tr></thead>
+      <tbody>${_obCsvRows.map(r => `<tr>
+        <td style="padding:5px 10px;font-size:12px;font-weight:700">${r.symbol||''}</td>
+        <td style="padding:5px 10px;text-align:center">${(r.trade_type||'LONG')==='LONG'?'<span class="demat-badge-long">LONG</span>':'<span class="demat-badge-swing">SWING</span>'}</td>
+        <td style="padding:5px 10px;text-align:right;font-size:12px">${r.qty||''}</td>
+        <td style="padding:5px 10px;text-align:right;font-size:12px">${fmt(parseFloat(r.avg_price)||0)}</td>
+        <td style="padding:5px 10px;font-size:12px">${r.buy_date||''}</td>
+      </tr>`).join('')}</tbody>`;
+    toast(`${_obCsvRows.length} holdings loaded from CSV`, 'success');
+  };
+  reader.readAsText(file);
+}
+
+function obAddRow() {
+  const tbody = document.getElementById('obHoldingsTbody');
+  const idx   = tbody.querySelectorAll('tr').length;
+  const today = new Date().toISOString().slice(0,10);
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td style="padding:4px 6px"><input type="text" placeholder="BSE" style="width:80px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;text-transform:uppercase" class="ob-sym"/></td>
+    <td style="padding:4px 6px">
+      <select style="padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px" class="ob-type">
+        <option value="LONG">Long</option>
+        <option value="SWING">Swing</option>
+      </select>
+    </td>
+    <td style="padding:4px 6px"><input type="number" min="0" placeholder="100" style="width:70px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px" class="ob-qty"/></td>
+    <td style="padding:4px 6px"><input type="number" min="0" placeholder="2800" style="width:90px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px" class="ob-price"/></td>
+    <td style="padding:4px 6px"><input type="date" value="${today}" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px" class="ob-date"/></td>
+    <td style="padding:4px 6px"><button onclick="this.closest('tr').remove()" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:16px">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+
+async function submitOnboarding() {
+  const capital = parseFloat(document.getElementById('obCapital').value) || 0;
+  const cash    = parseFloat(document.getElementById('obCash').value) || 0;
+  const date    = document.getElementById('obDate').value;
+  const holdings = [];
+
+  if (_obMode === 'csv') {
+    // Use CSV-parsed rows
+    if (!_obCsvRows.length) { toast('No CSV rows loaded. Upload a file first.', 'error'); return; }
+    _obCsvRows.forEach(r => {
+      const sym   = (r.symbol || '').trim().toUpperCase();
+      const type  = ((r.trade_type || 'LONG')).toUpperCase();
+      const qty   = parseFloat(r.qty) || 0;
+      const price = parseFloat(r.avg_price) || 0;
+      const bdate = (r.buy_date || date || new Date().toISOString().slice(0,10)).slice(0,10);
+      if (sym && qty > 0) holdings.push({ symbol: sym, trade_type: type, qty, avg_price: price, buy_date: bdate });
+    });
+  } else {
+    // Read manual table rows
+    document.querySelectorAll('#obHoldingsTbody tr').forEach(tr => {
+      const sym   = tr.querySelector('.ob-sym')?.value.trim().toUpperCase();
+      const type  = tr.querySelector('.ob-type')?.value || 'LONG';
+      const qty   = parseFloat(tr.querySelector('.ob-qty')?.value) || 0;
+      const price = parseFloat(tr.querySelector('.ob-price')?.value) || 0;
+      const bdate = tr.querySelector('.ob-date')?.value || date;
+      if (sym && qty > 0) holdings.push({ symbol: sym, trade_type: type, qty, avg_price: price, buy_date: bdate });
+    });
+  }
+
+  const resultEl = document.getElementById('obResult');
+  resultEl.textContent = 'Saving…';
+  try {
+    const r = await fetch('/api/demat/onboard', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ invested_capital: capital, wallet_balance: cash, onboard_date: date, holdings })
+    }).then(r => r.json());
+    if (r.error) { resultEl.textContent = r.error; toast(r.error, 'error'); return; }
+    resultEl.textContent = `✅ ${holdings.length} holdings seeded`;
+    toast(`Demat portfolio set up! ${holdings.length} holdings imported.`, 'success');
+    loadDematPortfolio();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WALLET ENTRY
+// ─────────────────────────────────────────────────────────────────────────────
+let _walletEntryType = 'DEPOSIT';
+function setWalletType(t) {
+  _walletEntryType = t;
+  document.getElementById('wTypeDeposit')?.classList.toggle('active', t==='DEPOSIT');
+  document.getElementById('wTypeWithdraw')?.classList.toggle('active', t==='WITHDRAW');
+}
+async function submitWalletEntry() {
+  const amt  = parseFloat(document.getElementById('wAmt').value) || 0;
+  const date = document.getElementById('wDate').value;
+  if (!amt || amt <= 0) { toast('Enter a valid amount', 'error'); return; }
+  try {
+    const r = await fetch('/api/demat/wallet', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ type: _walletEntryType, amount: amt, date })
+    }).then(r => r.json());
+    if (r.error) { toast(r.error, 'error'); return; }
+    document.getElementById('dematWalletBal').textContent = '₹' + fmt(r.balance);
+    document.getElementById('wAmt').value = '';
+    toast(`${_walletEntryType} of ${fmt(amt)} recorded`, 'success');
+    loadDematPortfolio();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TRADEBOOK UPLOAD
+// ─────────────────────────────────────────────────────────────────────────────
+function setTbTradeType(t) {
+  _tbTradeType = t;
+  document.getElementById('tbToggleLong')?.classList.toggle('active', t==='LONG');
+  document.getElementById('tbToggleSwing')?.classList.toggle('active', t==='SWING');
+}
+function onTbFileSelect(input) {
+  _tbFile = input.files[0];
+  if (!_tbFile) return;
+  document.getElementById('tbFileName').textContent = _tbFile.name;
+  document.getElementById('tbCommitBtn').style.display = '';
+  document.getElementById('tbCancelBtn').style.display = '';
+  previewTradebook();
+}
+async function previewTradebook() {
+  if (!_tbFile) return;
+  const fd = new FormData();
+  fd.append('file', _tbFile);
+  fd.append('trade_type', _tbTradeType);
+  try {
+    const r = await fetch('/api/demat/tradebook_upload', { method:'POST', body: fd }).then(r => r.json());
+    _tbPreviewData = r;
+    const wrap = document.getElementById('tbPreviewWrap');
+    wrap.style.display = '';
+    document.getElementById('tbPreviewLabel').textContent =
+      `Preview: ${r.inserted||0} transactions · ${r.duplicates||0} dupes skipped · Wallet: ${fmt(r.wallet_balance||0)}`;
+    const tbl = document.getElementById('tbPreviewTbl');
+    if (r.preview?.length) {
+      tbl.innerHTML = `<thead><tr style="background:var(--surface2)">
+        <th style="padding:4px 8px;text-align:left;color:var(--muted2)">Symbol</th>
+        <th style="padding:4px 8px;color:var(--muted2)">Action</th>
+        <th style="padding:4px 8px;color:var(--muted2)">Qty</th>
+        <th style="padding:4px 8px;color:var(--muted2)">Price</th>
+        <th style="padding:4px 8px;color:var(--muted2)">Date</th>
+        <th style="padding:4px 8px;color:var(--muted2)">Type</th>
+        <th style="padding:4px 8px;color:var(--muted2)">Charges</th>
+      </tr></thead>
+      <tbody>${r.preview.map(p => `<tr>
+        <td style="padding:4px 8px;font-weight:700">${p.symbol}</td>
+        <td style="padding:4px 8px;text-align:center;color:${p.action==='BUY'?'#10b981':'#f43f5e'}">${p.action}</td>
+        <td style="padding:4px 8px;text-align:right">${p.qty}</td>
+        <td style="padding:4px 8px;text-align:right">${fmt(p.price)}</td>
+        <td style="padding:4px 8px">${p.trade_date}</td>
+        <td style="padding:4px 8px;text-align:center">${p.trade_type==='LONG'?'<span class="demat-badge-long">LONG</span>':'<span class="demat-badge-swing">SWING</span>'}</td>
+        <td style="padding:4px 8px;text-align:right;color:var(--muted2)">${fmt(p.charges)}</td>
+      </tr>`).join('')}</tbody>`;
+    }
+    if (r.error) {
+      document.getElementById('tbResult').innerHTML =
+        `<span style="color:#f43f5e">Error: ${r.error}${r.columns_found ? '<br>Columns found: '+r.columns_found.join(', ') : ''}</span>`;
+      toast('Upload failed: ' + r.error, 'error');
+      return;
+    }
+    if (r.errors?.length) {
+      document.getElementById('tbResult').innerHTML =
+        `<span style="color:#f43f5e">${r.errors.slice(0,5).join('<br>')}</span>`;
+    }
+    toast(`${r.inserted||0} transactions imported, wallet updated`, 'success');
+    loadDematPortfolio();
+  } catch(e) { toast(e.message, 'error'); }
+}
+async function commitTradebook() {
+  if (!_tbFile) return;
+  // File was already uploaded in preview; just reload to refresh UI
+  toast('Tradebook imported! Refreshing portfolio…', 'success');
+  resetTbUpload();
+  loadDematPortfolio();
+}
+async function resetTradebookData() {
+  if (!confirm('This will delete all tradebook transactions, P&L records, and trade lots.\nOnboarding holdings will be restored to original quantities.\n\nContinue?')) return;
+  try {
+    const r = await fetch('/api/demat/reset_tradebook', {method:'POST'}).then(r=>r.json());
+    if (r.error) { toast(r.error, 'error'); return; }
+    toast('Tradebook data cleared. Now re-upload your CSV.', 'success');
+    resetTbUpload();
+    loadDematPortfolio();
+  } catch(e) { toast(e.message, 'error'); }
+}
+function resetTbUpload() {
+  _tbFile = null; _tbPreviewData = null;
+  document.getElementById('tbFileInput').value = '';
+  document.getElementById('tbFileName').textContent = 'tradebook.csv';
+  document.getElementById('tbPreviewWrap').style.display = 'none';
+  document.getElementById('tbCommitBtn').style.display = 'none';
+  document.getElementById('tbCancelBtn').style.display = 'none';
+  document.getElementById('tbResult').textContent = '';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CORPORATE ACTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+function setCaType(t) {
+  _caType = t;
+  document.getElementById('caTypeSplit')?.classList.toggle('active', t==='SPLIT');
+  document.getElementById('caTypeBonus')?.classList.toggle('active', t==='BONUS');
+  document.getElementById('caSplitRow').style.display = t==='SPLIT' ? 'flex' : 'none';
+  document.getElementById('caBonusRow').style.display = t==='BONUS' ? 'flex' : 'none';
+}
+function setCaBonusType(t) {
+  _caBonusType = t;
+  document.getElementById('caBonusLong')?.classList.toggle('active', t==='LONG');
+  document.getElementById('caBonusSwing')?.classList.toggle('active', t==='SWING');
+}
+async function submitCorporateAction() {
+  const symbol = document.getElementById('caSymbol').value.trim().toUpperCase();
+  if (!symbol) { toast('Enter a symbol', 'error'); return; }
+  let payload = { symbol, action: _caType };
+  if (_caType === 'SPLIT') {
+    payload.ratio = parseFloat(document.getElementById('caRatio').value) || 2;
+    payload.date  = document.getElementById('caDate').value;
+  } else {
+    payload.qty        = parseFloat(document.getElementById('caBonusQty').value) || 0;
+    payload.trade_type = _caBonusType;
+    payload.date       = document.getElementById('caBonusDate').value;
+  }
+  try {
+    const r = await fetch('/api/demat/corporate_action', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    }).then(r => r.json());
+    if (r.error) { toast(r.error, 'error'); return; }
+    document.getElementById('caResult').textContent = _caType==='SPLIT'
+      ? `Split applied to ${r.lots_updated} lots` : 'Bonus shares added';
+    toast('Corporate action applied', 'success');
+    loadDematPortfolio();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DIVIDEND
+// ─────────────────────────────────────────────────────────────────────────────
+// Auto-calc total when per-share changes
+document.addEventListener('input', e => {
+  if (e.target.id !== 'divPerShare') return;
+  const sym = (document.getElementById('divSymbol')?.value||'').trim().toUpperCase();
+  const pps = parseFloat(e.target.value) || 0;
+  if (!pps || !sym) { document.getElementById('divCalcHint').textContent = ''; return; }
+  // Look up total qty held for this symbol
+  const total = _dematHoldings.filter(h => h.symbol === sym).reduce((s,h) => s + h.total_qty, 0);
+  if (total > 0) {
+    const calc = round2(total * pps);
+    document.getElementById('divTotal').value = calc;
+    document.getElementById('divCalcHint').textContent = `${total} shares × ₹${pps} = ${fmt(calc)}`;
+  }
+});
+
+function round2(v) { return Math.round(v * 100) / 100; }
+
+async function submitDividend() {
+  const symbol   = (document.getElementById('divSymbol').value||'').trim().toUpperCase();
+  const perShare = parseFloat(document.getElementById('divPerShare').value) || 0;
+  const total    = parseFloat(document.getElementById('divTotal').value)    || 0;
+  const date     = document.getElementById('divDate').value;
+  if (!symbol)     { toast('Enter a symbol', 'error'); return; }
+  if (total <= 0)  { toast('Enter dividend total amount', 'error'); return; }
+  const resEl = document.getElementById('divResult');
+  resEl.textContent = 'Saving…';
+  try {
+    const r = await fetch('/api/demat/dividend', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ symbol, per_share: perShare, total_amount: total, date })
+    }).then(r => r.json());
+    if (r.error) { resEl.textContent = r.error; toast(r.error,'error'); return; }
+    resEl.textContent = `✅ ${fmt(total)} dividend from ${symbol} recorded`;
+    document.getElementById('divSymbol').value   = '';
+    document.getElementById('divPerShare').value = '';
+    document.getElementById('divTotal').value    = '';
+    document.getElementById('divCalcHint').textContent = '';
+    toast(`Dividend ${fmt(total)} from ${symbol} added to wallet + income`, 'success');
+    loadDematPortfolio();
+    loadDividendHistory();
+  } catch(e) { resEl.textContent = e.message; toast(e.message,'error'); }
+}
+
+async function loadDividendHistory() {
+  try {
+    const rows = await fetch('/api/demat/dividends').then(r => r.json());
+    const tbody = document.getElementById('divHistoryTbody');
+    if (!tbody) return;
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:12px;color:var(--muted2)">No dividends recorded</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = rows.map(r => `<tr>
+      <td style="padding:5px 10px">${r.date}</td>
+      <td style="padding:5px 10px;font-weight:700">${r.symbol}</td>
+      <td style="padding:5px 10px;text-align:right">${r.per_share > 0 ? '₹'+fmt(r.per_share) : '—'}</td>
+      <td style="padding:5px 10px;text-align:right;color:#10b981;font-weight:700">${fmt(r.total_amount)}</td>
+    </tr>`).join('');
+  } catch(_) {}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRICE UPDATE MODAL
+// ─────────────────────────────────────────────────────────────────────────────
+function openDematPriceModal() {
+  document.getElementById('dematPriceModal').style.display = 'flex';
+}
+function closeDematPriceModal() {
+  document.getElementById('dematPriceModal').style.display = 'none';
+}
+async function submitPriceUpdate() {
+  const sym   = document.getElementById('priceSymbol').value.trim().toUpperCase();
+  const price = parseFloat(document.getElementById('priceValue').value) || 0;
+  if (!sym || price <= 0) { toast('Symbol and price required', 'error'); return; }
+  try {
+    const r = await fetch('/api/demat/update_price', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ symbol: sym, price })
+    }).then(r => r.json());
+    if (r.error) { toast(r.error, 'error'); return; }
+    closeDematPriceModal();
+    toast(`${sym} price updated to ${fmt(price)}`, 'success');
+    loadDematPortfolio();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ORIGINAL TRADING STRATEGY — LOAD & SYNC (wired to tab)
+// ─────────────────────────────────────────────────────────────────────────────
 async function loadTradingStrategy() {
   document.getElementById('tsTblWrap').innerHTML =
     '<div class="empty" style="padding:40px"><div class="empty-icon">⏳</div><p>Loading trading data…</p></div>';
@@ -8319,13 +9401,13 @@ async function loadTradingStrategy() {
 }
 
 async function syncNSEThenStrategy() {
-  const btn = document.querySelector('#page-trading .btn-primary');
-  const orig = btn.textContent;
-  btn.disabled = true; btn.textContent = '⏳ Syncing NSE…';
+  const btn = document.getElementById('tradingSyncBtn');
+  const orig = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Syncing NSE…'; }
   try { await fetch('/api/nse/sync', {method:'POST'}).then(r => r.json()); } catch(_) {}
-  btn.textContent = '⏳ Loading…';
+  if (btn) btn.textContent = '⏳ Loading…';
   await loadTradingStrategy();
-  btn.disabled = false; btn.textContent = orig;
+  if (btn) { btn.disabled = false; btn.textContent = orig; }
 }
 
 function tsFilterCard(type) {
@@ -8921,16 +10003,19 @@ async function loadWCE() {
   ])];
 
   _wceCats = allClasses.map(cls => {
-    const meta = WCE_CLASS_META[cls] || { icon:'📦', color:'#94a3b8', grad:'linear-gradient(135deg,#475569,#94a3b8)', configKey:null };
+    // Normalize DB class name to WCE_CLASS_META key (handles 'liquidity' → 'Liquidity' etc.)
+    const normKey = Object.keys(WCE_CLASS_META).find(k => k.toLowerCase() === cls.toLowerCase()) || cls;
+    const meta = WCE_CLASS_META[normKey] || { icon:'📦', color:'#94a3b8', grad:'linear-gradient(135deg,#475569,#94a3b8)', cardBg:'linear-gradient(145deg,#1e293b,#334155)', configKey:null };
     const dbRow = byClass[cls] || { invested_value:0, current_value:0, return_value:0, return_pct:0 };
     const rows  = typesByClass[cls] || [];
     const targetPct = allocTargets[cls] || 0;
     return {
       id:      cls.toLowerCase().replace(/\s+/g,'_'),
-      name:    cls,
+      name:    normKey,
       icon:    meta.icon,
       color:   meta.color,
       grad:    meta.grad,
+      cardBg:  meta.cardBg,
       target:  targetPct || null,
       _rows:   rows,
       _inv:    dbRow.invested_value || 0,
@@ -9258,7 +10343,7 @@ function _wceRenderCats() {
     const actPct    = cat._actPct.toFixed(1);
     const tgtPct    = cat.target || 0;
     const isActive  = _wceCatOpen === cat.id;
-    const cardBg    = (WCE_CLASS_META[cat.name] || {}).cardBg || '#f8faff';
+    const cardBg    = cat.cardBg || cat.grad || 'linear-gradient(145deg,#1e293b,#334155)';
 
     // Ring geometry — all 4 rings share same dimensions
     const R = 26, C = +(2 * Math.PI * R).toFixed(2);
@@ -10927,10 +12012,9 @@ function switchMwTab(name, btn) {
 }
 
 async function loadNSE() {
-  const [allAssets, nseAll, portTypes] = await Promise.all([
+  const [allAssets, nseAll] = await Promise.all([
     fetch('/api/wt/assets').then(r => r.json()).catch(() => []),
     fetch('/api/nse').then(r => r.json()).catch(() => []),
-    fetch('/api/portfolio/asset_types').then(r => r.json()).catch(() => []),
   ]);
   _mwAllAssets = Array.isArray(allAssets) ? allAssets : [];
   _mwNseAll    = Array.isArray(nseAll)    ? nseAll    : [];
@@ -10939,12 +12023,8 @@ async function loadNSE() {
   window._nseBySymbol = {};
   _mwNseAll.forEach(r => { if (r.symbol) window._nseBySymbol[r.symbol.toUpperCase()] = r; });
 
-  // ── Bifurcation ───────────────────────────────────────────────────────────
-  // Filter by asset_type (from InvestMapping.AssetType), NOT the asset name.
-  // Gold tab = assets whose asset_type is literally 'Gold' (SGB, Physical, Digital).
-  // Gold MF / Gold ETF appear in their respective MF / ETF tabs (not Gold tab).
+  // Keep backward-compat filter vars (used by renderMwShares etc.)
   const atl      = a => (a.asset_type  || '').toLowerCase();
-  const acl      = a => (a.asset_class || '').toLowerCase();
   const isGold   = a => atl(a) === 'gold';
   const isEtf    = a => atl(a).includes('etf')    && !isGold(a);
   const isMF     = a => atl(a).includes('mutual') && !isGold(a) && !isEtf(a);
@@ -10955,81 +12035,74 @@ async function loadNSE() {
   _mwGoldPhysAssets = _mwAllAssets.filter(isGold);
   _mwShareAssets    = _mwAllAssets.filter(isShares);
 
-  // ── Build tab bar from distinct portfolio asset_types ────────────────────
-  _buildMwTabs(portTypes);
-
-  // ── Render known tabs ─────────────────────────────────────────────────────
-  renderMwShares(_mwShareAssets);
-  renderMwETF(_mwEtfAssets);
-  renderMwMF(_mwMfAssets);
-  renderMwGold(_mwGoldPhysAssets);
-
-  // ── Render any extra (non-standard) tabs ─────────────────────────────────
-  portTypes.forEach(type => {
-    const tl = (type || '').toLowerCase();
-    if (!tl.includes('etf') && !tl.includes('mutual') && !tl.includes('gold') && !tl.includes('shares')) {
-      const extraAssets = _mwAllAssets.filter(a => (a.asset_type || '').toLowerCase() === tl);
-      _renderMwExtraPanel(type, extraAssets);
-    }
-  });
+  // ── Build tabs by asset_category ─────────────────────────────────────────
+  _buildMwTabs();
 }
 
-// ── Build tab bar dynamically ─────────────────────────────────────────────────
-// Fixed tabs (Shares, ETF, MF, Gold) appear when assets of that type exist.
-// Extra tabs come from distinct asset_type in portfolio (e.g. Fixed Return, Real State).
-function _buildMwTabs(portTypes) {
-  // ── 1. Fixed tabs: show based on actual assets present ───────────────────
-  const fixedShow = {
-    shares: _mwShareAssets.length    > 0,
-    etf:    _mwEtfAssets.length      > 0,
-    mf:     _mwMfAssets.length       > 0,
-    gold:   _mwGoldPhysAssets.length > 0,
-  };
+// ── Category icons/colors for Live Market tabs ───────────────────────────────
+const _MW_CAT_META = {
+  'equity':           { icon: '📈', color: '#6366f1' },
+  'gold':             { icon: '🥇', color: '#f59e0b' },
+  'gold/commodities': { icon: '🥇', color: '#f59e0b' },
+  'commodities':      { icon: '🪙', color: '#f59e0b' },
+  'fixed income':     { icon: '🏦', color: '#14b8a6' },
+  'real estate':      { icon: '🏠', color: '#ec4899' },
+  'emergency fund':   { icon: '🛡️', color: '#10b981' },
+  'retirement':       { icon: '🎯', color: '#8b5cf6' },
+  'insurance':        { icon: '🔒', color: '#64748b' },
+};
+
+// ── Build tab bar from distinct asset_category values ────────────────────────
+function _buildMwTabs() {
+  // Hide the old fixed tabs permanently (we replace them with category tabs)
   ['shares','etf','mf','gold'].forEach(key => {
-    const btn   = document.getElementById('mwTab-' + key);
+    const btn = document.getElementById('mwTab-' + key);
+    if (btn) btn.style.display = 'none';
     const panel = document.getElementById('mwPanel-' + key);
-    if (btn) {
-      btn.style.display = fixedShow[key] ? '' : 'none';
-      // Assign data-color so switchMwTab can style them like dynamic tabs
-      btn.dataset.color = _MW_FIXED_COLORS[key] || '#6366f1';
-      _mwApplyTabStyle(btn, false);
-    }
     if (panel) panel.style.display = 'none';
   });
 
-  // ── 2. Extra tabs: portfolio asset_types not covered by the 4 fixed ones ─
-  const isFixed = tl =>
-    tl.includes('etf') || tl.includes('mutual') || tl === 'mf' ||
-    tl.includes('gold') || tl.includes('shares') || tl.includes('equity');
-
-  // Remove previously generated extra tabs/panels
+  // Remove previously generated tabs/panels
   document.querySelectorAll('.mw-dyn-tab').forEach(el => el.remove());
   document.getElementById('mwExtraPanels').innerHTML = '';
 
+  // Collect distinct categories (preserve insertion order, filter blanks)
+  const cats = [...new Set(
+    _mwAllAssets
+      .map(a => (a.asset_category || '').trim())
+      .filter(Boolean)
+  )];
+
   const tabBar = document.getElementById('mwTabBar');
   let dynIdx = 0;
-  portTypes.forEach(type => {
-    if (isFixed((type || '').toLowerCase())) return;
-    const slug  = type.toLowerCase().replace(/\s+/g, '_');
-    const color = _MW_DYN_PALETTE[dynIdx % _MW_DYN_PALETTE.length];
+  cats.forEach(cat => {
+    const slug  = cat.toLowerCase().replace(/[\s\/]+/g, '_');
+    const meta  = _MW_CAT_META[cat.toLowerCase()] || {};
+    const color = meta.color || _MW_DYN_PALETTE[dynIdx % _MW_DYN_PALETTE.length];
+    const icon  = meta.icon  || '📦';
     dynIdx++;
-    const btn  = document.createElement('button');
-    btn.className    = 'mw-asset-tab mw-dyn-tab';
-    btn.id           = 'mwTab-x-' + slug;
-    btn.textContent  = type;
+
+    const btn = document.createElement('button');
+    btn.className     = 'mw-asset-tab mw-dyn-tab';
+    btn.id            = 'mwTab-x-' + slug;
+    btn.textContent   = icon + ' ' + cat;
     btn.dataset.color = color;
-    btn.onclick      = function() { switchMwTab('x-' + slug, this); };
-    _mwApplyTabStyle(btn, false);  // set inactive color immediately
+    btn.onclick       = function() { switchMwTab('x-' + slug, this); };
+    _mwApplyTabStyle(btn, false);
     tabBar.appendChild(btn);
 
-    const panel     = document.createElement('div');
+    const panel = document.createElement('div');
     panel.className = 'mw-tab-panel';
     panel.id        = 'mwPanel-x-' + slug;
     panel.style.display = 'none';
     document.getElementById('mwExtraPanels').appendChild(panel);
+
+    // Render assets in this category
+    const catAssets = _mwAllAssets.filter(a => (a.asset_category || '').trim() === cat);
+    _renderMwExtraPanel(cat, catAssets, slug);
   });
 
-  // ── 3. Activate first visible tab ────────────────────────────────────────
+  // Activate first tab
   const firstVisible = document.querySelector('#mwTabBar .mw-asset-tab:not([style*="display: none"]):not([style*="display:none"])');
   if (firstVisible) {
     document.querySelectorAll('.mw-asset-tab').forEach(b => { b.classList.remove('active'); _mwApplyTabStyle(b, false); });
@@ -11042,9 +12115,9 @@ function _buildMwTabs(portTypes) {
   }
 }
 
-// ── Generic renderer for non-standard asset_types (Land, Real State, etc.) ────
-function _renderMwExtraPanel(typeName, assets) {
-  const slug  = typeName.toLowerCase().replace(/\s+/g, '_');
+// ── Generic renderer for non-standard asset categories/types ──────────────────
+function _renderMwExtraPanel(typeName, assets, slugOverride) {
+  const slug  = slugOverride || typeName.toLowerCase().replace(/[\s\/]+/g, '_');
   const panel = document.getElementById('mwPanel-x-' + slug);
   if (!panel) return;
   if (!assets.length) {
@@ -11058,7 +12131,7 @@ function _renderMwExtraPanel(typeName, assets) {
 
 function _renderMwExtraPage(slug, typeName) {
   // typeName is optional — derive from slug if not passed
-  if (!typeName) typeName = slug.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  if (!typeName) typeName = slug.replace(/[_\/]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   const panel = document.getElementById('mwPanel-x-' + slug);
   if (!panel) return;
 
