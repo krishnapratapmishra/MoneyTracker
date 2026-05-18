@@ -8,16 +8,17 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 :root{
-  --bg:#f0f4ff;--surface:#ffffff;--border:#e2e8f0;
-  --text:#0f172a;--muted:#64748b;
-  --indigo:#6366f1;--indigo-dim:rgba(99,102,241,.12);
-  --red:#f43f5e;
-}
-[data-theme="dark"]{
   --bg:#0b0f1a;--surface:#131929;--border:#1e2a3a;
-  --text:#e2e8f0;--muted:#64748b;
-  --indigo:#818cf8;--indigo-dim:rgba(129,140,248,.12);
+  --text:#e2e8f0;--muted:#64748b;--muted2:#94a3b8;
+  --indigo:#6366f1;--indigo2:#818cf8;--indigo-dim:rgba(99,102,241,.15);
+  --teal:#14b8a6;--amber:#f59e0b;--emerald:#10b981;--rose:#f43f5e;
   --red:#fb7185;
+}
+[data-theme="light"]{
+  --bg:#f0f4ff;--surface:#ffffff;--border:#e2e8f0;
+  --text:#0f172a;--muted:#64748b;--muted2:#475569;
+  --indigo:#6366f1;--indigo2:#4f46e5;--indigo-dim:rgba(99,102,241,.10);
+  --red:#f43f5e;
 }
 
 body{
@@ -26,166 +27,584 @@ body{
   color:var(--text);
   min-height:100vh;
   display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:1rem;
-  position:relative;
   overflow:hidden;
 }
 
-/* subtle background glow */
-body::before{
+/* ── LEFT PANEL ─────────────────────────────────────────────────────── */
+.left-panel{
+  flex:1;
+  position:relative;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  padding:2.5rem 3rem;
+  background:linear-gradient(135deg,#0b0f1a 0%,#0f1729 40%,#0a1628 100%);
+}
+[data-theme="light"] .left-panel{
+  background:linear-gradient(135deg,#1e1b4b 0%,#312e81 40%,#1e3a5f 100%);
+}
+
+/* animated mesh background */
+.left-panel::before{
   content:'';
-  position:fixed;inset:0;
+  position:absolute;inset:0;
   background:
-    radial-gradient(ellipse 60% 50% at 30% 20%, rgba(99,102,241,.08) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 40% at 75% 75%, rgba(20,184,166,.06) 0%, transparent 70%);
+    radial-gradient(ellipse 70% 60% at 20% 30%, rgba(99,102,241,.18) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 50% at 80% 70%, rgba(20,184,166,.12) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 60% 10%, rgba(245,158,11,.08) 0%, transparent 55%);
+  animation:bgShift 12s ease-in-out infinite alternate;
+  pointer-events:none;
+}
+@keyframes bgShift{
+  0%{opacity:.7;transform:scale(1);}
+  100%{opacity:1;transform:scale(1.06);}
+}
+
+/* floating orbs */
+.orb{
+  position:absolute;border-radius:50%;filter:blur(60px);
+  animation:orbFloat linear infinite;opacity:.35;
+  pointer-events:none;
+}
+.orb1{width:280px;height:280px;background:#6366f1;top:-80px;left:-60px;animation-duration:18s;}
+.orb2{width:200px;height:200px;background:#14b8a6;bottom:60px;right:-40px;animation-duration:22s;animation-delay:-8s;}
+.orb3{width:160px;height:160px;background:#f59e0b;top:45%;left:55%;animation-duration:16s;animation-delay:-4s;}
+@keyframes orbFloat{
+  0%{transform:translate(0,0) scale(1);}
+  33%{transform:translate(18px,-22px) scale(1.05);}
+  66%{transform:translate(-14px,16px) scale(.96);}
+  100%{transform:translate(0,0) scale(1);}
+}
+
+.brand{position:relative;z-index:2;}
+.brand-icon{font-size:2.4rem;display:block;margin-bottom:.5rem;}
+.brand-name{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:1.6rem;font-weight:800;letter-spacing:-.03em;
+  color:#fff;
+}
+.brand-tagline{
+  font-size:.8rem;color:rgba(255,255,255,.5);
+  margin-top:.3rem;letter-spacing:.06em;text-transform:uppercase;
+}
+
+/* slides */
+.slides{
+  position:relative;z-index:2;
+  flex:1;display:flex;align-items:center;justify-content:center;
+}
+.slide{
+  position:absolute;width:100%;
+  opacity:0;transform:translateY(20px);
+  transition:opacity .8s ease,transform .8s ease;
+  pointer-events:none;
+}
+.slide.active{opacity:1;transform:translateY(0);pointer-events:auto;}
+
+.slide-icon{font-size:3.2rem;margin-bottom:1rem;display:block;}
+.slide-headline{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:1.6rem;font-weight:800;line-height:1.25;
+  color:#fff;margin-bottom:.75rem;
+  letter-spacing:-.02em;
+}
+.slide-headline em{
+  font-style:normal;
+  background:linear-gradient(90deg,#818cf8,#34d399);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.slide-body{
+  font-size:.9rem;color:rgba(255,255,255,.55);
+  line-height:1.7;max-width:400px;
+}
+
+/* live ticker */
+.ticker{
+  position:relative;z-index:2;
+  display:flex;gap:10px;flex-wrap:wrap;
+  padding-bottom:.5rem;
+}
+.tick-chip{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 12px;border-radius:50px;
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.1);
+  font-size:.75rem;font-weight:600;color:rgba(255,255,255,.75);
+  -webkit-backdrop-filter:blur(6px);
+  backdrop-filter:blur(6px);
+  animation:chipPulse 3s ease-in-out infinite;
+}
+.tick-chip .arrow{font-size:.8rem;}
+.tick-chip.up .arrow{color:#34d399;}
+.tick-chip.down .arrow{color:#fb7185;}
+@keyframes chipPulse{
+  0%,100%{opacity:.75;}50%{opacity:1;}
+}
+
+/* dots */
+.dot-nav{
+  position:relative;z-index:2;
+  display:flex;gap:7px;margin-top:1.5rem;
+}
+.dot{
+  width:7px;height:7px;border-radius:50%;
+  background:rgba(255,255,255,.25);
+  cursor:pointer;transition:background .3s,transform .3s;
+}
+.dot.active{background:#818cf8;transform:scale(1.3);}
+
+/* ── RIGHT PANEL ────────────────────────────────────────────────────── */
+.right-panel{
+  width:420px;min-width:320px;
+  display:flex;align-items:center;justify-content:center;
+  padding:2rem 2.5rem;
+  background:var(--surface);
+  border-left:1px solid var(--border);
+  position:relative;
+}
+.right-panel::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(99,102,241,.06),transparent 70%);
   pointer-events:none;
 }
 
-.card{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:20px;
-  padding:2.5rem 2rem;
-  width:100%;max-width:400px;
-  position:relative;
-  box-shadow:0 24px 64px rgba(0,0,0,.18);
-}
+.form-box{width:100%;position:relative;}
 
-.logo{
-  text-align:center;
-  margin-bottom:2rem;
-}
-.logo-icon{
-  font-size:2.8rem;
-  line-height:1;
-  display:block;
-  margin-bottom:.6rem;
-}
-.logo-title{
+.form-logo{text-align:center;margin-bottom:2rem;}
+.form-logo-icon{width:110px;height:110px;border-radius:50%;object-fit:cover;object-position:center 15%;display:block;margin:0 auto 1rem;box-shadow:0 0 0 4px rgba(99,102,241,.4),0 6px 28px rgba(99,102,241,.3);}
+.form-title{
   font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:1.35rem;font-weight:800;
-  letter-spacing:-.02em;
+  font-size:1.3rem;font-weight:800;letter-spacing:-.02em;
   color:var(--text);
 }
-.logo-sub{
-  font-size:.78rem;color:var(--muted);margin-top:.25rem;
-  font-weight:400;letter-spacing:.02em;text-transform:uppercase;
-}
+.form-sub{font-size:.78rem;color:var(--muted);margin-top:.25rem;}
 
-.form-group{
-  margin-bottom:1.1rem;
-}
+.form-group{margin-bottom:1.1rem;}
 label{
-  display:block;
-  font-size:.78rem;font-weight:600;
-  color:var(--muted);
-  letter-spacing:.04em;text-transform:uppercase;
+  display:block;font-size:.75rem;font-weight:600;
+  color:var(--muted);letter-spacing:.05em;text-transform:uppercase;
   margin-bottom:.4rem;
 }
 input[type="text"],input[type="password"]{
-  width:100%;
-  padding:.7rem 1rem;
-  border:1px solid var(--border);
-  border-radius:10px;
-  background:var(--bg);
-  color:var(--text);
-  font-family:'Inter',sans-serif;
-  font-size:.95rem;
-  outline:none;
-  transition:border-color .2s, box-shadow .2s;
+  width:100%;padding:.72rem 1rem;
+  border:1px solid var(--border);border-radius:10px;
+  background:var(--bg);color:var(--text);
+  font-family:'Inter',sans-serif;font-size:.95rem;
+  outline:none;transition:border-color .2s,box-shadow .2s;
 }
 input[type="text"]:focus,input[type="password"]:focus{
-  border-color:var(--indigo);
-  box-shadow:0 0 0 3px var(--indigo-dim);
+  border-color:var(--indigo);box-shadow:0 0 0 3px var(--indigo-dim);
 }
 
 .error-msg{
-  background:rgba(244,63,94,.1);
-  border:1px solid rgba(244,63,94,.3);
-  color:var(--red);
-  border-radius:8px;
-  padding:.6rem .9rem;
-  font-size:.85rem;
-  margin-bottom:1.1rem;
+  background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.3);
+  color:var(--red);border-radius:8px;
+  padding:.6rem .9rem;font-size:.83rem;margin-bottom:1rem;
   display:flex;align-items:center;gap:.5rem;
 }
 
 .btn-login{
-  width:100%;
-  padding:.8rem;
-  background:var(--indigo);
-  color:#fff;
-  border:none;
-  border-radius:10px;
+  width:100%;padding:.82rem;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  color:#fff;border:none;border-radius:10px;
   font-family:'Plus Jakarta Sans',sans-serif;
   font-size:.95rem;font-weight:700;
   cursor:pointer;
-  transition:opacity .2s, transform .1s;
+  transition:opacity .2s,transform .1s,box-shadow .2s;
+  box-shadow:0 4px 18px rgba(99,102,241,.35);
   margin-top:.4rem;
 }
-.btn-login:hover{opacity:.9;}
+.btn-login:hover{opacity:.9;box-shadow:0 6px 24px rgba(99,102,241,.5);}
 .btn-login:active{transform:scale(.98);}
 
-.footer-note{
-  text-align:center;
-  font-size:.75rem;
-  color:var(--muted);
-  margin-top:1.6rem;
-}
-
-/* password toggle */
 .input-wrap{position:relative;}
 .toggle-pw{
   position:absolute;right:.85rem;top:50%;transform:translateY(-50%);
   background:none;border:none;cursor:pointer;
-  color:var(--muted);padding:0;line-height:1;font-size:1rem;
+  color:var(--muted);padding:0;font-size:1rem;line-height:1;
+}
+
+.divider{
+  display:flex;align-items:center;gap:.75rem;
+  margin:1.4rem 0 1rem;font-size:.75rem;color:var(--muted);
+}
+.divider::before,.divider::after{
+  content:'';flex:1;height:1px;background:var(--border);
+}
+
+.stats-row{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;
+  margin-bottom:1.4rem;
+}
+.stat-chip{
+  text-align:center;padding:8px 6px;
+  border-radius:10px;border:1px solid var(--border);
+  background:var(--bg);
+}
+.stat-chip .sv{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:1rem;font-weight:700;color:var(--indigo2);
+  display:block;
+}
+.stat-chip .sl{font-size:.65rem;color:var(--muted);margin-top:2px;}
+
+.footer-note{
+  text-align:center;font-size:.72rem;color:var(--muted);
+  margin-top:1.5rem;
+}
+
+/* ── Credit banner (bottom-left of left panel) ─────────────────────── */
+.credit-banner{
+  position:relative;z-index:2;
+  display:flex;align-items:center;gap:10px;
+  padding:10px 16px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;
+  -webkit-backdrop-filter:blur(8px);
+  backdrop-filter:blur(8px);
+  overflow:hidden;
+  animation:creditSlideIn .9s cubic-bezier(.22,1,.36,1) both;
+  animation-delay:.4s;
+}
+@keyframes creditSlideIn{
+  from{opacity:0;transform:translateY(20px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+/* shimmer sweep */
+.credit-banner::after{
+  content:'';
+  position:absolute;inset:0;
+  background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.07) 50%,transparent 60%);
+  background-size:200% 100%;
+  animation:shimmer 3.5s linear infinite;
+}
+@keyframes shimmer{
+  0%{background-position:200% 0;}
+  100%{background-position:-200% 0;}
+}
+
+.credit-avatar{
+  width:42px;height:42px;border-radius:50%;flex-shrink:0;
+  overflow:hidden;
+  box-shadow:0 0 0 2px rgba(99,102,241,.4);
+  animation:avatarPulse 2.8s ease-in-out infinite;
+}
+.credit-avatar img{width:100%;height:100%;object-fit:cover;object-position:center 15%;display:block;}
+@keyframes avatarPulse{
+  0%,100%{box-shadow:0 0 0 2px rgba(99,102,241,.4);}
+  50%{box-shadow:0 0 0 5px rgba(99,102,241,.15),0 0 16px rgba(99,102,241,.3);}
+}
+
+.credit-text{flex:1;min-width:0;}
+.credit-line1{
+  font-size:.68rem;font-weight:500;
+  color:rgba(255,255,255,.45);
+  letter-spacing:.05em;text-transform:uppercase;
+  line-height:1.3;
+}
+.credit-line2{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:.88rem;font-weight:800;
+  background:linear-gradient(90deg,#c7d2fe,#a5f3fc,#bbf7d0,#fde68a,#c7d2fe);
+  background-size:300% 100%;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  animation:nameGrad 4s linear infinite;
+  white-space:nowrap;
+  letter-spacing:-.01em;
+}
+@keyframes nameGrad{
+  0%{background-position:0% 50%;}
+  100%{background-position:300% 50%;}
+}
+.credit-line3{
+  font-size:.65rem;color:rgba(255,255,255,.3);
+  letter-spacing:.03em;line-height:1.4;
+  display:flex;align-items:center;gap:4px;
+}
+.credit-ai-pill{
+  display:inline-flex;align-items:center;gap:3px;
+  background:rgba(99,102,241,.2);
+  border:1px solid rgba(99,102,241,.35);
+  border-radius:99px;padding:1px 7px;
+  font-size:.6rem;font-weight:700;
+  color:#a5b4fc;
+  animation:pillBlink 3s ease-in-out infinite;
+}
+@keyframes pillBlink{0%,100%{opacity:.8;}50%{opacity:1;box-shadow:0 0 8px rgba(99,102,241,.4);}}
+
+.credit-spark{
+  font-size:18px;
+  animation:sparkSpin 4s ease-in-out infinite;
+  flex-shrink:0;
+}
+@keyframes sparkSpin{
+  0%,100%{transform:rotate(0deg) scale(1);}
+  25%{transform:rotate(-15deg) scale(1.15);}
+  75%{transform:rotate(15deg) scale(1.1);}
+}
+.theme-toggle{
+  position:absolute;top:1.2rem;right:1.2rem;
+  background:none;border:1px solid var(--border);
+  border-radius:8px;padding:5px 8px;cursor:pointer;
+  font-size:.85rem;color:var(--muted);
+  transition:border-color .2s;
+}
+.theme-toggle:hover{border-color:var(--indigo);}
+
+/* hint button + tooltip */
+.hint-btn{
+  position:absolute;top:1.2rem;left:1.2rem;
+  width:28px;height:28px;border-radius:50%;
+  background:var(--indigo-dim);border:1px solid rgba(99,102,241,.35);
+  color:var(--indigo2);font-size:.8rem;font-weight:700;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:background .2s,box-shadow .2s;
+  z-index:10;
+}
+.hint-btn:hover{background:rgba(99,102,241,.25);box-shadow:0 0 0 3px var(--indigo-dim);}
+.hint-popup{
+  display:none;position:absolute;top:3.2rem;left:1.2rem;
+  background:var(--surface);border:1px solid rgba(99,102,241,.4);
+  border-radius:12px;padding:14px 16px;width:220px;
+  box-shadow:0 8px 32px rgba(0,0,0,.3);z-index:20;
+  animation:hintIn .18s ease;
+}
+@keyframes hintIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+.hint-popup.open{display:block;}
+.hint-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--indigo2);margin-bottom:10px;}
+.hint-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:.82rem;}
+.hint-row .hl{color:var(--muted);}
+.hint-row .hv{
+  font-family:monospace;font-weight:700;color:var(--text);
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:6px;padding:2px 8px;font-size:.8rem;
+}
+.hint-note{font-size:.68rem;color:var(--muted);margin-top:8px;line-height:1.5;border-top:1px solid var(--border);padding-top:8px;}
+
+/* responsive: stack on small screens */
+@media(max-width:700px){
+  .left-panel{display:none;}
+  .right-panel{width:100%;border-left:none;padding:2rem 1.5rem;}
 }
 </style>
 </head>
 <body>
-<div class="card">
-  <div class="logo">
-    <span class="logo-icon">💎</span>
-    <div class="logo-title">Universe Magnet</div>
-    <div class="logo-sub">Personal Finance Tracker</div>
+
+<!-- ── LEFT PANEL ── -->
+<div class="left-panel">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+
+  <div class="brand">
+    <span class="brand-icon">💎</span>
+    <div class="brand-name">Universe Magnet</div>
+    <div class="brand-tagline">Personal Wealth Operating System</div>
   </div>
 
-  {% if error %}
-  <div class="error-msg">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-    {{ error }}
-  </div>
-  {% endif %}
-
-  <form method="post">
-    <div class="form-group">
-      <label for="username">Username</label>
-      <input type="text" id="username" name="username" autocomplete="username" required autofocus placeholder="Enter username">
+  <div class="slides" id="slides">
+    <div class="slide active" id="slide-0">
+      <span class="slide-icon">📊</span>
+      <div class="slide-headline">Your entire wealth,<br><em>one dashboard</em></div>
+      <div class="slide-body">Track stocks, mutual funds, gold, real estate, PF, and cash — all in a single unified view with live valuations.</div>
     </div>
-    <div class="form-group">
-      <label for="password">Password</label>
-      <div class="input-wrap">
-        <input type="password" id="password" name="password" autocomplete="current-password" required placeholder="Enter password">
-        <button type="button" class="toggle-pw" onclick="togglePw()" title="Show/hide password">👁</button>
+    <div class="slide" id="slide-1">
+      <span class="slide-icon">📈</span>
+      <div class="slide-headline">Demat portfolio<br><em>fully automated</em></div>
+      <div class="slide-body">Import your Zerodha tradebook, auto-compute FIFO P&L, track long-term vs swing holdings separately with real-time NSE prices.</div>
+    </div>
+    <div class="slide" id="slide-2">
+      <span class="slide-icon">🎯</span>
+      <div class="slide-headline">GTT signals &amp;<br><em>smart SIP levels</em></div>
+      <div class="slide-body">Get buy/sell/stop-loss signals based on 52-week highs and your SIP allocation strategy. Never miss a dip entry again.</div>
+    </div>
+    <div class="slide" id="slide-3">
+      <span class="slide-icon">🏦</span>
+      <div class="slide-headline">Loans, EMIs &amp;<br><em>cash flow clarity</em></div>
+      <div class="slide-body">Track all your loans, EMI schedules and monthly cash flow. Know exactly where every rupee goes each month.</div>
+    </div>
+    <div class="slide" id="slide-4">
+      <span class="slide-icon">🔒</span>
+      <div class="slide-headline">100% private,<br><em>runs on your machine</em></div>
+      <div class="slide-body">No third-party servers. No cloud sync. Your financial data stays on your device — always private, always yours.</div>
+    </div>
+  </div>
+
+  <!-- ── Credit banner ── -->
+  <div class="credit-banner">
+    <div class="credit-avatar"><img src="{{ url_for('static', filename='logo.png') }}" alt="KM"></div>
+    <div class="credit-text">
+      <div class="credit-line1">Crafted with passion</div>
+      <div class="credit-line2">Krishna Mishra</div>
+      <div class="credit-line3">
+        Designed &amp; Developed &nbsp;·&nbsp;
+        <span class="credit-ai-pill">✦ Claude AI</span>
       </div>
     </div>
-    <button type="submit" class="btn-login">Sign In</button>
-  </form>
+    <div class="credit-spark">✦</div>
+  </div>
 
-  <div class="footer-note">Your data stays local &mdash; no cloud sync</div>
+  <div>
+    <div class="ticker" id="ticker">
+      <div class="tick-chip up"><span>📈</span><span>Nifty 50</span><span class="arrow">▲</span><span id="t1">+1.2%</span></div>
+      <div class="tick-chip up"><span>💛</span><span>Gold</span><span class="arrow">▲</span><span id="t2">+0.4%</span></div>
+      <div class="tick-chip down"><span>💵</span><span>USD/INR</span><span class="arrow">▼</span><span id="t3">−0.1%</span></div>
+      <div class="tick-chip up"><span>🏦</span><span>Sensex</span><span class="arrow">▲</span><span id="t4">+0.9%</span></div>
+    </div>
+    <div class="dot-nav" id="dotNav">
+      <div class="dot active" onclick="goSlide(0)"></div>
+      <div class="dot" onclick="goSlide(1)"></div>
+      <div class="dot" onclick="goSlide(2)"></div>
+      <div class="dot" onclick="goSlide(3)"></div>
+      <div class="dot" onclick="goSlide(4)"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── RIGHT PANEL ── -->
+<div class="right-panel">
+  <button type="button" class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+
+  <!-- Default credentials hint -->
+  <button type="button" class="hint-btn" onclick="toggleHint()" title="First time? Click for login details">?</button>
+  <div class="hint-popup" id="hintPopup">
+    <div class="hint-title">🔑 First-time Login</div>
+    <div class="hint-row"><span class="hl">Username</span><span class="hv">admin</span></div>
+    <div class="hint-row"><span class="hl">Password</span><span class="hv">Universe</span></div>
+    <div class="hint-note">Change your username &amp; password after first login from App Settings → Security.</div>
+  </div>
+
+  <div class="form-box">
+    <div class="form-logo">
+      <img class="form-logo-icon" id="loginAvatar" src="/api/profile/avatar" alt="Profile">
+      <div class="form-title">{% if user_name %}Welcome back, {{ user_name }} 👋{% else %}Welcome back{% endif %}</div>
+      <div class="form-sub">Sign in to your wealth dashboard</div>
+    </div>
+
+    <!-- quick stats teaser -->
+    <div class="stats-row">
+      <div class="stat-chip"><span class="sv">12+</span><span class="sl">Asset Classes</span></div>
+      <div class="stat-chip"><span class="sv">Live</span><span class="sl">NSE Prices</span></div>
+      <div class="stat-chip"><span class="sv">FIFO</span><span class="sl">P&amp;L Engine</span></div>
+    </div>
+
+    {% if error %}
+    <div class="error-msg">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="post">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" autocomplete="username" required autofocus placeholder="Enter your username">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="input-wrap">
+          <input type="password" id="password" name="password" autocomplete="current-password" required placeholder="Enter your password">
+          <button type="button" class="toggle-pw" onclick="togglePw()" title="Show/hide">👁</button>
+        </div>
+      </div>
+      <button type="submit" class="btn-login">Sign In →</button>
+    </form>
+
+    <div class="footer-note">Your data stays local &mdash; no cloud sync &mdash; fully private</div>
+  </div>
 </div>
 
 <script>
-function togglePw(){
+// ── Theme ──────────────────────────────────────────────────────────────
+document.getElementById('loginAvatar').src = '/api/profile/avatar?t=' + Date.now();
+const saved = localStorage.getItem('um-theme');
+const preferDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+const initTheme = saved || (preferDark ? 'dark' : 'light');
+document.documentElement.setAttribute('data-theme', initTheme);
+document.querySelector('.theme-toggle').textContent = initTheme === 'dark' ? '☀️' : '🌙';
+
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('um-theme', next);
+  document.querySelector('.theme-toggle').textContent = next === 'dark' ? '☀️' : '🌙';
+}
+
+// ── ESC closes hint popup ──────────────────────────────────────────────
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') document.getElementById('hintPopup').classList.remove('open');
+});
+
+// ── Hint popup ─────────────────────────────────────────────────────────
+function toggleHint() {
+  const p = document.getElementById('hintPopup');
+  p.classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+  const popup = document.getElementById('hintPopup');
+  if (popup.classList.contains('open') &&
+      !popup.contains(e.target) &&
+      !e.target.classList.contains('hint-btn')) {
+    popup.classList.remove('open');
+  }
+});
+
+// ── Password toggle ────────────────────────────────────────────────────
+function togglePw() {
   const p = document.getElementById('password');
   p.type = p.type === 'password' ? 'text' : 'password';
 }
-// respect system dark/light preference
-if(!window.matchMedia('(prefers-color-scheme: dark)').matches){
-  document.documentElement.setAttribute('data-theme','light');
+
+// ── Slide show ─────────────────────────────────────────────────────────
+let _slide = 0;
+const SLIDE_COUNT = 5;
+const SLIDE_INTERVAL = 4000;
+
+function goSlide(n) {
+  document.getElementById('slide-' + _slide).classList.remove('active');
+  document.querySelectorAll('.dot')[_slide].classList.remove('active');
+  _slide = n;
+  document.getElementById('slide-' + _slide).classList.add('active');
+  document.querySelectorAll('.dot')[_slide].classList.add('active');
 }
+
+setInterval(() => { goSlide((_slide + 1) % SLIDE_COUNT); }, SLIDE_INTERVAL);
+
+// ── Ticker animation (simulated market moves) ──────────────────────────
+const _tickers = [
+  { id:'t1', base:1.2, range:.6, prefix:'+', cls:'up' },
+  { id:'t2', base:0.4, range:.4, prefix:'+', cls:'up' },
+  { id:'t3', base:-0.1,range:.3, prefix:'', cls:'down' },
+  { id:'t4', base:0.9, range:.5, prefix:'+', cls:'up' },
+];
+
+function jitter(base, range) {
+  return base + (Math.random() - 0.5) * range;
+}
+
+function updateTicker() {
+  _tickers.forEach(t => {
+    const val = jitter(t.base, t.range);
+    const el  = document.getElementById(t.id);
+    if (!el) return;
+    const sign = val >= 0 ? '+' : '';
+    el.textContent = sign + val.toFixed(2) + '%';
+    const chip = el.closest('.tick-chip');
+    const arrow = chip?.querySelector('.arrow');
+    if (chip && arrow) {
+      chip.classList.remove('up','down');
+      chip.classList.add(val >= 0 ? 'up' : 'down');
+      arrow.textContent = val >= 0 ? '▲' : '▼';
+    }
+  });
+}
+
+setInterval(updateTicker, 2800);
 </script>
 </body>
 </html>

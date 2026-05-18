@@ -1,0 +1,20 @@
+# Virtual environments (one per OS, all local — never commit)
+.venv-win/
+.venv-mac/
+.venv-linux/
+
+# Launcher state
+.setup_done
+launcher.log
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temp cookies from testing
+Temp*.txt
